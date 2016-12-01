@@ -1,0 +1,434 @@
+.panel-widget {
+	&.widget-userfocus {
+		background: @brand-grape;
+		text-align: center;
+		position: relative;
+		overflow: hidden;
+		background: rgba(0,0,0,.2);
+
+		hr {border-color: rgba(255, 255, 255, 0.125);}
+		.widget-body {padding: 30px 0;position: relative;z-index: 2;}
+
+		&:before {
+			background: url(../demo/images/pattern-abstract-large.jpg) no-repeat;
+			position: absolute;
+			width: 100%;
+			top: 0;
+			left: 0;
+			overflow: visible;
+			padding-top: 100%;
+			z-index: 1;
+			background-size: cover;
+			opacity: .6;
+		}
+
+		img {height: 80px; width: 80px; margin-bottom: 10px;}
+
+		.name, .location {display: block; color: #fff;}
+
+		.name {font-size: @font-size-large;}
+		.location {font-size: @font-size-mini; color: rgba(255, 255, 255, 0.5);}
+
+		.number, .number-context {
+			display: block;
+			text-align: center;
+		}
+
+		.number {font-size: @font-size-large; color: @gray-darker;}
+		.number-context {text-transform: uppercase; color: @gray; font-size: @font-size-mini}
+
+		table {
+			margin-bottom: 0;
+			background: transparent;
+			td:first-child {border-right: 1px solid @border-lighter;}
+			td {padding: 15px; border-top: 1px solid transparent}
+		}
+	}
+	.widget-footer {
+		background: #fff;
+		border-bottom-left-radius: @border-radius-base;
+		border-bottom-right-radius: @border-radius-base;
+		z-index: 2;
+		position: relative;
+	}
+
+
+
+
+	&.widget-weather {
+		background: @brand-inverse;
+		color: #fff;
+		padding: 20px;
+		position: relative;
+		overflow: hidden;
+		background: rgba(0,0,0,.2);
+
+		hr {border-color: rgba(255, 255, 255, 0.125);}
+		.form-horizontal {position: relative;z-index: 2;}
+
+		&:before {
+			background: url(../demo/images/city-landmark-lights-night.jpg) no-repeat;
+			position: absolute;
+			width: 100%;
+			top: 0;
+			left: 0;
+			overflow: visible;
+			padding-top: 100%;
+			z-index: 1;
+			background-size: cover;
+		}
+
+		.tabular {
+			position: relative;
+			z-index: 2;
+		}
+
+		input.search-city {
+			background: rgba(255, 255, 255, 0.125) !important;
+			border-color: transparent !important;
+			color: #fff !important;
+			.placeholder(rgba(255, 255, 255, 0.5);)
+		}
+
+		.input-icon > .search-city-icon {
+			color: rgba(255, 255, 255, 0.5);
+		}
+
+		.weather-location {
+			font-size: @font-size-h2;
+			font-weight: 300;
+		}
+		
+
+		.weather-details {
+			display: block;
+			font-size: @font-size-small;
+			color: rgba(255, 255, 255, 0.5);
+			//font-style: italic;
+		}
+		.weather-icon {
+			skycon {
+				margin: 0 auto;
+				//width: 100px;
+				display: block;
+				margin: 0 auto;
+			}
+			.weather-temp {
+				display: block;
+				font-size: @font-size-h1;
+				font-weight: 300;
+				//text-align: center;
+			}
+		}
+	}
+}
+
+// profile
+
+.panel-profile {
+	.user-profile {
+		padding: 0;
+		.user-avatar {
+			border-top-left-radius: @border-radius-base;
+			border-top-right-radius: @border-radius-base;
+		}
+		.user-detail {
+			p {margin-bottom: 20px;}
+			padding: 20px;
+			.user-name {font-weight: 400; margin-bottom: 20px;}
+			.user-info {text-transform: uppercase; color: @gray; font-weight: 700;}
+		}
+	}
+}
+
+// recent activities
+
+ul.recent-activities {
+	padding-left: 0;
+	margin: 0;
+	display: table;
+	width: 100%;
+	border-collapse: collapse;
+
+	li {
+		&:first-child {border-top: 1px solid @border-lighter;}
+		&:last-child {border-bottom: 0px solid @border-lighter;}
+		border-bottom: 1px solid @border-lighter;
+		line-height: 1;
+		display: table-row;
+
+		.icon, .avatar, .msg, .time {
+			display: table-cell;
+			vertical-align: middle;
+		}
+
+		.icon {
+			width: 40px;
+			text-align: center;
+			i {
+				height: 30px;
+				width: 30px;
+				padding-left: 0;
+				font-size: 12px;
+				display: inline;
+			}
+		}
+		
+		.avatar {
+			width: 40px;
+			text-align: center;
+			img {
+				width: 30px;
+				height: 30px;
+				border-radius: 50%;
+			}
+		}
+
+		.msg {
+			.person {
+				font-weight: 700;
+				color: @gray-darker;
+			}
+			padding: 12px 10px;
+			line-height: @line-height-base;
+		}
+
+		.time {
+			width: 30px;
+			padding: 10px 0;
+			font-size: @font-size-small;
+			color: @gray-light;
+		}
+	}	
+}
+
+
+// User Profile
+
+.panel-userprofile {
+	.list-unstyled;
+	margin-top: 20px;
+	margin-bottom: 20px;
+	li {
+		&:extend(.clearfix all);
+		display: block;
+		padding: 10px 0;
+		border-bottom: 1px solid @border-lighter;
+		&:first-child {padding-top: 0;}
+		&:last-child {border-bottom: 0;}
+		img {
+			float: left;
+			height: 30px;
+			width: 30px;
+			border-radius: @border-radius-small;
+		}
+		.content {
+			.time {float: right; color: @gray-light; font-size: @font-size-small;}
+			margin-left: 45px;
+		}
+	}
+}
+
+
+// Tasks Panel
+
+.panel-tasks {
+	.list-unstyled;
+	margin-bottom: 0px;
+	position: relative;
+	li {
+		form {margin-right: -90px;}
+		&:extend(.clearfix all);
+		padding: 0px 100px 0px 10px;
+		//background-color: @gray-lighter;
+		margin-top: 1px;
+		margin-bottom: 1px;
+		border: 1px solid transparent !important;
+		border-radius: @border-radius-base;
+		background: @tone-bright;
+		position: relative;
+		&:hover, &:active, &:focus {
+			border: 1px solid transparent !important;
+		}
+		&:active, &:focus {cursor: -webkit-grabbing; cursor: -moz-grabbing; border: none;}
+
+		.task-container {
+			margin-bottom: 0;
+			padding: 9px 0;
+			position: relative;
+			.task-description {
+			}
+
+			> span.label {
+				width: 15px; 
+				height: 15px; 
+				display: inline-block;
+				float: left;
+				margin-right: 10px;
+				margin-top: 2px;
+			} // colors
+
+			form .input-group > .input-group-btn > .btn-group > button:first-child {
+				padding: 0;
+				.label.color-block {
+					height: 36px;
+					width: 36px;
+					top: 0;
+				}
+			}
+		}
+
+		.options {
+			position: absolute;
+			right: 10px;
+			top: 50%;
+			margin-top: -11px;
+			.btn {
+				padding: 4px 8px;
+				color: @gray;
+				box-shadow: none;
+				background: transparent;
+				&:hover {background: transparent; color: @gray-dark; }
+			}
+		}
+
+		//&:last-child {margin-bottom: 0;}
+
+		//> .task-container {margin-bottom: -5px;}
+		
+		&.angular-ui-tree-placeholder {
+			background: @body-bg !important;
+			padding: 9px 100px 9px 15px !important;
+			min-height: 40px;
+			margin: 0 0 2px !important;
+			border: 0px dashed @border-darker !important;
+			border-radius: @border-radius-base !important;
+		}
+
+		&.as-sortable-placeholder {
+			background: black;
+			box-shadow: 1px 1px 1px #ddd;
+		}
+	}
+
+	&.completed {
+		li {
+			font-style: italic;
+		}
+	}
+}
+
+.tasklist {
+	.panel-tasks li {
+		border: none;
+	}
+	.angular-ui-tree-placeholder {
+		height: 24px !important;
+		border: 2px solid #aaf;
+	}
+	.panel-tasks li form {
+		display: block;
+	}
+	.form-group {
+		margin-bottom: 0px !important;
+	}
+	.panel-tasks.completed {
+		li {
+			background: @border-lighter;
+			// text-decoration: line-through !important;
+			font-style: italic;
+			color: @gray;
+
+			.task-description {
+				text-decoration: line-through;
+			}
+		}
+	}
+}
+
+
+
+// Chat Panels
+
+.panel-chat {
+	margin-bottom: 20px;
+	height: 200px;
+	overflow-y: auto;
+
+	.chat-message {
+		margin-bottom: 10px;
+		position: relative;
+		&:last-child {margin-bottom: 0;}
+
+		&:after {
+			left: 38px;
+			top: 10px;
+			border: solid transparent;
+			content: " ";
+			height: 0;
+			width: 0;
+			position: absolute;
+			pointer-events: none;
+			border-right-color: #EEE;
+			border-width: 6px;
+			margin-top: -4px;
+		}
+
+		.chat-contact {
+			img {max-width: 40px; border-radius: 50%;}
+			float: left;
+			margin-right: 10px;
+		}
+		.chat-text {
+			padding: 10px;
+			background-color: #eee;
+			position: relative;
+			overflow: hidden;
+			position: relative;
+			border-radius: @border-radius-base;
+		}
+		&.me {
+			.chat-contact {
+				float: right;
+				margin-left: 10px;
+				margin-right: 0px;
+			}
+			.chat-text {
+				background-color: #ddd;
+			}
+			&:after {
+				border-right-color: transparent;
+				border-left-color: #ddd;
+				right: 38px;
+				left: auto;
+			}
+		}
+	}
+}
+
+.chat-primary		{.chat-states(@brand-primary);}
+.chat-warning      {.chat-states(@brand-warning);}
+.chat-danger       {.chat-states(@brand-danger);}
+.chat-success      {.chat-states(@brand-success);}
+.chat-info         {.chat-states(@brand-info);}
+.chat-inverse      {.chat-states(@brand-inverse);}
+
+// custom colors
+.chat-brown        {.chat-states(@brand-brown);}  
+.chat-indigo       {.chat-states(@brand-indigo);}
+.chat-orange       {.chat-states(@brand-orange);}
+.chat-sky          {.chat-states(@brand-sky);}
+.chat-midnightblue {.chat-states(@brand-midnightblue);}
+.chat-magenta      {.chat-states(@brand-magenta);}  
+.chat-green        {.chat-states(@brand-green);} 
+.chat-purple       {.chat-states(@brand-purple);} 
+
+
+.chat-states(@chat-color) {
+	.chat-text {
+		color: #fff !important;
+		background-color: @chat-color !important;
+	}
+	&:after {border-right-color: @chat-color !important;}
+	&.me:after {border-left-color: @chat-color !important;}
+}

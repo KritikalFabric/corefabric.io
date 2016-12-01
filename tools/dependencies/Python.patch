@@ -1,0 +1,190 @@
+--- /dev/null	2016-11-19 18:17:01.000000000 +0000
++++ make_patch.sh	2016-11-19 18:16:15.775849524 +0000
+@@ -0,0 +1,14 @@
++#!/bin/sh -v
++
++rm -f ../Python.patch ../Python.patch.Modules ../Python.patch.Lib
++
++diff -u /dev/null make_patch.sh >> ../Python.patch
++diff -u /dev/null show_patch.sh >> ../Python.patch
++diff -u Makefile.pre.in.orig Makefile.pre.in >> ../Python.patch
++diff -u setup.py.orig setup.py >> ../Python.patch
++diff -u configure.ac.orig configure.ac >> ../Python.patch
++
++diff -u Modules/getpath.c.orig Modules/getpath.c >> ../Python.patch.Modules
++diff -u Modules/posixmodule.c.orig Modules/posixmodule.c >> ../Python.patch.Modules
++
++diff -u Lib/sysconfig.py.orig Lib/sysconfig.py >> ../Python.patch.Lib
+--- /dev/null	2016-11-19 18:17:01.000000000 +0000
++++ show_patch.sh	2016-11-19 18:16:15.776010503 +0000
+@@ -0,0 +1,12 @@
++#!/bin/sh
++
++diff -u /dev/null make_patch.sh
++diff -u /dev/null show_patch.sh
++diff -u Makefile.pre.in.orig Makefile.pre.in
++diff -u setup.py.orig setup.py
++diff -u configure.ac.orig configure.ac
++
++diff -u Modules/getpath.c.orig Modules/getpath.c
++diff -u Modules/posixmodule.c.orig Modules/posixmodule.c
++
++diff -u Lib/sysconfig.py.orig Lib/sysconfig.py
+--- Makefile.pre.in.orig	2016-11-19 18:16:15.739996496 +0000
++++ Makefile.pre.in	2016-11-19 18:16:15.776502251 +0000
+@@ -68,8 +68,8 @@
+ 
+ # Compiler options
+ OPT=		@OPT@
+-BASECFLAGS=	@BASECFLAGS@
+-BASECPPFLAGS=	@BASECPPFLAGS@
++BASECFLAGS=	@BASECFLAGS@ -DCOREFABRIC_ENV__$(COREFABRIC_ENV)=1
++BASECPPFLAGS=	@BASECPPFLAGS@ -DCOREFABRIC_ENV__$(COREFABRIC_ENV)=1
+ CONFIGURE_CFLAGS=	@CFLAGS@
+ # CFLAGS_NODIST is used for building the interpreter and stdlib C extensions.
+ # Use it when a compiler flag should _not_ be part of the distutils CFLAGS
+@@ -465,7 +465,7 @@
+ 
+ # Default target
+ all:		build_all
+-build_all:	$(BUILDPYTHON) oldsharedmods sharedmods gdbhooks Modules/_testembed python-config
++build_all:	$(BUILDPYTHON) oldsharedmods sharedmods gdbhooks python-config
+ 
+ # Compile a binary with gcc profile guided optimization.
+ profile-opt:
+--- setup.py.orig	2016-11-19 18:16:15.746025462 +0000
++++ setup.py	2016-11-19 18:16:15.777097978 +0000
+@@ -506,15 +506,8 @@
+         # lib_dirs and inc_dirs are used to search for files;
+         # if a file is found in one of those directories, it can
+         # be assumed that no additional -I,-L directives are needed.
+-        if not cross_compiling:
+-            lib_dirs = self.compiler.library_dirs + [
+-                '/lib64', '/usr/lib64',
+-                '/lib', '/usr/lib',
+-                ]
+-            inc_dirs = self.compiler.include_dirs + ['/usr/include']
+-        else:
+-            lib_dirs = self.compiler.library_dirs[:]
+-            inc_dirs = self.compiler.include_dirs[:]
++        lib_dirs = self.compiler.library_dirs[:]
++        inc_dirs = self.compiler.include_dirs[:]
+         exts = []
+         missing = []
+ 
+--- configure.ac.orig	2016-11-19 18:16:15.751886149 +0000
++++ configure.ac	2016-11-19 18:16:15.777923349 +0000
+@@ -357,73 +357,16 @@
+ ##                           [Use (OpenStep|Rhapsody) dynamic linker]))
+ ##
+ # Set name for machine-dependent library files
+-AC_ARG_VAR([MACHDEP], [name for machine-dependent library files])
+ AC_MSG_CHECKING(MACHDEP)
+ if test -z "$MACHDEP"
+ then
+-    # avoid using uname for cross builds
+-    if test "$cross_compiling" = yes; then
+-       # ac_sys_system and ac_sys_release are used for setting
+-       # a lot of different things including 'define_xopen_source'
+-       # in the case statement below.
+-	case "$host" in
+-	*-*-linux*)
+-		ac_sys_system=Linux
+-		;;
+-	*-*-cygwin*)
+-		ac_sys_system=Cygwin
+-		;;
+-	*)
+-		# for now, limit cross builds to known configurations
+-		MACHDEP="unknown"
+-		AC_MSG_ERROR([cross build not supported for $host])
+-	esac
+-	ac_sys_release=
+-    else
+-	ac_sys_system=`uname -s`
+-	if test "$ac_sys_system" = "AIX" \
+-	-o "$ac_sys_system" = "UnixWare" -o "$ac_sys_system" = "OpenUNIX"; then
+-		ac_sys_release=`uname -v`
+-	else
+-		ac_sys_release=`uname -r`
+-	fi
+-    fi
+-    ac_md_system=`echo $ac_sys_system |
+-			tr -d '[/ ]' | tr '[[A-Z]]' '[[a-z]]'`
+-    ac_md_release=`echo $ac_sys_release |
+-			tr -d '[/ ]' | sed 's/^[[A-Z]]\.//' | sed 's/\..*//'`
+-    MACHDEP="$ac_md_system$ac_md_release"
+-
+-    case $MACHDEP in
+-	linux*) MACHDEP="linux";;
+-	cygwin*) MACHDEP="cygwin";;
+-	darwin*) MACHDEP="darwin";;
+-	irix646) MACHDEP="irix6";;
+-	'')	MACHDEP="unknown";;
+-    esac
++	ac_sys_system=Linux
++	MACHDEP=linux
+ fi
+ 
+ AC_SUBST(_PYTHON_HOST_PLATFORM)
+ if test "$cross_compiling" = yes; then
+-	case "$host" in
+-	*-*-linux*)
+-		case "$host_cpu" in
+-		arm*)
+-			_host_cpu=arm
+-			;;
+-		*)
+-			_host_cpu=$host_cpu
+-		esac
+-		;;
+-	*-*-cygwin*)
+-		_host_cpu=
+-		;;
+-	*)
+-		# for now, limit cross builds to known configurations
+-		MACHDEP="unknown"
+-		AC_MSG_ERROR([cross build not supported for $host])
+-	esac
+-	_PYTHON_HOST_PLATFORM="$MACHDEP${_host_cpu:+-$_host_cpu}"
++	_PYTHON_HOST_PLATFORM="$MACHDEP"
+ fi
+ 	
+ # Some systems cannot stand _XOPEN_SOURCE being defined at all; they
+@@ -1013,7 +956,7 @@
+ 
+ AC_MSG_RESULT($LDLIBRARY)
+ 
+-AC_PROG_RANLIB
++LT_INIT
+ AC_SUBST(AR)
+ AC_CHECK_TOOLS(AR, ar aal, ar)
+ 
+@@ -2162,7 +2105,16 @@
+ 	    LINKFORSHARED="-Wl,-E -Wl,+s";;
+ #	    LINKFORSHARED="-Wl,-E -Wl,+s -Wl,+b\$(BINLIBDEST)/lib-dynload";;
+ 	BSD/OS/4*) LINKFORSHARED="-Xlinker -export-dynamic";;
+-	Linux*|GNU*) LINKFORSHARED="-Xlinker -export-dynamic";;
++	Linux*|GNU*)
++	    case $COREFABRIC_ENV in
++	        joyent)
++	            LINKFORSHARED="-Wl,-shared"
++	            ;;
++	        *)
++	            LINKFORSHARED="-Xlinker -export-dynamic"
++	        ;;
++	    esac
++	    ;;
+ 	# -u libsys_s pulls in all symbols in libsys
+ 	Darwin/*) 
+ 		LINKFORSHARED="$extra_undefs -framework CoreFoundation"
+@@ -2189,7 +2141,8 @@
+ 		  *gcc*)
+ 		    if $CC -Xlinker --help 2>&1 | grep export-dynamic >/dev/null
+ 		    then
+-			LINKFORSHARED="-Xlinker --export-dynamic"
++			#FABRIC#LINKFORSHARED="-Xlinker --export-dynamic"
++			LINKFORSHARED="-Wl,-shared"
+ 		    fi;;
+ 		  esac;;
+ 	CYGWIN*)

@@ -1,0 +1,155 @@
+//alerts.less
+
+.alert {
+  //background: #fff !important;
+  border-width: 0px 0 0 2px;
+	p {
+		margin: 0 !important;
+	}
+	p + p {
+		margin-top: 10px !important;
+	}
+}
+.alert .alert-link {
+	font-weight: @alert-link-font-weight; color: @brand-primary !important;
+}
+
+//thumbnails.less
+.thumbnail {
+	margin-bottom: 0;
+}
+
+//labels.less
+.label {
+	padding: .09em .45em .15em;
+	font-family: @label-font-family;
+  font-weight: @label-font-weight;
+  font-size: 0.84615em;
+  border-radius: @label-border-radius;
+  text-transform: uppercase;
+}
+
+// Colors
+.label-orange {
+  .label-variant(@brand-orange);
+}
+.label-grape {
+  .label-variant(@brand-grape);
+}
+.label-inverse {
+  .label-variant(@brand-inverse);
+}
+.label-sky {
+  .label-variant(@brand-sky);
+}
+
+.badge {
+	padding: 2.5px 5px;
+	font-size: 11px;
+}
+
+// Colors
+// Contextual variations (based on label colors)
+
+.badge-primary  {.label-variant(@brand-primary);}
+.badge-success  {.label-variant(@brand-success);}
+.badge-info     {.label-variant(@brand-info);}
+.badge-warning  {.label-variant(@brand-warning);}
+.badge-danger   {.label-variant(@brand-danger);}
+.badge-magenta   {.label-variant(@brand-magenta);}
+.badge-orange   {.label-variant(@brand-orange);}
+.badge-indigo   {.label-variant(@brand-indigo);}
+
+#sidebar {
+  .badge.badge-primary  {.label-variant(@brand-primary);}
+  .badge.badge-indigo  {.label-variant(@brand-indigo);}
+  .badge.badge-orange  {.label-variant(@brand-orange);}
+  .badge.badge-success  {.label-variant(@brand-success);}
+  .badge.badge-info     {.label-variant(@brand-info);}
+  .badge.badge-warning  {.label-variant(@brand-warning);}
+  .badge.badge-danger   {.label-variant(@brand-danger);}
+}
+
+//progressbars.less
+.progress-sm {height: 8px;}
+.progress, .progress-bar {.box-shadow(~"none");}
+
+//Variants
+.progress-bar-inverse{
+  .progress-bar-variant(@brand-inverse);
+}
+
+.progress-bar-primary{
+  .progress-bar-variant(@brand-primary);
+}
+
+.progress-bar-green {
+  .progress-bar-variant(@brand-green);
+}
+
+.progress-bar-orange {
+  .progress-bar-variant(@brand-orange);
+}
+
+.progress-bar-purple {
+  .progress-bar-variant(@brand-purple);
+}
+
+.progress-bar-indigo {
+  .progress-bar-variant(@brand-indigo);
+}
+
+.progress-striped .progress-bar {
+  #gradient > .striped(rgba(255,255,255,0.35));
+}
+
+// Contextual Progress
+.contextual-progress {
+  margin: 20px 0;
+  .progress-percentage {
+    float: right;
+    position: relative;
+  }
+  .label {
+    position: absolute;
+    right: 32px; top: 2px;
+    padding: 3px 5px;
+  }
+  .progress-title {float: left;}
+
+  .progress {
+    height:2px;
+    margin:5px 0 0;
+  }
+}
+.contextual-progress:first-child{margin-top: 0;}
+
+//input-groups.less
+.input-group-addon {
+	padding: @padding-base-vertical 5px;
+	min-width: 44px;
+}
+.input-group-btn > .btn {
+	+ .dropdown-toggle {
+    	padding-left: 5px;
+    	padding-right: 5px;
+  	}
+}
+
+.input-group-btn  > .btn {
+  &:hover, &:active, &:focus, &.active {
+    z-index: inherit;
+  }
+}
+
+//.input-group .form-control {
+//  z-index: inherit;
+//}
+
+
+//carousel.less
+.carousel-caption {
+  h1, h2, h3, h4, h5, h6 {
+    color: @carousel-heading-color;
+  }
+}

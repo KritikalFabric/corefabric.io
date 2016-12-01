@@ -1,0 +1,347 @@
+/* Drop Downs */
+
+header {
+	/*Icon should be white when there is a notification*/
+	a.hasnotifications {color:#fff !important;}
+
+	.toolbar>li, #rightmenu-trigger {
+		border-left: 1px solid @navbar-vertical-separator;
+	}
+	#leftmenu-trigger {
+		border-right: 1px solid @navbar-vertical-separator;
+	}
+
+	&.navbar {
+		box-shadow: 0 2px 1px 0 rgba(0, 0, 0, 0.1) !important;
+	}
+}
+
+.scrollthis {
+	height: 315px;
+	li {
+	     &:extend(.clearfix all);
+	     a {display: block; text-decoration: none;}
+	}
+	+ .dd-footer {border-top: 1px solid #e6e7e8;}
+}
+
+.dropdown-menu {
+	&.notifications, &.messages {padding: 0; z-index: 1300; width: 320px;}
+
+	&.notifications li, &.messages li {
+		border-bottom: 1px solid @border-lighter;
+		color: @gray-dark !important;
+		a {
+			white-space: normal; color: @gray-dark;
+			&.active {color: @gray-darker !important; background: lighten(@brand-info, 57%) !important}
+			&.active:hover {color: @gray-darker !important; background: lighten(@brand-info, 57%) !important}
+			&:hover {color: @gray-darker !important; background: none !important}
+
+			// Manually fix width for tooltip
+			.btn-mark-unread + .tooltip > .tooltip-inner {min-width: 83px;}
+
+			button.btn-mark-read, button.btn-mark-unread, button{
+				float: right; border: none !important; 
+				padding: 0 !important; 
+				background: none !important; 
+				 line-height: 0;
+				
+				i {
+					color: @gray-lighter !important;	
+					margin: 0;
+					font-size: 11px !important;
+					padding: 3px !important; 
+					margin-right: -3px;
+					top: -4px;
+					// margin-left: 5px;
+
+				}
+				&:hover{ i {color: @brand-primary !important;}}
+			}
+		}
+		.time {color: @gray-lighter; padding-left: 10px; padding-right: 7px; font-size: @font-size-mini; white-space: nowrap; text-align: right; vertical-align: top; line-height: 11px;}
+
+		&.dd-header a, &.dd-footer a {color: @link-color; &:hover {text-decoration: none;}}
+		&.dd-header {
+			padding: 7px 10px; .clearfix; font-size: @font-size-mini; color: @gray !important; text-transform: uppercase;
+			span:first-child {.pull-left; font-weight: 700;}
+			span:last-child {
+				.pull-right;
+				a {padding: 0 !important;}
+			}
+			a {background: none !important}
+			a:hover {color: @link-hover-color !important}
+		}
+		&.dd-footer {
+			font-size: @font-size-mini;
+			a {text-align: right; padding: 7px 10px; &:hover, &:focus{background: none !important; color: @link-hover-color !important; text-decoration: none;}}
+		}
+		&:last-child {border-bottom: 0;}
+	}
+
+	&.notifications .scrollthis li {
+		.notification-user i 	{color: @brand-midnightblue;}
+		.notification-warning i {color: @brand-warning;}
+		.notification-danger i 	{color: @brand-danger;}
+		.notification-fix i 	{color: @brand-inverse;}
+		.notification-success i {color: @brand-success;}
+		.notification-failure i {color: @brand-danger;}
+		.notification-order i 	{color: @brand-info;}
+		a {
+			padding: 19px; 
+			line-height: 16px;
+			i {
+				.pull-left;
+				padding: 5px 0; text-align: center; margin-top: -4px; margin-right: 10px;
+			}
+			.msg {overflow: hidden; display: inline;}
+		}
+		.time {float: right;}
+	}
+
+	&.messages li {
+		 a {
+			//line-height: 14px;
+			img {.pull-left; margin-right: 10px; height: 40px; border-radius: 50%}
+			 div {overflow: hidden; position: relative;}
+
+			padding: 19px;
+			.name {margin-top: 0px; color: @gray-dark; font-weight: 700} .msg {padding-top: 2px;}
+
+			.tooltip, .tooltip-arrow {position: absolute !important;}
+		}
+		.time {float: right;}
+		img {height:40px;width:40px; border-radius: 50%}
+		span {display: block;}
+		span.msg {font-size: @font-size-small; color: @gray;}
+	}
+
+	&.userinfo {
+		padding: 0px 15px;
+		min-width: 200px;
+		&:extend(.clearfix all);
+		ul {padding-left: 0;}
+		li {list-style:none;}
+		h5 {margin: -2px 0 -2px 0;}
+
+		li.username {
+			&:extend(.clearfix all);
+			margin: 0 -15px;
+			padding: 0 10px 10px;
+			border-bottom: 1px solid @border-lighter;
+
+			a {padding: 0 5px;}
+
+			.pull-left img {width: 30px; border-radius: 50%;}
+			.pull-right {
+				min-width: 130px;
+				small {
+					color: @gray-lighter;
+					span {color: @link-color}
+				}
+			}
+		}
+
+		.userlinks {
+			ul {
+				display: block;
+				position: relative;
+				border:none;
+				background: transparent;
+				width: 100%;
+				.box-shadow(~"none");
+
+				li {
+					margin: 0 -15px;
+					a {white-space: inherit;}
+					&.divider {margin: 5px -15px;}
+				}
+
+				i.pull-right {margin-top:2px;}
+			}
+		}
+	}
+	&.search {
+		width: 280px;
+		padding: 0;
+		input[type="text"] {border:none;height: 38px;}
+	}
+}
+
+#headerbardropdown {
+	padding: 16px 19px;
+	//span {background-color: none; padding: 2px 8px 3px 8px; display: block;border-radius:@border-radius-small}
+	i {margin-left: 0px;}
+}
+
+.toolbar.navbar-nav           {margin: 0;}
+.navbar-nav.toolbar>li        {
+	float: right;
+	> a {
+		padding-top: 16px;
+		padding-bottom: 16px;
+	}
+}
+
+.nav > li > a {padding: 10px 20px;}
+
+a.username {
+	padding: 10px 10px !important;
+	font-size: 12px !important;
+
+	&:extend(.clearfix all);
+	span {
+		font-weight: 600;
+		padding-right: 8px;
+	    //Visual Alignment
+	    top:2px;
+	    position: relative;
+	    float: left;
+	}
+	img {
+		height: 30px;
+		width: 30px;
+		border-radius: 50%;
+		float: right;
+	}
+}
+
+.dropdown-menu.userinfo .username a {
+	&:extend(.clearfix all);
+	padding: 0;
+	color: @gray-darker;
+	&:hover {text-decoration: none;background: none;}
+}
+
+header.navbar {margin-bottom:0px; border:none;}
+
+/* Nav and Sidebar Badges
+// ------------------------*/
+
+.nav .badge, #sidebar .badge {
+	text-align: center;
+	text-shadow: none !important;
+}
+
+.nav .badge {
+	top: 8px;
+	left: 27px;
+	position: absolute;
+
+	//background-color: @brand-danger;
+}
+
+
+
+/* The toggle links for left/right sidebar */
+.navbar .btn {font-size: 1em; padding: 5px;}
+.navbar .btn.pull-left {border-right: 1px solid #555; margin-right: 10px;}
+.navbar .btn.pull-right {border-left: 1px solid #555; margin-left: 10px}
+
+
+/* Menu Triggers */
+.navbar-default #topnav {
+	#leftmenu-trigger, #rightmenu-trigger {
+	
+		background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADIAAAAyCAYAAAAeP4ixAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAyJpVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADw/eHBhY2tldCBiZWdpbj0i77u/IiBpZD0iVzVNME1wQ2VoaUh6cmVTek5UY3prYzlkIj8+IDx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IkFkb2JlIFhNUCBDb3JlIDUuMy1jMDExIDY2LjE0NTY2MSwgMjAxMi8wMi8wNi0xNDo1NjoyNyAgICAgICAgIj4gPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4gPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIgeG1sbnM6eG1wPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvIiB4bWxuczp4bXBNTT0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wL21tLyIgeG1sbnM6c3RSZWY9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9zVHlwZS9SZXNvdXJjZVJlZiMiIHhtcDpDcmVhdG9yVG9vbD0iQWRvYmUgUGhvdG9zaG9wIENTNiAoV2luZG93cykiIHhtcE1NOkluc3RhbmNlSUQ9InhtcC5paWQ6OTA1NTE3QTA3RUI2MTFFNDk5RjdGQjZGNUYwNTMzREYiIHhtcE1NOkRvY3VtZW50SUQ9InhtcC5kaWQ6OTA1NTE3QTE3RUI2MTFFNDk5RjdGQjZGNUYwNTMzREYiPiA8eG1wTU06RGVyaXZlZEZyb20gc3RSZWY6aW5zdGFuY2VJRD0ieG1wLmlpZDo5MDU1MTc5RTdFQjYxMUU0OTlGN0ZCNkY1RjA1MzNERiIgc3RSZWY6ZG9jdW1lbnRJRD0ieG1wLmRpZDo5MDU1MTc5RjdFQjYxMUU0OTlGN0ZCNkY1RjA1MzNERiIvPiA8L3JkZjpEZXNjcmlwdGlvbj4gPC9yZGY6UkRGPiA8L3g6eG1wbWV0YT4gPD94cGFja2V0IGVuZD0iciI/PuztcnsAAABvSURBVHja7NhBCsAgDATApPTh+XnquSdLKxSZPQdhDHvQ7O7YIUdsEhAQEBAQEBAQEBAQEJCXOVccmpk1Mzee2WUj98tb8fkwNhKTG9ERZX+Y+nhO2ZVd2ZVd2XUEBAQEBAQEBAQEBAQE5M+5BBgAxEkYW5e4p+QAAAAASUVORK5CYII=);
+	}
+} 
+
+.dropdown-toggle {
+	display: inline-block;
+}
+
+
+#leftmenu-trigger, #rightmenu-trigger {
+	height: 50px; width: 50px; cursor: pointer;
+	background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADIAAAAyCAYAAAAeP4ixAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAyJpVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADw/eHBhY2tldCBiZWdpbj0i77u/IiBpZD0iVzVNME1wQ2VoaUh6cmVTek5UY3prYzlkIj8+IDx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IkFkb2JlIFhNUCBDb3JlIDUuMy1jMDExIDY2LjE0NTY2MSwgMjAxMi8wMi8wNi0xNDo1NjoyNyAgICAgICAgIj4gPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4gPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIgeG1sbnM6eG1wPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvIiB4bWxuczp4bXBNTT0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wL21tLyIgeG1sbnM6c3RSZWY9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9zVHlwZS9SZXNvdXJjZVJlZiMiIHhtcDpDcmVhdG9yVG9vbD0iQWRvYmUgUGhvdG9zaG9wIENTNiAoV2luZG93cykiIHhtcE1NOkluc3RhbmNlSUQ9InhtcC5paWQ6QzEyRjFDODQ5OTc1MTFFNEIwM0RBQ0MzQzM1REREMUQiIHhtcE1NOkRvY3VtZW50SUQ9InhtcC5kaWQ6QzEyRjFDODU5OTc1MTFFNEIwM0RBQ0MzQzM1REREMUQiPiA8eG1wTU06RGVyaXZlZEZyb20gc3RSZWY6aW5zdGFuY2VJRD0ieG1wLmlpZDpDMTJGMUM4Mjk5NzUxMUU0QjAzREFDQzNDMzVEREQxRCIgc3RSZWY6ZG9jdW1lbnRJRD0ieG1wLmRpZDpDMTJGMUM4Mzk5NzUxMUU0QjAzREFDQzNDMzVEREQxRCIvPiA8L3JkZjpEZXNjcmlwdGlvbj4gPC9yZGY6UkRGPiA8L3g6eG1wbWV0YT4gPD94cGFja2V0IGVuZD0iciI/Pm4FKuMAAABaSURBVHja7NhRCgAQEEVRIwu387EIlMZ531In3R+Rma3CeisyEBAQEBAQEBAQEBAQkM2NS/fOw+f+eZHw+QAidrFrBETsYtcICAgICAgICAgICAgIyKtbAgwASZIPW5TIvUUAAAAASUVORK5CYII=);
+}
+#leftmenu-trigger {
+	background-position: 0 0; float: left;
+	&:hover {background-position: 0 50px;}
+}
+#rightmenu-trigger {
+	background-position: 0 0; float: right;
+	&:hover {background-position: 0px 50px;}
+}
+
+@media (max-width: @screen-xs-max) {
+	//Alignments in small screen
+	.dropdown-menu.messages {
+		margin-right: -35px;
+		&:before {margin-right: 35px;}
+	}
+	.dropdown-menu.notifications {
+		margin-right: -81px;
+		&:before {margin-right: 81px;}
+		width: 280px;
+	}
+
+	// Menu Horizontal
+	nav.navbar .dropdown-menu {
+		position: relative;
+		float: none;
+		background: none;
+		.box-shadow(~"none");
+		border:none;
+	}
+	nav.navbar .navbar-header {width: auto;}
+}
+
+nav.navbar {margin-bottom: 0;}
+
+
+
+
+
+
+/* Search */
+//---------------------
+
+// .toolbar li.search-icon {
+// 	border: none !important;
+// }
+
+#search-inline {
+	input {
+		border:none;
+		height: 35px;
+		padding-left: 25px;
+	}
+
+	.search {
+		margin: 9px 10px 9px 0px;
+		color: #8c959b;
+	}
+
+	.remove {
+		right: 0;
+		margin: 9px 20px 9px 10px;
+		&:hover {
+			cursor: pointer;
+		}
+	}
+
+	
+	@media (max-width: @screen-xs-max) { //display search full-width only on small screen
+		&.active {						 //and only when it has an active class
+			display: block !important;
+			right: 0;
+			left: 0;
+			top: 0;
+			position: absolute;
+			z-index: 999;
+			margin: 0;
+			border: none;
+			padding: 8px 0 7px;
+		}
+
+		input {
+			padding-left: 45px;
+		}
+
+		.search {
+			margin: 9px 20px 9px 20px;
+		}
+	}
+}

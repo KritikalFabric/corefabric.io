@@ -1,0 +1,16 @@
+--- Lib/sysconfig.py.orig	2016-11-19 18:16:15.769745919 +0000
++++ Lib/sysconfig.py	2016-11-19 18:16:15.790945750 +0000
+@@ -657,8 +657,11 @@
+             # We can't use "platform.architecture()[0]" because a
+             # bootstrap problem. We use a dict to get an error
+             # if some suspicious happens.
+-            bitness = {2147483647:"32bit", 9223372036854775807:"64bit"}
+-            machine += ".%s" % bitness[sys.maxsize]
++            if release[2:] >= "11":
++                machine += ".64bit"
++            else:
++                bitness = {2147483647:"32bit", 9223372036854775807:"64bit"}
++                machine += ".%s" % bitness[sys.maxsize]
+         # fall through to standard osname-release-machine representation
+     elif osname[:4] == "irix":              # could be "irix64"!
+         return "%s-%s" % (osname, release)

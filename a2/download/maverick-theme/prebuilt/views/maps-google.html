@@ -1,0 +1,77 @@
+<div id="page-heading">
+    <ol class="breadcrumb">
+        <li><a href="#/">Dashboard</a></li>
+        <li>Maps</li>
+        <li class="active">Google Maps</li>
+    </ol>
+
+    <h1>Google Maps</h1>
+    <div class="options">
+        <div class="btn-toolbar">
+            <div class="btn-group" dropdown>
+                <button type="button" class="btn btn-default dropdown-toggle" dropdown-toggle>
+                    Export as <span class="caret"></span>
+                </button>
+                <ul class="dropdown-menu" role="menu">
+                  <li><a href="#">Action</a></li>
+                  <li><a href="#">Another action</a></li>
+                  <li><a href="#">Something else here</a></li>
+                  <li class="divider"></li>
+                  <li><a href="#">Separated link</a></li>
+                </ul>
+            </div>
+            <a href="#" class="btn btn-default hidden-xs"><i class="glyphicon glyphicon-cog"></i></a>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid" ng-controller="GMapsController">
+    <div class="row">
+        <div class="col-xs-12">
+            <panel panel-class="panel-sky" heading="Geolocation">
+                <div style="height: 300px" gmap options="basicMapOptions"></div>
+            </panel>
+        </div>
+        <div class="col-xs-12">
+            <panel panel-class="panel-sky" heading="Advanced Routing">
+                <div style="height: 300px" gmap options="routeMapOptions" instance="routeMapInstance"></div>
+                <br>
+                <button class="btn btn-danger" ng-click="startRoute($event)">Start Routing</button>
+             </panel>
+        </div>
+        <div class="col-xs-12">
+            <panel panel-class="panel-sky" heading="Panorama">
+                <div style="height: 300px" gmap options="panoramicMapOptions" panorama></div>
+            </panel>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-6">
+            <panel panel-class="panel-sky" heading="Fusion Tables">
+                <div style="height: 300px" gmap options="fusionMapOptions" instance="fusionMapInstance"></div>
+            </panel>
+        </div>
+        <div class="col-md-6">
+            <panel panel-class="panel-sky col-md-6" heading="Polylines">
+                <div style="height: 300px" gmap options="polylinesMapOptions" instance="polylinesMapInstance"></div>
+            </panel>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-12">
+            <panel panel-class="panel-sky" heading="Geocoding">
+                <p>
+                    <div style="height: 300px" gmap options="{
+                        lat: -12.043333,
+                        lng: -77.028333
+                    }" instance="geoCodingMapInstance"></div>
+                </p>
+                <p>
+                    <input type="text" ng-model="geocodeAddress" />
+                    <button ng-click="submitGeocoding(geocodeAddress)">Search</button>
+                </p>
+            </panel>
+        </div>
+    </div>
+
+</div><!-- container-fluid -->

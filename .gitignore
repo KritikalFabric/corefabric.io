@@ -1,0 +1,10 @@
+.gradle
+classes/
+.local
+.idea
+build
+corefabric.io.*
+get-pip.py
+config.json
+jDtnConfig.xml
+*.swp

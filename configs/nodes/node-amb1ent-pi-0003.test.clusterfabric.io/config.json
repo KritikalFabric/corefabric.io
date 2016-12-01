@@ -1,0 +1,48 @@
+{
+  "node": {
+	"name": "node-0003",
+	"zone": "pi",
+    "hostname": "node-amb1ent-pi-0003.test.clusterfabric.io",
+    "ip4": "172.16.237.131",
+    "localhostIf": "lo",
+    "wanIf": "eth0",
+        "node_db":{
+                "host":"db-amb1ent-pi-0001.test.storagefabric.io",
+                "db":"node_node_amb1ent_pi_0003",
+                "user":"postgres",
+                "password":"password"
+        }
+
+  },
+  "cluster": {
+    "tcpip": true,
+    "peers":[
+      {
+        "host":"router-amb1ent-pi.test.wanfabric.io",
+        "port":5701
+      },
+      {
+        "host":"node-amb1ent-pi-0001.test.clusterfabric.io",
+        "port":5701
+      },
+      {
+        "host":"node-amb1ent-pi-0002.test.clusterfabric.io",
+        "port":5701
+      }
+    ]
+  },
+  "dtn": {
+    "isRouter": false,
+    "routerHostname": "router-amb1ent-pi.test.wanfabric.io",
+    "routerIp4": "172.16.237.128"
+  },
+  "roles": {
+        "app-web":[{}],
+    "dtn-node": [{}],
+    "mqtt-broker":[{}],
+    "dtn-mqtt-bridge":[{
+      "subscribe":"nodes/pi/node-0003/#",
+      "to":"dtn://router-amb1ent-pi.test.wanfabric.io/MqttBridge"
+    }]
+  }
+}

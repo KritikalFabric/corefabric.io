@@ -1,0 +1,17 @@
+<div *ngIf="item.separator==true">
+    <span>{{item.label}}</span>
+</div>
+<a *ngIf="!item.separator" (click)="ui.select(item)">
+    <i ng-if="item.iconClasses" [class]="item.iconClasses"></i><span>{{item.label}}</span>
+    <span [innerHTML]="item.html"></span>
+</a>
+<ul *ngIf="item.children && (ui.isOpen(item) || (ui.hasSearchQuery() && ui.isSelected(item)))" style="display:block;">
+    <li *ngFor="let x of item.children"
+        [ngClass]="{ hasChild: (x.children!==undefined),
+                      active: ui.isSelected(x),
+                        open: (x.children!==undefined) && ui.isOpen(x),
+              'search-focus': (ui.hasSearchQuery() && ui.isSelected(x)) }"
+    >
+        <nav-renderer [item]="x" *ngIf="!(ui.hasSearchQuery() && !ui.isSelected(x))"></nav-renderer>
+    </li>
+</ul>

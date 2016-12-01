@@ -1,0 +1,551 @@
+<div id="page-heading">
+    <ol class="breadcrumb">
+        <li><a href="#/">Home</a></li>
+        <li class="active">Dashboard</li>
+    </ol>
+
+    <h1>Dashboard</h1>
+    <div class="options">
+        <div class="btn-toolbar">
+            <div class="btn-group" dropdown>
+                <ul class="dropdown-menu" role="menu">
+                  <li><a href="#">Action</a></li>
+                  <li><a href="#">Another action</a></li>
+                  <li><a href="#">Something else here</a></li>
+                  <li class="divider"></li>
+                  <li><a href="#">Separated link</a></li>
+                </ul>
+            </div>
+            <a href="#" class="btn btn-default hidden-xs"><i class="glyphicon glyphicon-cog"></i></a>
+        </div>
+    </div>
+</div>
+
+
+<div class="container-fluid" ng-controller="DashboardController">
+
+    <div class="row">
+        <div class="col-md-8 animated-content">
+            <panel panel-class="panel-default no-padding" heading="User Statistics">
+                <panel-controls>
+                    <panel-control-collapse></panel-control-collapse>
+                    <panel-control-title></panel-control-title>
+                    <panel-control-colors></panel-control-colors>
+                    <panel-control-refresh type="circular" is-loading="loadingChartData" ng-click="refreshAction()"></panel-control-refresh>
+                    <div class="pull-right mr10 hidden-xs">
+                        <button class="btn btn-sm btn-default" style="text-transform: uppercase;" daterangepicker="drp_options" date-begin="drp_start" date-end="drp_end">
+                            <i class="glyphicon glyphicon-calendar"></i> <span style="margin-left: 5px">{{drp_start}} - {{drp_end}}</span> <b class="caret"></b>
+                        </button>
+                    </div>
+                </panel-controls>
+
+                <div class="p20">
+                    <div class="row">
+                        <div class="col-md-12">
+                           <div class="" flot-chart style="width: 100%; height:319px" 
+                                data-flot-data="plotStatsData"
+                                data-flot-options="plotStatsOptions"
+                            ></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="m-n panel-footer">
+                    <div class="row">
+                        <div class="visitor-sparklines col-xs-12 col-sm-3 col-md-3">
+                            <div class="sparkline-block">
+                                <span sparklines="{
+                                lineWidth: 2,
+                                type: 'line',
+                                width: '52px',
+                                height: '20px',
+                                lineColor: '#6cc7d9',
+                                fillColor: '#e2f4f7',
+                                spotColor: false,
+                                minSpotColor: false,
+                                highlightLineColor: 'rgba(0,0,0,0.1)',
+                                highlightSpotColor: '#6cc7d9',
+                                spotRadius: 3,
+                                maxSpotColor: false}" data-data="[251,933,653,759,1022,1702,565]"></span>
+                            </div>
+                            <h3 style="text-align: center; margin: 0;">7,550</h3>
+                            <p style="text-align: center; margin: 0;">Visits</p>
+                            <hr class="hidden-md hidden-sm hidden-lg">
+                        </div>
+                        <div class="visitor-sparklines col-xs-12 col-sm-3 col-md-3">
+                            <div class="sparkline-block">
+                                <span sparklines="{
+                                lineWidth: 2,
+                                type: 'line',
+                                width: '52px',
+                                height: '20px',
+                                lineColor: '#5299cc',
+                                fillColor: '#dcebf5',
+                                spotColor: false,
+                                minSpotColor: false,
+                                highlightLineColor: 'rgba(0,0,0,0.1)',
+                                highlightSpotColor: '#5299cc',
+                                spotRadius: 3,
+                                maxSpotColor: false}" data-data="[1251,633,1653,1759,1022,1702,2565]"></span>
+                            </div>
+                            <h3 style="text-align: center; margin: 0;">12,350</h3>
+                            <p style="text-align: center; margin: 0;">Page Views</p>
+                            <hr class="hidden-md hidden-sm hidden-lg">
+                        </div>
+                        <div class="visitor-sparklines col-xs-12 col-sm-3 col-md-3">
+                            <div class="sparkline-block">
+                                <span sparklines="{
+                                barWidth: 4,
+                                type: 'bar',
+                                barSpacing: 4,
+                                width: '52px', 
+                                height: '20px',
+                                barColor: '#70cc87',
+                                fillColor: '#70cc87',
+                                spotColor: false,
+                                minSpotColor: false,
+                                highlightLineColor: 'rgba(0,0,0,0.1)',
+                                highlightSpotColor: '#70cc87',
+                                spotRadius: 3,
+                                maxSpotColor: false}" data-data="[345,563,747,136,356,628,534]"></span>
+                            </div>
+                            <h3 style="text-align: center; margin: 0;">$6,180</h3>
+                            <p style="text-align: center; margin: 0;">Earnings</p>
+                            <hr class="hidden-md hidden-sm hidden-lg">
+                        </div>
+                        <div class="visitor-sparklines col-xs-12 col-sm-3 col-md-3">
+                            <div class="sparkline-block">
+                                <span sparklines="{
+                                barWidth: 4,
+                                type: 'bar',
+                                barSpacing: 4,
+                                width: '52px', 
+                                height: '20px',
+                                barColor: '#797b80',
+                                fillColor: '#797b80',
+                                spotColor: false,
+                                minSpotColor: false,
+                                highlightLineColor: 'rgba(0,0,0,0.1)',
+                                highlightSpotColor: '#797b80',
+                                spotRadius: 3,
+                                maxSpotColor: false}" data-data="[80,143,107,216,246,128,214]"></span>
+                            </div>
+                            <h3 style="text-align: center; margin: 0;">940</h3>
+                            <p style="text-align: center; margin: 0;">Items Sold</p>
+                        </div> 
+                    </div>
+                </div>
+
+            </panel>
+        </div>
+        <div class="col-md-4 animated-content">
+            <div class="row">
+                <div class="col-xs-6">
+                    <tile-simple data="{ title: 'Orders', href: '#/ui-tiles',text: '9', color: 'danger'}"></tile-simple>
+                </div>
+                <div class="col-xs-6">
+                    <tile-simple data="{ title: 'Sales', href: '#/ui-tiles',text: '41', color: 'indigo'}"></tile-simple>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-xs-6">
+                    <tile-simple data="{ title: 'Profits', href: '#/ui-tiles',text: '$1,138', color: 'success'}"></tile-simple>
+                </div>
+                <div class="col-xs-6">
+                    <tile-simple data="{ title: 'Members', href: '#/ui-tiles',text: '27', color: 'midnightblue'}"></tile-simple>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-xs-6">
+                    <a class="info-tiles tiles-facebook" href>
+                        <div class="tiles-heading"><span class="text-center">Facebook</span></div>
+                        <div class="tiles-body">
+                            <div class="pull-left"><i class="fa fa-thumbs-o-up"></i></div>
+                            <div class="pull-right">215</div>
+                        </div>
+                    </a>
+                </div>
+                <div class="col-xs-6">
+                    <a  class="info-tiles tiles-twitter">
+                        <div class="tiles-heading"><span class="text-center">Twitter</span></div>
+                        <div class="tiles-body">
+                            <div class="pull-left"><i class="fa fa-twitter"></i></div>
+                            <div class="pull-right">964</div>
+                        </div>
+                    </a>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-6">
+                    <tile type="default" heading="Disk Space">
+                        <div easypiechart class="easypiechart"
+                            data-percent="25"
+                            data-options="epDiskSpace"><span class="percent">25</span>
+                        </div>
+                    </tile>
+                </div>
+                <div class="col-md-6" ng-drop="true">
+                    <tile type="default" heading="Bandwidth" ng-drag="true">
+                        <div easypiechart class="easypiechart"
+                            data-percent="23"
+                            data-options="epBandwidth"><span class="percent">23</span>
+                        </div>
+                    </tile>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-3 animated-content">
+            <div class="panel panel-widget widget-userfocus">
+                <div class="widget-body">
+                    <img src="assets/demo/avatar/dangerfield.png" alt="Dangerfield" class="img-circle" />
+
+                    <span class="name">Alexander Smith</span>
+                    <span class="location"><span class="glyphicon glyphicon-map-marker"></span> San Fransisco, CA</span>
+                </div>
+                <div class="widget-footer">
+                    <table class="table">
+                        <tbody>
+                            <tr>
+                                <td>
+                                    <span class="number">3,125</span>
+                                    <span class="number-context">Followers</span>
+                                </td>
+                                <td>
+                                    <span class="number">177</span>
+                                    <span class="number-context">Following</span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-5 animated-content" ng-controller="FlotChartsController" ng-drop="true">
+            <panel panel-class="panel-gray no-padding" heading="Live Analytics" ng-drag="true">
+                <panel-controls>
+                    <panel-control-collapse></panel-control-collapse>
+                    <panel-control-title></panel-control-title>
+                    <panel-control-colors></panel-control-colors>                               
+                </panel-controls>
+            
+                <div class="mb0" flot-chart style="width: 100%; height:211px" 
+                    data-flot-data="realtimeData"
+                    data-flot-options="realtimeDashboard"
+                ></div> 
+            </panel>
+        </div>
+        <div class="col-md-4 animated-content">
+            <div class="panel panel-widget widget-weather">
+
+                <div class="tabular" style="height: 146px;">
+                    <div class="tabular-row">
+                        <div class="tabular-cell vat">
+                            <div class="weather-info">
+                                <span class="weather-location">Toronto, <span class="weather-temp">4° C</span></span>
+                                <span class="weather-details mt10">Partly Cloudy</span>
+                                <span class="weather-details">Humidity: 48</span>
+                                <span class="weather-details">Wind: 35km/h</span>
+                            </div>
+                        </div>
+                        <div class="tabular-cell text-right">
+                            <div class="weather-icon">
+                                <skycon icon="'partly-cloudy-night'" color="white" size="'100'"></skycon>
+                                
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <hr>
+                <div class="form-horizontal">
+                    <div class="form-group mb0 mt20">
+                        <div class="col-xs-12">
+                            <div class="input-icon">
+                                <i class="fa fa-search search-city-icon"></i>
+                                <input type="text" class="search-city form-control" placeholder="Search City...">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            
+            </div>
+        </div>
+
+
+    </div>
+
+    <div class="row">
+        <div class="col-md-6 animated-content" ng-drop="true">
+            <div ng-controller="TasksController">
+                <script type="text/ng-template" id="items_renderer.html">
+                    <div class="task-container" as-sortable-item-handle>
+                        <!-- <input type="checkbox"> -->
+                        <span class="label label-{{item.color || 'primary'}}" ng-show="!item.editing"></span>
+                        <span class="task-description" ng-show="!item.editing">{{item.title}}</span>
+
+                            <form class="form-horizontal" ng-submit="doneEditing(item)" ng-show="item.editing" data-nodrag>
+                                <div class="form-group">
+                                    <div class="col-md-12">
+                                        <div class="input-group">
+                                            <div class="input-group-btn">
+                                                <div class="btn-group" dropdown style="">
+                                                  <button type="button" class="btn btn-default dropdown-toggle" dropdown-toggle>
+                                                    <div class="label label-{{item.color||'primary'}} color-block"></div>
+                                                  </button>
+                                                  <ul class="dropdown-menu dropdown-colors" role="menu">
+                                                    <li><span class="label label-success" ng-click="item.color='success'"></span></li>
+                                                    <li><span class="label label-primary" ng-click="item.color='primary'"></span></li>
+                                                    <li><span class="label label-warning" ng-click="item.color='warning'"></span></li>
+                                                    <li><span class="label label-danger" ng-click="item.color='danger'"></span></li>
+                                                    <li><span class="label label-info" ng-click="item.color='info'"></span></li>
+                                                  </ul>
+                                                </div>
+                                            </div>
+                                            <input type="text" class="form-control no-validate" ng-model="item.title" placeholder="Task title..." ng-keyup="cancelEdit($event, item)">
+                                            <div class="input-group-btn">
+                                                <input type="submit" class="btn btn-primary" value="Save" / >
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </form>
+                    </div>
+                    <div class="options todooptions">
+                        <div class="btn-group" ng-show="!item.editing">
+                            <button data-nodrag class="btn btn-default btn-xs" ng-click="complete(this, item)"><i class="glyphicon glyphicon-ok"></i></button>
+                            <button data-nodrag class="btn btn-default btn-xs" ng-click="edit(item)"><i class="glyphicon glyphicon-edit"></i></button>
+                            <button data-nodrag class="btn btn-default btn-xs" ng-click="remove(this)"><i class="glyphicon glyphicon-remove"></i></button>
+                        </div>
+                    </div>
+                </script>
+
+                <div class="row">
+                    <div class="col-xs-12">
+
+                        <panel heading="Tasks" panel-class="panel-default" ng-drag="true">
+                            <panel-controls>
+                                <panel-control-collapse></panel-control-collapse>
+                                <panel-control-title></panel-control-title>
+                                <panel-control-colors></panel-control-colors>
+                                <button class="btn btn-primary btn-sm mr10" ng-click="showForm=true;showTasksTab=true;showCompletedTab=false" style="margin-top: -5px;">Add Task</button>
+                            </panel-controls>
+
+                            <div>
+
+                                <form class="form-horizontal" name="create_task" ng-submit="newItem(newTaskTitle, newTaskLabelText, newTaskColor)" ng-show="showForm">
+                                    <div class="form-group">
+
+
+                                        <div class="col-xs-12">
+                                            <div class="input-group">
+                                                <div class="input-group-btn">
+                                                    <div class="btn-group" dropdown style="">
+                                                      <button type="button" class="btn btn-default dropdown-toggle" dropdown-toggle>
+                                                        <div class="label label-{{newTaskColor||'primary'}} color-block"></div>
+                                                      </button>
+                                                      <ul class="dropdown-menu dropdown-colors" role="menu">
+                                                        <li><span class="label label-success" ng-click="newTaskColor='success'"></span></li>
+                                                        <li><span class="label label-primary" ng-click="newTaskColor='primary'"></span></li>
+                                                        <li><span class="label label-warning" ng-click="newTaskColor='warning'"></span></li>
+                                                        <li><span class="label label-danger" ng-click="newTaskColor='danger'"></span></li>
+                                                        <li><span class="label label-info" ng-click="newTaskColor='info'"></span></li>
+                                                      </ul>
+                                                    </div>
+                                                </div>
+                                                <input type="text" class="form-control no-validate" ng-model="newTaskTitle" placeholder="Task title..." ng-keyup="cancelAdd($event)">
+
+                                                <div class="input-group-btn">
+                                                    <input
+                                                    class="btn btn-success btn-block"
+                                                    value="Add Task"
+                                                    type="submit"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+
+
+                                        <div class="col-xs-3 col-md-2">
+                                                
+                                        </div>
+                                    </div>
+                                    
+                                </form>     
+                              </div>
+
+                                <div id="tasks-demo">
+                                    <div class="tasklist">
+                                        <ul ng-model="tasks" as-sortable="{containerPositioning: 'relative', containment: '#tasks-demo'}" class="panel-tasks">
+                                            <li
+                                                as-sortable-item
+                                                ng-repeat="item in tasks"
+                                                ng-include="'items_renderer.html'"
+                                                ng-style="{'border-left': item.color? '2px solid '+item.color:''}"
+                                            >
+                                            </li>
+                                        </ul>
+                                    </div>
+                                    <div class="tasklist">
+                                        <ul ng-model="tasksComplete" as-sortable="{containerPositioning: 'relative', containment: '#tasks-demo'}" class="panel-tasks completed">
+                                            <li
+                                                as-sortable-item
+                                                ng-repeat="item in tasksComplete"
+                                                ng-style="{'border-left': item.color? '2px solid '+item.color:''}"
+                                            >
+                                                <div class="task-container">
+                                                    <span class="label label-{{item.color || 'primary'}}" ng-show="item.label"></span>
+                                                    <span class="task-description">{{item.title}}</span>
+                                                </div>
+                                                <div class="options todooptions">
+                                                    <div class="btn-group" ng-show="!item.editing">
+                                                        <button data-nodrag class="btn btn-default btn-xs" ng-click="incomplete(item, $index)"><i class="glyphicon glyphicon-repeat"></i></button>
+                                                    </div>
+                                                </div>
+                                            </li>
+                                        </ul>
+
+                                    </div>
+                                </div>
+                        </panel>
+
+                    </div>
+                </div>
+            </div>
+            <panel panel-class="panel-default" heading="Map" ng-drag="true">
+                <panel-controls>
+                    <panel-control-collapse></panel-control-collapse>
+                    <panel-control-title></panel-control-title>
+                    <panel-control-colors></panel-control-colors>
+                </panel-controls>
+            
+                <div ng-controller="VectorMapsController">
+                    <div style="height: 350px" jqvmap options="jqvmapWorld"></div>
+                </div>
+                <div class="panel-footer">
+                    <div class="row">
+                        <div class="col-md-3 visible-lg-block">
+                            <div easypiechart class="easypiechart sm tooltips"
+                                data-percent="81"
+                                data-options="mapspace"
+                                data-trigger="hover" 
+                                data-tooltip="Bounce Rate"
+                                ><span class="percent">81</span>
+                            </div>
+                        </div>
+
+                        <div class="col-md-12 col-lg-6">
+                            <div class="row">
+                                <div class="col-xs-3">
+                                    <div class="sparkline-block">
+                                        <span sparklines="{
+                                        lineWidth: 2,
+                                        type: 'line',
+                                        width: '52px',
+                                        height: '20px',
+                                        lineColor: '#ef553a',
+                                        fillColor: '#F7D0CA',
+                                        spotColor: false,
+                                        minSpotColor: false,
+                                        highlightLineColor: 'rgba(0,0,0,0.1)',
+                                        highlightSpotColor: '#ef553a',
+                                        spotRadius: 3,
+                                        maxSpotColor: false}" data-data="[251,933,653,759,1022,1702,565]"></span>
+                                    </div>
+                                    <h3 class="text-center m-n">7,550</h3>
+                                    <p class="text-center m-n">Page/Session</p>
+                                </div>
+                                <div class="col-xs-6">
+                                        <h3 class="text-center mt-sm mb-n">295,229</h3>
+                                        <p class="text-center m-n">Page Views</p>
+                                </div>
+                                <div class="col-xs-3">
+                                    <div class="sparkline-block">
+                                        <span sparklines="{
+                                        lineWidth: 2,
+                                        type: 'line',
+                                        width: '52px',
+                                        height: '20px',
+                                        lineColor: '#ef553a',
+                                        fillColor: '#F7D0CA',
+                                        spotColor: false,
+                                        minSpotColor: false,
+                                        highlightLineColor: 'rgba(0,0,0,0.1)',
+                                        highlightSpotColor: '#ef553a',
+                                        spotRadius: 3,
+                                        maxSpotColor: false}" data-data="[1251,633,1653,1759,1022,1702,2565]"></span>
+                                    </div>
+                                    <h3 class="text-center m-n">01:19:21</h3>
+                                    <p class="text-center m-n">Session</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-3 visible-lg-block">
+                            <div easypiechart class="easypiechart sm tooltips"
+                                data-percent="67"
+                                data-trigger="hover" 
+                                data-tooltip="New Sessions"
+                                data-options="mapspace"><span class="percent">67</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </panel>
+        </div>
+        <div class="col-md-6 animated-content" ng-drop="true">
+            <panel panel-class="panel-default no-padding" ng-drag="true" heading="User Accounts">
+                <panel-controls>
+                    <panel-control-collapse></panel-control-collapse>
+                    <panel-control-title></panel-control-title>
+                    <panel-control-colors></panel-control-colors>
+                </panel-controls>
+
+                <div class="table-responsive">
+                    <table class="table" style="margin-bottom: 0px;">
+                        <tbody class="selects">
+                            <tr ng-repeat="ua in accountsInRange()">
+                                <td class="col-xs-1"><img ng-src="assets/demo/avatar/{{ua.picture}}" alt="jackson" class="img-circle" style="width: 30px; height: 30px;">
+                                <td class="col-xs-7">{{ua.name}}</td>
+                                <td class="col-xs-4 text-right">
+                                    <div class="btn-group">
+                                        <button class="btn btn-sm btn-default" ng-click="uaHandle($index)"><i class="glyphicon glyphicon-ok"></i></button>
+                                        <button class="btn btn-sm btn-default" ng-click="uaHandle($index)"><i class="glyphicon glyphicon-remove"></i></button>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                        <tfoot>
+                            <tr class="active">
+                                <td colspan="4" class="text-left" style="background: none;">
+                                    <div class="clearfix">
+                                        <div class="pull-right">
+                                            <pagination class="mb0 pagination-sm" boundary-links="false" total-items="userAccounts.length-6" ng-model="currentPage" items-per-page="itemsPerPage" previous-text="&lsaquo;" next-text="&rsaquo;" class="pull-right"></pagination>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </panel>
+
+            <panel panel-class="panel-default" ng-drag="true" heading="Calendar">
+                    <panel-controls>
+                        <panel-control-collapse></panel-control-collapse>
+                        <panel-control-title></panel-control-title>
+                        <panel-control-colors></panel-control-colors>
+                    </panel-controls>
+
+                <div ng-controller="CalendarController">
+                    <div data-full-calendar="{ events: demoEvents }" ng-model="demoEvents"></div>
+                </div>
+            </panel>
+        </div>
+        <div class="col-md-6">
+            
+        </div>
+    </div>
+
+</div> <!-- container-fluid -->

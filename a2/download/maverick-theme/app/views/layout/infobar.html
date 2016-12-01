@@ -1,0 +1,103 @@
+<div class="infobar" sticky-scroll="50" rightbar-right-position="getLayoutOption('layoutBoxed')">
+    <div scrollable style="height: 100%;padding-bottom:40px">
+        <accordion close-others="rightbarAccordionsShowOne">
+	        <accordion-group is-open="rightbarAccordions[1].open" ng-class="{open:rightbarAccordions[1].open}">
+	          <accordion-heading>
+	          Pending Tasks <small>(5)</small>
+	          </accordion-heading>
+	          
+	          <progressbar contextual="true" value="25" heading="Backend Development" type="info"></progressbar>
+	          <progressbar contextual="true" value="77" heading="Bug Fix" type="primary"></progressbar>
+	          <progressbar contextual="true" value="70" heading="Javascript Code" type="success"></progressbar>
+	          <progressbar contextual="true" value="55" heading="Preparing Documentation" type="danger"></progressbar>
+	          <progressbar contextual="true" value="25" heading="Mobile App" type="orange"></progressbar>
+	          
+	          <!-- <span class="more"><a href="#/ui-progressbars">View all Pending</a></span> -->
+	        </accordion-group>
+
+	        <accordion-group is-open="rightbarAccordions[2].open" ng-class="{open:rightbarAccordions[2].open}" id="chatbar">
+	          <accordion-heading>
+	          Online Contacts
+	          </accordion-heading>
+	          <ul class="chat-users">
+	            <li data-stats="{{user.status}}" ng-repeat="user in chatters" >
+	              <a href="#" ng-click="toggleChatBox(user, $event)">
+	                <img ng-src="assets/demo/avatar/{{user.avatar}}" alt="">
+	                <span>{{user.name}}</span>
+	              </a>
+	            </li>
+	          </ul>
+	          <!-- <span class="more"><a href="#/extras-chatroom">See all</a></span> -->
+	        </accordion-group>
+
+	        <accordion-group is-open="rightbarAccordions[3].open" ng-class="{open:rightbarAccordions[3].open}">
+	          <accordion-heading>
+	          Storage Space
+	          </accordion-heading>
+
+	          <div class="clearfix" style="margin-bottom: 5px;margin-top:10px;">
+	            <div class="progress-title pull-left">1.31 GB of 1.50 GB used</div>
+	            <div class="progress-percentage pull-right">87.3%</div>
+	          </div>
+	          <div class="progress">
+	            <div class="progress-bar progress-bar-success" style="width: 50%"></div>
+	            <div class="progress-bar progress-bar-warning" style="width: 25%"></div>
+	            <div class="progress-bar progress-bar-danger" style="width: 12.3%"></div>
+	          </div>
+	        </accordion-group>
+        </accordion>
+    </div>
+</div> <!-- .infobar -->
+
+<div id="chat-box" ng-show="getLayoutOption('showChatBox')" position-chat-box="currentChatterId" ng-click="$event.stopPropagation()">
+    <div class="panel panel-default" ng-controller="ChatRoomController">
+      <div class="panel-heading">
+        <h2>Alfred Hitchcok</h2>
+      </div>
+      <div class="panel-body">
+        <div class="panel-chat" id="chat" scroll-to-bottom="messages.length + userTyping" scrollable>
+          <div class="chat-message me">
+            <div class="chat-contact">
+              <img src="assets/demo/avatar/tennant.png" alt="">
+            </div>
+            <div class="chat-text">
+              This is a really weird chat room. I keep getting strange responses. :S
+            </div>
+          </div>
+          <div class="chat-message chat-primary">
+            <div class="chat-contact">
+              <img src="assets/demo/avatar/potter.png" alt="">
+            </div>
+            <div class="chat-text">
+              Why don't you tell us more about what's bothering you?
+            </div>
+          </div>
+          <div ng-repeat="msg in messages" class="chat-message {{msg.class}}">
+            <div class="chat-contact">
+              <img ng-src="assets/demo/avatar/{{msg.avatar}}" alt="">
+            </div>
+            <div class="chat-text">
+              {{msg.text}}
+            </div>
+          </div>
+
+          <div class="chat-message chat-success" ng-show="userTyping">
+            <div class="chat-contact">
+              <img ng-src="assets/demo/avatar/{{userAvatar}}" alt="">
+            </div>
+            <div class="chat-text" style="width:30px">
+              ...
+            </div>
+          </div>
+        </div>
+        <form ng-submit="sendMessage(userText)">
+          <div class="input-group">
+            <input type="text" placeholder="Enter your message here" ng-model="userText" class="form-control no-validate">
+            <span class="input-group-btn">
+              <button type="button" class="btn btn-primary" ng-click="sendMessage(userText)"><i class="fa fa-comments-o"></i></button>
+            </span>
+          </div>
+        </form>
+      </div>
+    </div>
+</div> <!-- #chat-box placed outside because of overflow -->

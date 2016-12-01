@@ -1,0 +1,337 @@
+@import "colors/color-default.less";
+@import "colors/color-inverse.less";
+@import "colors/color-midnightblue.less";
+@import "colors/color-primary.less";
+@import "colors/color-grape.less";
+@import "colors/color-indigo.less";
+@import "colors/color-orange.less";
+@import "colors/color-success.less";
+@import "colors/color-danger.less";
+@import "colors/color-green.less";
+
+// Mixin
+//--------------------------------
+.horizontal-variant(@variant) {
+
+	@horizontal-background: "horizontal-@{variant}-background";
+	@horizontal-color: "horizontal-@{variant}-color";
+	@horizontal-placeholder: "horizontal-@{variant}-placeholder";
+
+	@horizontal-toolbar-icon: "horizontal-@{variant}-toolbar-icon";
+	@horizontal-toolbar-icon-hover: "horizontal-@{variant}-toolbar-icon-hover";
+
+	@horizontal-toolbar-divider: "horizontal-@{variant}-toolbar-divider";
+
+	#topnav {
+		background: @@horizontal-background;
+
+		#search-inline {
+			i 	  {color: @@horizontal-toolbar-icon;}
+			input {
+				background: @@horizontal-background;
+				color: @@horizontal-color;
+				.placeholder(@@horizontal-placeholder);
+			}
+		}
+
+
+		
+		.toolbar>li, #rightmenu-trigger {
+			border-left: 1px solid @@horizontal-toolbar-divider;
+		}
+		#leftmenu-trigger {
+			border-right: 1px solid @@horizontal-toolbar-divider;
+		}
+
+		.toolbar>li {
+			> a {
+				color: @@horizontal-toolbar-icon;
+				&:hover {color: @@horizontal-toolbar-icon-hover;}
+			}
+		}
+
+		.navbar-nav > .open > a, .navbar-nav > .open > a:hover {
+			color: @@horizontal-toolbar-icon-hover;
+			background: @@horizontal-toolbar-divider;
+		}
+		
+		#search-inline.active {
+			@media (max-width: @screen-xs-max) {
+				background: @@horizontal-background;
+			}
+		}
+	}
+}
+
+
+.sidebar-variant(@variant) {
+
+	@sidebar-background : "sidebar-@{variant}-background";
+	@sidebar-color-text : "sidebar-@{variant}-color-text";
+	@sidebar-color-icon : "sidebar-@{variant}-color-icon";
+
+	@sidebar-divider-color : "sidebar-@{variant}-divider-color";
+	@sidebar-divider-background : "sidebar-@{variant}-divider-background";
+
+	@sidebar-active-background: "sidebar-@{variant}-active-background";
+	@sidebar-active-color: "sidebar-@{variant}-active-color";
+
+	@sidebar-hover-color: "sidebar-@{variant}-hover-color";
+	@sidebar-hover-background: "sidebar-@{variant}-hover-background";
+
+
+	@sidebar-submenu-background: "sidebar-@{variant}-submenu-background";
+	@sidebar-submenu-color: "sidebar-@{variant}-submenu-color";
+
+	@sidebar-submenu-hover-color: "sidebar-@{variant}-submenu-hover-color";
+	@sidebar-submenu-hover-background: "sidebar-@{variant}-submenu-hover-background";
+
+	@sidebar-submenu-active-color: "sidebar-@{variant}-submenu-active-color";
+	@sidebar-submenu-active-background: "sidebar-@{variant}-submenu-active-background";
+
+	@sidebar-filter-background: "sidebar-@{variant}-submenu-active-color";
+	@sidebar-filter-submenu-background: "sidebar-@{variant}-submenu-active-background";
+
+
+	@sidebar-filter-background: 		"sidebar-@{variant}-filter-background";
+	@sidebar-filter-color: 				"sidebar-@{variant}-filter-color";
+
+	@sidebar-filter-submenu-background: "sidebar-@{variant}-filter-submenu-background";
+	@sidebar-filter-submenu-color: 		"sidebar-@{variant}-filter-submenu-color";
+
+
+
+
+	#wrapper {
+		.static-sidebar-wrapper {
+			background: @@sidebar-background;
+
+		}
+
+		.static-sidebar {
+			i {color: @@sidebar-color-icon;}
+			.nav-separator {
+				color: @@sidebar-divider-color;
+				background: @@sidebar-divider-background;
+			}
+
+			li.search-focus.active {
+				a {
+					background: @@sidebar-filter-background; 
+					color: @@sidebar-filter-color; 
+				}
+				li.search-focus.active a {
+					background: @@sidebar-filter-submenu-background;
+					color: @@sidebar-filter-submenu-color;
+				}
+			}
+		
+			li a {
+				color: @@sidebar-color-text;
+			}
+			.active>a {
+				background: @@sidebar-active-background;
+				color: @@sidebar-active-color;
+			}
+
+			li.active>a>i, 
+			li.active>a:hover>i {
+				color: @@sidebar-active-color;
+			}
+
+			li>a:hover>i {color: @@sidebar-hover-color;}
+
+
+			li:hover>a {
+				color: @@sidebar-hover-color;
+				background: @@sidebar-hover-background;
+			}
+
+			li:hover>a>i {color: @@sidebar-hover-color;}
+
+			li.active:hover>a, li.active:hover>a>i {
+				color: @@sidebar-active-color;
+				background: @@sidebar-active-background;
+			} 
+
+			#sidebar > li:hover {
+				@media screen and (min-width: 768px) {
+					background: @@sidebar-submenu-background;
+				}
+			}
+
+			#sidebar ul {
+				&, li a {
+					background: @@sidebar-submenu-background;
+					color: @@sidebar-submenu-color;
+				}
+				li:hover a {
+					color: @@sidebar-submenu-hover-color;
+					background: @@sidebar-submenu-hover-background;
+				}
+				li.active>a {
+					color: @@sidebar-submenu-active-color;
+					background: @@sidebar-submenu-active-background;
+				}
+				li.active:hover>a {
+					color: @@sidebar-submenu-hover-color;
+					background: @@sidebar-submenu-hover-background;
+				}
+			}
+			#search {
+				form {
+					.search-query {
+						background: @@sidebar-divider-background;
+						color: @@sidebar-hover-color;
+						.placeholder(fade(@@sidebar-color-text,40%));
+					}
+					
+					button[type="submit"] {
+						i {color:@@sidebar-color-text;}
+					}
+				}
+			}
+			.nav-separator {
+				background: @@sidebar-divider-background;
+				color: @@sidebar-divider-color;
+				body.sidebar-collapsed & {
+					background: @@sidebar-divider-background !important;
+					&:hover {background: @@sidebar-divider-background !important;}
+				}
+			}
+		}
+
+	}
+
+
+
+	#horizontal-navbar {
+		background-color: @@sidebar-background;
+		.navbar-nav {
+			>li {
+				> a {
+					background: @@sidebar-background;
+					color: @@sidebar-color-text;
+					i {color: 	@@sidebar-color-icon;}
+				}
+				&:hover > a {
+					background: @@sidebar-hover-background;
+					color: @@sidebar-hover-color;
+				}
+
+				ul {
+					background: @@sidebar-submenu-background;
+					li {
+						a {
+							background: @@sidebar-submenu-background;
+							color: @@sidebar-submenu-color;
+						}
+
+						&:hover a {
+							color: @@sidebar-submenu-hover-color;
+							background: @@sidebar-submenu-hover-background;
+						}
+
+						&.active>a, &.active>a i, 
+						&.active:hover>a, &.active:hover>a i {
+							background-color: 	@@sidebar-active-background;
+							color: 				@@sidebar-active-color;
+						}
+						
+						&:hover>a, &:hover>a>i {
+							background: 		@@sidebar-hover-background;
+							color: 				@@sidebar-hover-color;
+						}
+					}
+				}
+
+			}
+		}
+	}
+}
+
+
+// Topnav
+body.navbar-midnightblue {
+	.horizontal-variant(~"midnightblue");
+}
+
+body.navbar-default {
+	.horizontal-variant(~"default");
+}
+
+body.navbar-inverse {
+	.horizontal-variant(~"inverse");
+}
+
+body.navbar-primary {
+	.horizontal-variant(~"primary");
+}
+
+body.navbar-grape {
+	.horizontal-variant(~"grape");
+}
+
+body.navbar-indigo {
+	.horizontal-variant(~"indigo");
+}
+
+body.navbar-orange {
+	.horizontal-variant(~"orange");
+}
+
+body.navbar-danger {
+	.horizontal-variant(~"danger");
+}
+
+body.navbar-green {
+	.horizontal-variant(~"green");
+}
+
+body.navbar-success {
+	.horizontal-variant(~"success");
+}
+
+
+
+//Sidebar
+body.sidebar-midnightblue {
+	.sidebar-variant(~"midnightblue");
+}
+
+body.sidebar-default {
+	.sidebar-variant(~"default");
+}
+
+
+body.sidebar-inverse {
+	.sidebar-variant(~"inverse");
+}
+
+body.sidebar-primary {
+	.sidebar-variant(~"primary");
+}
+
+body.sidebar-grape {
+	.sidebar-variant(~"grape");
+}
+
+body.sidebar-indigo {
+	.sidebar-variant(~"indigo");
+}
+
+body.sidebar-orange {
+	.sidebar-variant(~"orange");
+}
+
+body.sidebar-danger {
+	.sidebar-variant(~"danger");
+}
+
+body.sidebar-success {
+	.sidebar-variant(~"success");
+}
+
+body.sidebar-green {
+	.sidebar-variant(~"green");
+}

@@ -1,0 +1,108 @@
+<div id="page-heading">
+	<ol class="breadcrumb">
+		<li><a href="#/">Dashboard</a></li>
+		<li>UI Elements</li>
+		<li class="active">Panel</li>
+	</ol>
+
+	<h1>Panels</h1>
+	<div class="options">
+        <div class="btn-toolbar">
+            <div class="btn-group" dropdown>
+                <button type="button" class="btn btn-default dropdown-toggle" dropdown-toggle>
+                    Export as <span class="caret"></span>
+                </button>
+                <ul class="dropdown-menu" role="menu">
+                  <li><a href="#">Action</a></li>
+                  <li><a href="#">Another action</a></li>
+                  <li><a href="#">Something else here</a></li>
+                  <li class="divider"></li>
+                  <li><a href="#">Separated link</a></li>
+                </ul>
+            </div>
+            <a href="#" class="btn btn-default hidden-xs"><i class="glyphicon glyphicon-cog"></i></a>
+        </div>
+    </div>
+</div>
+
+
+<div class="container-fluid">
+	<div class="row">
+		<div class="col-md-4" ng-drop="true">
+			<panel panel-class="panel-warning" heading="Drag This" ng-drag="true">
+				<panel-controls>
+			        <button class="button-icon"><i class="glyphicon glyphicon-cog"></i></button>
+			        <button class="button-icon"><i class="glyphicon glyphicon-wrench"></i></button> 
+				</panel-controls>
+			
+				<p>Lorem ipsum dolor sit amet, consectetur adipisicing elit. Illum vel voluptatem eum distinctio quod deserunt ipsum veniam rem natus consequatur explicabo, numquam, aperiam eligendi ex corporis inventore a deleniti voluptate aliquid atque. Illum animi debitis illo! Facilis consectetur, magnam vel quas ad quo nam a voluptatem numquam tempora adipisci explicabo. Repellat veritatis itaque iste quae iusto provident fugit architecto deleniti.</p>
+			</panel>
+			<panel panel-class="panel-danger" heading="Change My Name" ng-drag="true">
+				<panel-controls>
+			        <panel-control-title></panel-control-title>
+				</panel-controls>
+			
+				<p>Lorem ipsum dolor sit amet, consectetur adipisicing elit. Illum vel voluptatem eum distinctio quod deserunt ipsum veniam rem natus consequatur explicabo, numquam, aperiam eligendi ex corporis inventore a deleniti voluptate aliquid atque. Illum animi debitis illo! Facilis consectetur, magnam vel quas ad quo nam a voluptatem numquam tempora adipisci explicabo. Repellat veritatis itaque iste quae iusto provident fugit architecto deleniti.</p>
+			</panel>
+			<panel panel-class="panel-midnightblue" heading="Expand and Collapse" ng-drag="true">
+				<panel-controls>
+			        <panel-control-collapse></panel-control-collapse>
+				</panel-controls>
+			
+				<p>Lorem ipsum dolor sit amet, consectetur adipisicing elit. Illum vel voluptatem eum distinctio quod deserunt ipsum veniam rem natus consequatur explicabo, numquam, aperiam eligendi ex corporis inventore a deleniti voluptate aliquid atque. Illum animi debitis illo! Facilis consectetur, magnam vel quas ad quo nam a voluptatem numquam tempora adipisci explicabo. Repellat veritatis itaque iste quae iusto provident fugit architecto deleniti.</p>
+			</panel>
+		</div>
+
+		<div class="col-md-4" ng-drop="true">
+			<panel panel-class="panel-toyo" heading="Change Colors" ng-drag="true">
+				<panel-controls>
+			        <panel-control-colors></panel-control-colors>
+				</panel-controls>
+
+				<p>Lorem ipsum dolor sit amet, consectetur adipisicing elit. Illum vel voluptatem eum distinctio quod deserunt ipsum veniam rem natus consequatur explicabo, numquam, aperiam eligendi ex corporis inventore a deleniti voluptate aliquid atque. Illum animi debitis illo! Facilis consectetur, magnam vel quas ad quo nam a voluptatem numquam tempora adipisci explicabo. Repellat veritatis itaque iste quae iusto provident fugit architecto deleniti.</p>
+			</panel>
+			<panel panel-class="panel-primary" heading="Blocked and Loading" ng-drag="true">
+				<panel-controls>
+			        <button class="button-icon"><i class="glyphicon glyphicon-refresh"></i></button>
+				</panel-controls>
+			
+				<p>Lorem ipsum dolor sit amet, consectetur adipisicing elit. Illum vel voluptatem eum distinctio quod deserunt ipsum veniam rem natus consequatur explicabo, numquam, aperiam eligendi ex corporis inventore a deleniti voluptate aliquid atque. Illum animi debitis illo! Facilis consectetur, magnam vel quas ad quo nam a voluptatem numquam tempora adipisci explicabo. Repellat veritatis itaque iste quae iusto provident fugit architecto deleniti.</p>
+
+				<div class="panel-loading">
+                    <div class="panel-loader-circular"></div>
+                </div>
+			</panel>
+			<panel panel-class="panel-purple" heading="You Can't Drag This">
+				<panel-controls>
+			        <button class="button-icon"><i class="glyphicon glyphicon-cog"></i></button>
+			        <button class="button-icon"><i class="glyphicon glyphicon-wrench"></i></button> 
+				</panel-controls>
+			
+				<p>Lorem ipsum dolor sit amet, consectetur adipisicing elit. Illum vel voluptatem eum distinctio quod deserunt ipsum veniam rem natus consequatur explicabo, numquam, aperiam eligendi ex corporis inventore a deleniti voluptate aliquid atque. Illum animi debitis illo! Facilis consectetur, magnam vel quas ad quo nam a voluptatem numquam tempora adipisci explicabo. Repellat veritatis itaque iste quae iusto provident fugit architecto deleniti.</p>
+			</panel>
+		</div>
+
+		<div class="col-md-4" ng-drop="true">
+			<tabset panel-tabs="true" panel-class="panel-green" ng-drag="true">
+				<tab heading="Tab 1">
+					<p>Lorem ipsum dolor sit amet, consectetur adipisicing elit. Illum vel voluptatem eum distinctio quod deserunt ipsum veniam rem natus consequatur explicabo, numquam, aperiam eligendi ex corporis inventore a deleniti voluptate aliquid atque. Illum animi debitis illo! Facilis consectetur, magnam vel quas ad quo nam a voluptatem numquam tempora adipisci explicabo. Repellat veritatis itaque iste quae iusto provident fugit architecto deleniti.</p>
+				</tab>
+				<tab heading="Tab 2">
+					<p>Lorem ipsum dolor sit amet, consectetur adipisicing elit. Illum vel voluptatem eum distinctio quod deserunt ipsum veniam rem natus consequatur explicabo, numquam, aperiam eligendi ex corporis inventore a deleniti voluptate aliquid atque. Illum animi debitis illo! Facilis consectetur, magnam vel quas ad quo nam a voluptatem numquam tempora adipisci explicabo. Repellat veritatis itaque iste quae iusto provident fugit architecto deleniti.</p>
+				</tab>
+			</tabset>
+			<tabset panel-tabs="true" panel-class="panel-inverse" heading="Tabbed Panel Heading" ng-drag="true">
+				<tab heading="Tab 1">
+					<p>Lorem ipsum dolor sit amet, consectetur adipisicing elit. Illum vel voluptatem eum distinctio quod deserunt ipsum veniam rem natus consequatur explicabo, numquam, aperiam eligendi ex corporis inventore a deleniti voluptate aliquid atque. Illum animi debitis illo! Facilis consectetur, magnam vel quas ad quo nam a voluptatem numquam tempora adipisci explicabo. Repellat veritatis itaque iste quae iusto provident fugit architecto deleniti.</p>
+				</tab>
+				<tab heading="Tab 2">
+					<p>Lorem ipsum dolor sit amet, consectetur adipisicing elit. Illum vel voluptatem eum distinctio quod deserunt ipsum veniam rem natus consequatur explicabo, numquam, aperiam eligendi ex corporis inventore a deleniti voluptate aliquid atque. Illum animi debitis illo! Facilis consectetur, magnam vel quas ad quo nam a voluptatem numquam tempora adipisci explicabo. Repellat veritatis itaque iste quae iusto provident fugit architecto deleniti.</p>
+				</tab>
+			</tabset>
+			<panel panel-class="panel-info" heading="Panel with icon" panel-icon="fa fa-calendar" ng-drag="true">
+				<p>Lorem ipsum dolor sit amet, consectetur adipisicing elit. Illum vel voluptatem eum distinctio quod deserunt ipsum veniam rem natus consequatur explicabo, numquam, aperiam eligendi ex corporis inventore a deleniti voluptate aliquid atque. Illum animi debitis illo! Facilis consectetur, magnam vel quas ad quo nam a voluptatem numquam tempora adipisci explicabo. Repellat veritatis itaque iste quae iusto provident fugit architecto deleniti.</p>
+			</panel>
+		</div>
+	</div>
+</div>
+

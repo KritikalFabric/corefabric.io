@@ -1,0 +1,140 @@
+diff --git a/Makefile.am b/Makefile.am
+index 0d8fe10..7a323af 100644
+--- a/Makefile.am
++++ b/Makefile.am
+@@ -18,6 +18,7 @@ DIST_SUBDIRS = $(subdirs) src conformance benchmarks
+ # the installed version of gmock if there is one.
+ check-local:
+ 	@echo "Making lib/libgmock.a lib/libgmock_main.a in gmock"
++	@cd gmock && ./configure --prefix=$(DESTDIR)
+ 	@cd gmock && $(MAKE) $(AM_MAKEFLAGS) lib/libgmock.la lib/libgmock_main.la
+ 	@cd gmock/gtest && $(MAKE) $(AM_MAKEFLAGS) lib/libgtest.la lib/libgtest_main.la
+ 
+@@ -30,6 +31,7 @@ check-local:
+ clean-local:
+ 	@if test -e gmock/Makefile; then \
+ 	  echo "Making clean in gmock"; \
++	  cd gmock && ./configure --prefix=$(DESTDIR)
+ 	  cd gmock && $(MAKE) $(AM_MAKEFLAGS) clean; \
+ 	fi; \
+ 	if test -e conformance/Makefile; then \
+diff --git a/configure.ac b/configure.ac
+index 896f347..06537cc 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -47,6 +47,8 @@ AC_CANONICAL_TARGET
+ 
+ AM_INIT_AUTOMAKE([1.9 tar-ustar subdir-objects])
+ 
++AC_ARG_WITH([hacks],[],[],[with_hacks=check])
++
+ AC_ARG_WITH([zlib],
+   [AS_HELP_STRING([--with-zlib],
+     [include classes for streaming compressed data in and out @<:@default=check@:>@])],
+@@ -101,6 +103,8 @@ AC_FUNC_MEMCMP
+ AC_FUNC_STRTOD
+ AC_CHECK_FUNCS([ftruncate memset mkdir strchr strerror strtol])
+ 
++AM_CONDITIONAL([HAVE_HACKS], [test `uname` = SunOS])
++
+ # Check for zlib.
+ HAVE_ZLIB=0
+ AS_IF([test "$with_zlib" != no], [
+@@ -183,6 +187,7 @@ AM_CONDITIONAL([OBJC_CONFORMANCE_TEST], [test $OBJC_CONFORMANCE_TEST = 1])
+ #   too.
+ export CFLAGS
+ export CXXFLAGS
++export DESTDIR
+ AC_CONFIG_SUBDIRS([gmock])
+ 
+ AC_CONFIG_FILES([Makefile src/Makefile benchmarks/Makefile conformance/Makefile protobuf.pc protobuf-lite.pc])
+diff --git a/src/Makefile.am b/src/Makefile.am
+index d6f27fa..7352521 100644
+--- a/src/Makefile.am
++++ b/src/Makefile.am
+@@ -18,6 +18,12 @@ else
+ PTHREAD_DEF =
+ endif
+ 
++if HAVE_HACKS
++HACKS = -DHAVE_HACKS=1 -DUNAME_`uname`=1 -lm
++else
++HACKS =
++endif
++
+ if GCC
+ # Turn on all warnings except for sign comparison (we ignore sign comparison
+ # in Google so our code base have tons of such warnings).
+@@ -26,7 +32,7 @@ else
+ NO_OPT_CXXFLAGS = $(PTHREAD_CFLAGS) $(PTHREAD_DEF) $(ZLIB_DEF)
+ endif
+ 
+-AM_CXXFLAGS = $(NO_OPT_CXXFLAGS) $(PROTOBUF_OPT_FLAG)
++AM_CXXFLAGS = $(HACKS) $(NO_OPT_CXXFLAGS) $(PROTOBUF_OPT_FLAG)
+ 
+ AM_LDFLAGS = $(PTHREAD_CFLAGS)
+ 
+@@ -176,6 +182,7 @@ nobase_include_HEADERS =                                         \
+   google/protobuf/util/message_differencer.h
+ 
+ lib_LTLIBRARIES = libprotobuf-lite.la libprotobuf.la libprotoc.la
++noinst_LIBRARIES =
+ 
+ libprotobuf_lite_la_LIBADD = $(PTHREAD_LIBS)
+ libprotobuf_lite_la_LDFLAGS = -version-info 11:0:0 -export-dynamic -no-undefined
+diff --git a/src/google/protobuf/stubs/common.h b/src/google/protobuf/stubs/common.h
+index 43e88ff..aa62c1b 100644
+--- a/src/google/protobuf/stubs/common.h
++++ b/src/google/protobuf/stubs/common.h
+@@ -37,12 +37,28 @@
+ 
+ #include <string>
+ 
++// GCC 4.9 has a bug that makes it impossible to use isinf and isnan when both
++// <math.h> and <cmath> get pulled into the same translation unit.
++// Unfortunately it is difficult to prevent this from happening, so to work
++// around the problem we use std::isinf and std::isnan from <cmath> for C++11
++// builds and otherwise use the plain isinf and isnan functions from <math.h>.
++// Note that for Windows we do something different because it does not support
++// the plain isinf and isnan.
++#if __cplusplus >= 201103L
++#include <cmath>
++#include <climits>
++#else
++#include <math.h>
++#include <limits.h>
++#endif
++
+ #include <google/protobuf/stubs/port.h>
+ #include <google/protobuf/stubs/macros.h>
+ #include <google/protobuf/stubs/platform_macros.h>
+ 
+ // TODO(liujisi): Remove the following includes after the include clean-up.
+ #include <google/protobuf/stubs/logging.h>
++#include <google/protobuf/stubs/mathlimits.h>
+ #include <google/protobuf/stubs/scoped_ptr.h>
+ #include <google/protobuf/stubs/mutex.h>
+ #include <google/protobuf/stubs/callback.h>
+diff --git a/src/google/protobuf/stubs/mathlimits.h b/src/google/protobuf/stubs/mathlimits.h
+index 275d953..ff5a9b8 100644
+--- a/src/google/protobuf/stubs/mathlimits.h
++++ b/src/google/protobuf/stubs/mathlimits.h
+@@ -43,18 +43,6 @@
+ #ifndef UTIL_MATH_MATHLIMITS_H__
+ #define UTIL_MATH_MATHLIMITS_H__
+ 
+-// GCC 4.9 has a bug that makes it impossible to use isinf and isnan when both
+-// <math.h> and <cmath> get pulled into the same translation unit.
+-// Unfortunately it is difficult to prevent this from happening, so to work
+-// around the problem we use std::isinf and std::isnan from <cmath> for C++11
+-// builds and otherwise use the plain isinf and isnan functions from <math.h>.
+-// Note that for Windows we do something different because it does not support
+-// the plain isinf and isnan.
+-#if __cplusplus >= 201103L
+-#include <cmath>
+-#else
+-#include <math.h>
+-#endif
+ #include <string.h>
+ 
+ #include <cfloat>

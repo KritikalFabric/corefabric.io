@@ -1,0 +1,26 @@
+Changelog
+
+1.0.3
+----------------
+Fixed issues with panel controls in FF
+Added faux offcanvas effect on sidebar
+Fixed ngGrid styling
+Improved responsiveness
+Added page content animation
+
+1.0.2
+----------------
+Added email templates
+Fixed styling issues in boxed layout
+Fixed styling of meditor toolbar
+
+1.0.1
+----------------
+Fixed navigation visibility on small screens
+Nestable demo fixed
+Fixed infobar/sidebar top positions
+Fixed dragImage position on ngSortable
+
+1.0.0
+----------------
+Initial release

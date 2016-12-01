@@ -1,0 +1,260 @@
+// Leftbar/Sidebar
+// --------------------------------------------------
+
+.static-sidebar	{
+	&:extend(.clearfix all);
+	//background: @sidebar-background; 
+	white-space: nowrap; 
+	position:relative; 
+}
+
+
+/* Sidebar Menu */
+
+#sidebar {
+	white-space: normal; 
+	margin: 0 0 0 0; 
+	padding-left: 0 !important; 
+	list-style-type: none;
+	
+	.label {margin-left: 10px;}
+	.badge {font-weight: 700; background-color: rgba(21, 22, 26, 0.6); margin-left: 10px !important;}
+	i {margin-left: 0px; margin-right: 18px; min-width: 16px; text-align: center; display: inline-block;}
+
+	.divider {
+		height: 1px; width: 100%; 
+		margin: 10px 0px; overflow: hidden; 
+	}
+
+	.nav-separator {
+		padding: 7px 16px;
+		font-size: @font-size-mini;
+		background: #293136;
+	}
+	
+	a {text-decoration: none;}
+	ul {padding: 10px 0;list-style: none;}
+	ul {padding-left: 0 !important}
+	
+	//Main Menu Styles - Level 1
+	li a {text-transform: uppercase; display: block;padding: 15px 16px;position: relative; font-weight: 500; }
+	> li > a, > li > a > i {.transition(~"color 0.2s ease");} // only the first level
+	
+	// Submenu Styles - Level 2
+	ul li a {padding: 5px 20px 5px 50px; text-transform: none; font-weight: 400;}
+	ul li.active:not(.open)>a {font-weight: 700;}
+	   li ul {display: none;}
+	
+	ul ul {padding: 0;} //Removes the extra stacked padding
+	
+	// All other levels
+	li li li a {padding-left: 70px;} //level 3
+	ul ul ul li a {padding-left: 90px} // level 4
+	ul ul ul ul li a {padding-left: 110px} // level 5
+
+	li.disabled-link a {
+   		cursor: @cursor-disabled;
+   		font-style: italic;
+	}
+}
+
+
+//Arrows
+#sidebar li.hasChild>a {position: relative; &:extend(.clearfix all);}
+
+/* Remove the :hover from the following lines for arrows to appear always */
+#sidebar li.hasChild>a:before, #sidebar li.hasChild.open>a:before {content: "\f105"; .opacity(0.5)}
+#sidebar li.hasChild.open>a:before {content: "\f107"; .opacity(0.5)}
+
+#sidebar li.hasChild>a:before, #sidebar li.hasChild.open>a:before {
+  font-family: FontAwesome;
+  font-style: normal;
+  font-weight: normal;
+
+  text-decoration: inherit;
+  text-align: right;
+  padding-right: 0px;
+  display: inline-block;
+  float: right;
+
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#sidebar li.hasChild li.hasChild a:before{top: 5px;}
+
+
+
+// Collapse sidebar fixes
+body.sidebar-collapsed #sidebar { 
+	// Arrows on Collapse
+	> li.hasChild.open>a:before {content:"";}
+	> li.hasChild > a:before {content:"";}
+	> li.hasChild:hover>a:before {content: "\f107";}
+
+	// fix for sidebar collapsed hover
+	ul {display: none !important;}
+	li:hover > ul {display: block !important;}
+}
+
+
+/* Sidebar Layout + Responsive */
+
+/* Search at Left Navigation Sidebar */
+#search {
+	line-height: 0;
+	margin-bottom: 0px;
+	margin-top: 0px;
+
+	> a {display: none !important;}
+
+	form {
+		margin: 0px 0px 0px 0px;
+		padding: 0 0px 0px 0px;
+		position: relative;
+		
+		.search-query {
+			padding: 0 10px 0 50px;
+			border-radius:0px;
+			min-height: 50px;
+			line-height: 18px;
+			width: 100%;
+
+			&:focus {
+				 .placeholder(~"transparent");
+				+ button i {.opacity(1);}
+			}
+
+			&, &:active, &:focus {
+				border: none;
+			}
+		}
+		
+		button[type="submit"] {
+			float: left;
+			position: absolute;
+			top: 0;left: 0px;
+			border: 0; background: none;
+			padding: 19px 0;margin: 0;min-width: 50px; text-align: center;
+			i {margin: 0 0 0 2px !important; .opacity(0.4)}
+		}
+	}
+}
+
+#sidebar .badge {
+	float: right;
+
+	position: absolute;
+  	top: 16px;
+  	//right: 30px;
+}
+
+
+
+
+
+
+// ----------------------------
+// Collapse at small screens
+// -----------------------------
+
+@media screen and (max-width: @screen-xs-max) {
+	.static-sidebar-wrapper {
+		width: 0;
+		z-index: @zindex-navbar-fixed - 1;
+		.transition(~'width 0ms ease-out');
+
+		#sidebar {white-space: nowrap;}
+	}
+	.static-content-wrapper {overflow: hidden;}
+
+	body.show-sidebar {
+		.static-sidebar-wrapper 	{width: 240px;}
+		//#page-content 	{margin-left: 240px;}
+		//footer 			{.translate(240px,0);}
+	}
+}
+
+
+
+// --------------
+// Collapsed
+// --------------
+
+@media screen and (min-width: 768px) {
+	body.sidebar-collapsed {
+
+		.nav-separator div {
+			&, &:hover, &:active {
+				.text-hide() !important;
+			}
+		}
+
+		.static-sidebar-wrapper {
+			&, &>div {
+				white-space: nowrap;
+				width: 50px;
+				overflow: visible;
+			}
+			#sidebar > li{
+				white-space: nowrap;
+				position: relative;
+				width: 50px;
+				span {display: none;}
+
+				&:hover {
+					width: 290px;
+					z-index: 1512;
+					span {display: inline;}
+					
+					>ul {
+						display: block;
+						position: absolute;
+						left: 50px;
+						width: 240px;
+						>li>a {padding-left: 20px;}
+						>li li>a {padding-left: 40px;}
+						>li li li>a {padding-left: 60px;}
+						>li li li li>a {padding-left: 80px;}
+					}
+				}
+			}
+		}
+
+		#search {
+			display: none;
+		}
+	}
+}
+
+// Separators
+.static-sidebar .nav-separator {
+	display: block;
+	font-size: 11px;
+	text-transform: none;
+	display: block;
+	padding: 7px 20px;
+	border-bottom: 0;
+	font-weight: 700;
+	body.sidebar-collapsed & {
+		.text-hide();
+		padding: 5px 0;
+		width: 50px !important;
+		div {
+			&, &:hover, &:active {
+				.text-hide() !important;
+			}
+		}
+	}
+}
+
+
+
+
+
+//LABEL FIX
+#sidebar li .label.pull-right {
+	line-height: @line-height-base;
+}
+
+

@@ -1,0 +1,270 @@
+<div ng-controller="MainController"
+	id="headerbar"
+	ng-class="{headerbarHide: getLayoutOption('headerBarHidden'), headerbarShow: !getLayoutOption('headerBarHidden')}"
+	ng-show="!getLayoutOption('fullscreen')"
+	ng-cloak>
+	<div class="container-fluid">
+		<div class="row">
+			<div class="col-xs-6 col-sm-2">
+				<a href="#" class="shortcut-tiles tiles-brown">
+					<div class="tiles-body">
+						<div class="pull-left"><i class="glyphicon glyphicon-star"></i></div>
+					</div>
+					<div class="tiles-footer">
+						Create Post
+					</div>
+				</a>
+			</div>
+			<div class="col-xs-6 col-sm-2">
+				<a href="#" class="shortcut-tiles tiles-grape">
+					<div class="tiles-body">
+						<div class="pull-left"><i class="glyphicon glyphicon-user"></i></div>
+						<div class="pull-right"><span class="badge">2</span></div>
+					</div>
+					<div class="tiles-footer">
+						Contacts
+					</div>
+				</a>
+			</div>
+			<div class="col-xs-6 col-sm-2">
+				<a href="#" class="shortcut-tiles tiles-primary">
+					<div class="tiles-body">
+						<div class="pull-left"><i class="glyphicon glyphicon-envelope"></i></div>
+						<div class="pull-right"><span class="badge">10</span></div>
+					</div>
+					<div class="tiles-footer">
+						Messages
+					</div>
+				</a>
+			</div>
+			<div class="col-xs-6 col-sm-2">
+				<a href="#" class="shortcut-tiles tiles-inverse">
+					<div class="tiles-body">
+						<div class="pull-left"><i class="glyphicon glyphicon-camera"></i></div>
+						<div class="pull-right"><span class="badge">3</span></div>
+					</div>
+					<div class="tiles-footer">
+						Gallery
+					</div>
+				</a>
+			</div>
+
+			<div class="col-xs-6 col-sm-2">
+				<a href="#" class="shortcut-tiles tiles-midnightblue">
+					<div class="tiles-body">
+						<div class="pull-left"><i class="glyphicon glyphicon-cog"></i></div>
+					</div>
+					<div class="tiles-footer">
+						Settings
+					</div>
+				</a>
+			</div>
+			<div class="col-xs-6 col-sm-2">
+				<a href="#" class="shortcut-tiles tiles-orange">
+					<div class="tiles-body">
+						<div class="pull-left"><i class="glyphicon glyphicon-wrench"></i></div>
+					</div>
+					<div class="tiles-footer">
+						Plugins
+					</div>
+				</a>
+			</div>
+						
+		</div>
+	</div>
+</div>
+
+<header
+	id="topnav"
+	class="navbar ng-hide"
+	ng-class="{'navbar-fixed-top': getLayoutOption('fixedHeader'), 'navbar-static-top': !getLayoutOption('fixedHeader')}"
+	ng-controller="MainController"
+	role="banner"
+	ng-show="!layoutLoading"
+	ng-cloak>
+	<a id="leftmenu-trigger" ng-click="toggleLeftBar()"></a>
+	<a id="rightmenu-trigger" ng-click="toggleRightBar()"></a>
+
+
+	<div class="navbar-header pull-left">
+		<a class="navbar-brand" href="#/">Maverick</a>
+	</div>
+
+	<div id="search-inline"
+		class="nav navbar-nav navbar-form hidden-xs"
+		ng-class="{
+		  active: getLayoutOption('showSmallSearchBar')
+		}">
+		<div class="input-icon">
+			<i class="glyphicon glyphicon-search search"></i>
+			<input type="text" placeholder="Type to search..." class="form-control" tabindex="1">
+			<i class="glyphicon glyphicon-remove remove visible-xs-inline-block" ng-click="toggleSearchBar($event)"></i>
+		</div>
+	</div>
+
+	<ul class="nav navbar-nav pull-right toolbar">
+	  <li class="dropdown" ng-show="!isLoggedIn">
+		<a href="#/extras-login2" style="font-size: 14px"><i class="fa fa-sign-in"></i> Log in</a>
+	  </li>
+	  <li class="dropdown" ng-show="isLoggedIn" dropdown>
+		<a href class="dropdown-toggle username" dropdown-toggle><img src="assets/demo/avatar/dangerfield.png" alt="Dangerfield" /></a>
+		<ul class="dropdown-menu animated userinfo arrow">
+		  <li class="userlinks">
+			<ul class="dropdown-menu">
+			  <li><a href="#">Edit Profile <i class="pull-right glyphicon glyphicon-pencil"></i></a></li>
+			  <li><a href="#">Account <i class="pull-right glyphicon glyphicon-user"></i></a></li>
+			  <li><a href="#">Settings <i class="pull-right glyphicon glyphicon-cog"></i></a></li>
+			  <li class="divider"></li>
+			  <li><a href="#">Earnings <i class="pull-right glyphicon glyphicon-stats"></i></a></li>
+			  <li><a href="#">Statement <i class="pull-right glyphicon glyphicon-list-alt"></i></a></li>
+			  <li><a href="#">Withdrawals <i class="pull-right glyphicon glyphicon-credit-card"></i></a></li>
+			  <li class="divider"></li>
+			  <li><a href="" class="text-right" ng-click="logOut()">Sign Out</a></li>
+			</ul>
+		  </li>
+		</ul>
+	  </li>
+	  <li class="dropdown hidden-xs" dropdown ng-controller="MessagesController" ng-show="isLoggedIn">
+		<a href class="dropdown-toggle" dropdown-toggle>
+		 <i class="glyphicon glyphicon-envelope"></i><span class="badge badge-danger" ng-if="unseenCount>0" ng-bind="unseenCount"></span>
+		</a>
+		<ul class="dropdown-menu animated messages arrow">
+		  <li class="dd-header">
+			<span>Messages ({{unseenCount}})</span>
+			<span><a href="#"><i class="glyphicon glyphicon-cog"></i></a></span>
+		  </li>
+			  <div class="scrollthis" scrollable>
+				<li ng-repeat="item in messages">
+				  <a href="#/" ng-class="{active: !item.read}">
+					<button tooltip-placement="top" tooltip-append-to-body="true" tooltip="Mark read" class="btn-mark-read" ng-if="!item.read" ng-click="setRead(item, $event)"><i class="glyphicon glyphicon-unchecked"></i></button>
+					<button tooltip-placement="top" tooltip-append-to-body="true" tooltip="Mark unread" class="btn-mark-unread" ng-if="item.read" ng-click="setUnread(item, $event)"><i class="glyphicon glyphicon-check"></i></button>
+					<span class="time">{{item.time}}</span>
+					<img ng-src="{{item.thumb}}" alt="avatar" />
+					<div>
+					  <span class="name">{{item.name}}</span>
+					  <span class="msg">{{item.message}}</span>
+					</div>
+				  </a>
+				</li>
+			  </div>
+		  <li class="dd-footer"><a href="#" ng-click="setReadAll($event)">Mark all read</a></li>
+		</ul>
+	  </li>
+	  <li class="dropdown" dropdown ng-controller="NotificationsController" ng-show="isLoggedIn">
+		<a href dropdown-toggle class="dropdown-toggle">
+		  <i class="glyphicon glyphicon-globe"></i><span class="badge badge-indigo" ng-if="unseenCount>0" ng-bind="unseenCount"></span>
+		</a>
+		<ul class="dropdown-menu animated notifications arrow">
+		  <li class="dd-header">
+			<span>Notifications ({{unseenCount}})</span>
+			<span><a href="#"><i class="glyphicon glyphicon-cog"></i></a></span>
+		  </li>
+				<div class="scrollthis" scrollable>
+			<li ng-repeat="item in notifications">
+			  <a href="#" class="{{item.class}}" ng-class="{active: !item.seen}">
+				<button tooltip-placement="top" tooltip-append-to-body="true" tooltip="Mark seen" class="btn-mark-read" ng-if="!item.seen" ng-click="setSeen(item, $event)"><i class="glyphicon glyphicon-unchecked"></i></button>
+				<button tooltip-placement="top" tooltip-append-to-body="true" tooltip="Mark unseen" class="btn-mark-unread" ng-if="item.seen" ng-click="setUnseen(item, $event)"><i class="glyphicon glyphicon-check"></i></button>
+				<span class="time">{{item.time}}</span>
+				<i class="{{item.iconClasses}}"></i>
+				<span class="msg">{{item.text}}</span>
+			  </a>
+			</li>
+				</div>
+		  <li class="dd-footer"><a href="javascript:;" ng-click="setSeenAll($event)">Mark all seen</a></li>
+		</ul>
+	  </li>
+	  <li class="visible-xs-block">
+		  <a href="#" ng-click="toggleSearchBar($event)"><i class="glyphicon glyphicon-search"></i></a>
+	  </li>
+	  <li ng-click="showHeaderBar($event)" class="hidden-xs">
+		  <a href="" id="headerbardropdown"><i class="glyphicon glyphicon-th"></i></a>
+	  </li>
+	  <li class="dropdown demodrop" dropdown>
+		  <a href dropdown-toggle class="dropdown-toggle tooltips"><i class="glyphicon glyphicon-cog"></i></a>
+		  <ul class="dropdown-menu animated arrow dropdown-menu-form" id="demo-dropdown">
+
+			<div class="tabular">
+				<div class="tabular-row">
+					<div class="tabular-cell pt0">
+						<label for="demo-header-variations" class="control-label">Header Colors</label>
+
+						<ul class="list-inline demo-color-variation" id="demo-header-variations">
+							<li><a class="color-default"      href="javascript:;" ng-click="setNavbarClass('navbar-default', $event)"></a></li>
+							<li><a class="color-inverse"      href="javascript:;" ng-click="setNavbarClass('navbar-inverse', $event)"></a></li>
+							<li><a class="color-midnightblue" href="javascript:;" ng-click="setNavbarClass('navbar-midnightblue', $event)"></a></li>
+							<li><a class="color-primary"      href="javascript:;" ng-click="setNavbarClass('navbar-primary', $event)"></a></li>
+							<li><a class="color-indigo"      href="javascript:;" ng-click="setNavbarClass('navbar-indigo', $event)"></a></li>
+							<li><a class="color-success"      href="javascript:;" ng-click="setNavbarClass('navbar-success', $event)"></a></li>
+							<li><a class="color-green"      href="javascript:;" ng-click="setNavbarClass('navbar-green', $event)"></a></li>
+							<li><a class="color-grape"      href="javascript:;" ng-click="setNavbarClass('navbar-grape', $event)"></a></li>
+							<li><a class="color-orange"      href="javascript:;" ng-click="setNavbarClass('navbar-orange', $event)"></a></li>
+							<li><a class="color-danger"      href="javascript:;" ng-click="setNavbarClass('navbar-danger', $event)"></a></li>
+						</ul>
+					</div>
+					<div class="tabular-cell pt0">
+						<label for="demo-color-variations" class="control-label">Sidebar Colors</label>
+						<ul class="list-inline demo-color-variation">
+							<li><a class="color-default"      href="javascript:;" ng-click="setSidebarClass('sidebar-default', $event)"></a></li>
+							<li><a class="color-inverse"      href="javascript:;" ng-click="setSidebarClass('sidebar-inverse', $event)"></a></li>
+							<li><a class="color-midnightblue" href="javascript:;" ng-click="setSidebarClass('sidebar-midnightblue', $event)"></a></li>
+							<li><a class="color-primary"      href="javascript:;" ng-click="setSidebarClass('sidebar-primary', $event)"></a></li>
+							<li><a class="color-indigo"      href="javascript:;" ng-click="setSidebarClass('sidebar-indigo', $event)"></a></li>
+							<li><a class="color-success"      href="javascript:;" ng-click="setSidebarClass('sidebar-success', $event)"></a></li>
+							<li><a class="color-green"      href="javascript:;" ng-click="setSidebarClass('sidebar-green', $event)"></a></li>
+							<li><a class="color-grape"      href="javascript:;" ng-click="setSidebarClass('sidebar-grape', $event)"></a></li>
+							<li><a class="color-orange"      href="javascript:;" ng-click="setSidebarClass('sidebar-orange', $event)"></a></li>
+							<li><a class="color-danger"      href="javascript:;" ng-click="setSidebarClass('sidebar-danger', $event)"></a></li>
+						</ul>
+					</div>
+				</div>
+				<div class="tabular-row">
+					<div class="tabular-cell">
+						<label for="layoutFixedHeader">Fixed Header</label>
+						<div ng-click="$event.stopPropagation()">
+							<input type="checkbox" ng-model="layoutFixedHeader" class="js-switch" ui-switch="{color: '#E43B11', secondaryColor: '#F89279'}" />
+						</div>
+					</div>
+					<div class="tabular-cell">
+						  <label for="layoutLayoutBoxed"><a href="#/layout-fixed">Boxed Layout</a></label>
+						  <div ng-click="$event.stopPropagation()">
+							<input type="checkbox" ng-model="layoutLayoutBoxed" class="js-switch" ui-switch="{color: '#E43B11', secondaryColor: '#F89279'}" />
+						  </div>
+					</div>
+				</div>
+				<div class="tabular-row">
+					<div class="tabular-cell">
+						<label for="layoutLayoutHorizontal">Horizontal Nav</label>
+						<div ng-click="$event.stopPropagation()">
+							<input type="checkbox" ng-model="layoutLayoutHorizontal" class="js-switch" ui-switch="{color: '#E43B11', secondaryColor: '#F89279'}" />
+						</div>
+					</div>
+					<div class="tabular-cell">
+					</div>
+				</div>
+				<div class="tabular-row">
+					<div class="tabular-cell pb0 pr10">
+					  <label for="layoutDropdownTransitionStyle">Dropdown Animation</label>
+					  <div ng-click="$event.stopPropagation()">
+						<select ng-model="layoutDropdownTransitionStyle" class="form-control">
+							<option value="{{item}}"
+							ng-selected="item == layoutDropdownTransitionStyle"
+							ng-repeat="item in layoutPageTransitionStyleList">{{item}}</option>
+						</select>
+					  </div>
+					</div>
+					<div class="tabular-cell pb0 pl10">
+						<label for="layoutPageTransitionStyle">Transition Animation</label>
+						  <div ng-click="$event.stopPropagation()">
+							<select ng-model="layoutPageTransitionStyle" class="form-control">
+								<option value="{{item}}"
+								ng-selected="item == layoutPageTransitionStyle"
+								ng-repeat="item in layoutPageTransitionStyleList">{{item}}</option>
+							</select>
+						  </div>
+					</div>
+				</div>
+			</div>
+		  </ul>
+	  </li>
+	</ul>
+</header>

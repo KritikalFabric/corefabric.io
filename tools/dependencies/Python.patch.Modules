@@ -1,0 +1,62 @@
+--- Modules/getpath.c.orig	2016-11-19 18:16:15.757604958 +0000
++++ Modules/getpath.c	2016-11-19 18:16:15.783683369 +0000
+@@ -289,6 +289,20 @@
+                                      tmpbuffer, MAXPATHLEN * 2);
+             Py_DECREF(decoded);
+             if (k >= 0) {
++#ifdef COREFABRIC_ENV__joyent
++                wchar_t * tok = wcstok(tmpbuffer, L" \t\r\n");
++                if ((tok != NULL) && !wcscmp(tok, key)) {
++                    tok = wcstok(NULL, L" \t");
++                    if ((tok != NULL) && !wcscmp(tok, L"=")) {
++                        tok = wcstok(NULL, L"\r\n");
++                        if (tok != NULL) {
++                            wcsncpy(value, tok, MAXPATHLEN);
++                            result = 1;
++                            break;
++                        }
++                    }
++                }
++#else // allegedly &state in the following "improves" the MT- situation, please explain to me?
+                 wchar_t * tok = wcstok(tmpbuffer, L" \t\r\n", &state);
+                 if ((tok != NULL) && !wcscmp(tok, key)) {
+                     tok = wcstok(NULL, L" \t", &state);
+@@ -301,6 +315,7 @@
+                         }
+                     }
+                 }
++#endif
+             }
+         }
+     }
+--- Modules/posixmodule.c.orig	2016-11-19 18:16:15.763770628 +0000
++++ Modules/posixmodule.c	2016-11-19 18:17:22.174207361 +0000
+@@ -5117,7 +5117,7 @@
+ parse_envlist(PyObject* env, Py_ssize_t *envc_ptr)
+ {
+     char **envlist;
+-    Py_ssize_t i, pos, envc;
++    Py_ssize_t i, pos, envc, j;
+     PyObject *keys=NULL, *vals=NULL;
+     PyObject *key, *val, *key2, *val2;
+     char *p, *k, *v;
+@@ -5127,6 +5127,9 @@
+     if (i < 0)
+         return NULL;
+     envlist = PyMem_NEW(char *, i + 1);
++    for (j = 0; j < i+1; ++j) {
++        envlist[j] = 0;
++    }
+     if (envlist == NULL) {
+         PyErr_NoMemory();
+         return NULL;
+@@ -5194,6 +5197,9 @@
+ {
+     int i;
+     char **argvlist = PyMem_NEW(char *, *argc+1);
++    for (i = 0; i < *argc+1; ++i) {
++        argvlist[i] = 0;
++    }
+     if (argvlist == NULL) {
+         PyErr_NoMemory();
+         return NULL;

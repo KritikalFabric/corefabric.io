@@ -1,0 +1,15 @@
+{
+  "node": {
+	"name": "db-amb1ent-pi-0001",
+	"zone": "unix",
+    "hostname": "db-amb1ent-pi-0001.test.storagefabric.io",
+    "ip4": "172.16.73.216",
+    "localhostIf": "lo0",
+    "wanIf": "net0"
+  },
+  "dtn": {
+    "isRouter": false,
+    "routerHostname": "router-amb1ent-unix.test.wanfabric.io",
+    "routerIp4": "172.16.73.200"
+  }
+}

@@ -1,0 +1,43 @@
+option java_package = "org.kritikal.fabric.protobufs";
+option java_outer_classname = "DW";
+
+// for compatibility with the AI protobufs
+message PackedGuid {
+    optional sfixed64 msb = 4;
+    optional sfixed64 lsb = 5;
+}
+
+// for compatibility with the AI protobufs
+message YYYYMMDD {
+    optional int32 yyyy = 1;
+    optional int32 mm = 2;
+    optional int32 dd = 3;
+}
+
+// O for object, collection, etc.
+message O {
+    enum DataTypes {
+        CLASS_LONG = 1;
+        CLASS_UUID = 2;
+        CLASS_STR = 3;
+        CLASS_TUPLE = 4;
+        CLASS_SET = 5;
+        CLASS_MAP = 6;
+    }
+    required DataTypes data_type = 1;
+    optional uint64 long = 2;
+    optional PackedGuid uuid = 3;
+    optional string str = 4;
+    repeated O tupleItem = 5;
+    optional Set set = 6;
+    optional Map map = 7;
+}
+
+message Set {
+    repeated O item = 1;
+}
+
+message Map {
+    repeated O key = 1;
+    repeated O value = 2;
+}

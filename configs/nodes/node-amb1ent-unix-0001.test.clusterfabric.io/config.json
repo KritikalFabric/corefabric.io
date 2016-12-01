@@ -1,0 +1,30 @@
+{
+  "node": {
+	"name": "node-0001",
+	"zone": "unix",
+    "hostname": "node-amb1ent-unix-0001.test.clusterfabric.io",
+    "ip4": "172.16.73.201",
+    "localhostIf": "lo0",
+    "wanIf": "net0",
+        "node_db":{
+                "host":"db-amb1ent-pi-0001.test.storagefabric.io",
+                "db":"node_node_amb1ent_unix_0001",
+                "user":"postgres",
+                "password":"password"
+        }
+  },
+  "dtn": {
+    "isRouter": false,
+    "routerHostname": "router-amb1ent-unix.test.wanfabric.io",
+    "routerIp4": "172.16.73.200"
+  },
+  "roles":{
+        "app-web":[{}],
+    "dtn-node":[{}],
+    "mqtt-broker":[{}],
+    "dtn-mqtt-bridge":[{
+        "subscribe":"nodes/unix/node-0001",
+        "to":"dtn://node-amb1ent-unix-0001.test.clusterfabric.io/MqttBridge"
+    }]
+  }
+}

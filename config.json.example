@@ -1,0 +1,37 @@
+{
+  "node": {
+    "hostname": "localhost.localdomain",
+    "ip4": "127.0.0.1",
+    "localhostIf": "lo0",
+    "wanIf": "en0",
+    "name": "localhost",
+    "zone": "localzone",
+    "node_db": {
+      "host": "localhost",
+      "db": "corefabric__node_db",
+      "user": "postgres",
+      "password": "password"
+    },
+    "app_config_uri": "http://127.0.0.1:8082/"
+  },
+  "dtn": {
+    "isRouter": true,
+    "routerHostname": "localhost.localdomain",
+    "routerIp4": "127.0.0.1"
+  },
+  "roles": {
+    "app-web": [{}],
+    "dtn-node": [],
+    "mqtt-broker":[],
+    "app-config-server": [{
+	"listenIp4": "127.0.0.1",
+	"listenPort": 8082,
+        "config_db": {
+          "host": "localhost",
+          "db": "corefabric__config_db",
+          "user": "postgres",
+          "password": "password"
+        }
+    }]
+  }
+}

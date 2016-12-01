@@ -1,0 +1,150 @@
+<div id="page-heading">
+	<ol class="breadcrumb">
+		<li><a href="#/">Dashboard</a></li>
+		<li>Extras</li>
+		<li class="active">Inbox</li>
+	</ol>
+
+	<h1>Inbox</h1>
+	<div class="options">
+		<div class="btn-toolbar">
+			<div class="btn-group" dropdown>
+				<button type="button" class="btn btn-default dropdown-toggle" dropdown-toggle>
+					Export as <span class="caret"></span>
+				</button>
+				<ul class="dropdown-menu" role="menu">
+					<li><a href="#">Action</a></li>
+					<li><a href="#">Another action</a></li>
+					<li><a href="#">Something else here</a></li>
+					<li class="divider"></li>
+					<li><a href="#">Separated link</a></li>
+				</ul>
+			</div>
+			<a href="#" class="btn btn-default hidden-xs"><i class="glyphicon glyphicon-cog"></i></a>
+		</div>
+	</div>
+</div>
+
+<div class="container-fluid" ng-controller="ComposeController">
+	<div class="row">
+		<div class="col-md-3">
+			<a class="btn btn-block btn-danger btn-compose" href="#/compose-mail">Compose</a>
+
+			<div class="inbox-menu mt20">
+
+				<div class="collapsible-menu" style="border-top: 0;">
+					<span class="inbox-leftbar-category clearfix">
+						<a href="javascript:;" data-toggle="collapse" data-target="#folders" class="category-heading">Folders</a>
+					</span>
+					<div class="collapse in" id="folders">
+						<a href="#/extras-inbox" class="inbox-menu-item active">Inbox <span class="badge badge-primary">9</span></a>
+						<a href="#" class="inbox-menu-item">Junk <span class="badge badge-warning">3</span></a>
+						<a href="#" class="inbox-menu-item">Drafts</a>
+						<a href="#" class="inbox-menu-item">Sent</a>
+						<a href="#" class="inbox-menu-item">Deleted <span class="badge badge-danger">5</span></a>
+					</div>
+				</div>
+
+				<div class="collapsible-menu">
+					<span class="inbox-leftbar-category clearfix">
+						<a href="javascript:;" data-toggle="collapse" data-target="#quicklinks" class="category-heading">Quick Links</a>
+
+
+					</span>
+					<div class="collapse in" id="quicklinks">
+						<a href="#" class="inbox-menu-item">Images <span class="badge">100</span></a>
+						<a href="#" class="inbox-menu-item">Documents <span class="badge">124</span></a>
+					</div>
+				</div>
+
+				<div class="collapsible-menu">
+					<span class="inbox-leftbar-category clearfix">
+						<a href="javascript:;" data-toggle="collapse" data-target="#customfolders" class="category-heading">Custom</a>
+
+					</span>
+					<div class="collapse in" id="customfolders">
+						<a href="#" class="inbox-menu-item"><i class="text-danger fa fa-circle-o mr5"></i>Work</a>
+						<a href="#" class="inbox-menu-item"><i class="text-info fa fa-circle-o mr5"></i>Personal</a>
+						<a href="#" class="inbox-menu-item"><i class="text-warning fa fa-circle-o mr5"></i>Others</a>
+					</div>
+				</div>
+
+			</div>
+
+			<div class="well well-sm well-inbox">
+				<div class="contextual-progress">
+					<div class="clearfix">
+						<div class="progress-title"><strong>4.2GB</strong> of <strong>10GB</strong></div>
+						<div class="progress-percentage">
+							<a href="#">Settings</a>
+						</div>
+					</div>
+					<div class="progress">
+						<div class="progress-bar progress-bar-success" style="width: 42%"></div>
+					</div>
+				</div>
+			</div>
+		</div>
+				<div class="col-md-9">
+			<div class="panel panel-inbox">
+				<div class="panel-body">
+					<div class="inbox-mail-heading">
+						<div class="clearfix spmg-2">
+							<div class="pull-left">
+								<a href="app-inbox" class="btn btn-default spmg2"><i class="fa fa-fw fa-level-up fa-rotate-270"></i></a>
+						        <div class="btn-group spmg2">
+		                            <a href="#" class="btn btn-default"><i class="fa fa-fw fa-save"></i></a>
+		                            <a href="#" class="btn btn-default"><i class="fa fa-fw fa-trash-o"></i></a>
+		                        </div>
+						    </div>
+						    <div class="pull-right">
+						    	<a href="#" class="btn btn-success spmg2"><i class="fa fa-paper-plane mr5"></i><span class="hidden-xs">Send</span></a>
+						    </div>
+						</div>
+					</div>
+					<form action="" role="form" id="inbox-compose-form" class="form-horizontal">
+						<div class="form-group mb10">
+							<div class="col-md-12">
+								<div class="input-icon right">
+									<a href="#" class="icon show-next-formgroup">CC</a>
+									<input type="text" class="form-control tokenfield-email" value="" placeholder="To">
+								</div>
+							</div>
+						</div>
+						<div class="form-group mb10" style="display: none;">
+							<div class="col-md-12">
+								<div class="input-icon right">
+									<a href="#" class="icon show-next-formgroup">BCC</a>
+									<input type="text" class="form-control tokenfield-email" value="">
+								</div>
+							</div>
+						</div>
+						<div class="form-group mb10" style="display:none;">
+							<div class="col-md-12"><input type="text" class="form-control"></div>
+						</div>
+						<div class="form-group mb10">
+							<div class="col-md-12"><input type="text" class="form-control" placeholder="Subject for email"></div>
+						</div>
+						<div class="form-group mb10">
+							<div class="col-xs-12">
+								<div class="composer" text-angular ng-model="mailBody"
+									ta-toolbar="[['p','h3'],['bold','italics', 'underline'], ['justifyLeft', 'justifyCenter', 'justifyRight'], ['indent', 'outdent'], ['insertImage', 'insertLink', 'insertVideo']]">
+					                <h3>Default Editor</h3>
+					                <p>Lorem ipsum dolor sit amet, consectetur adipisicing elit. Rem, nobis laboriosam repellat ipsum deserunt voluptate eos praesentium atque eligendi libero. Nam, id, eligendi natus facilis ullam pariatur numquam amet illum repudiandae ex porro labore in perferendis vero nobis iure ratione? Repudiandae, vel, quo, dolores velit vero debitis sed non odio culpa quasi excepturi tempore saepe atque quod repellendus aliquam eum neque dolorem beatae veniam quis id deserunt dignissimos voluptatum incidunt necessitatibus inventore reprehenderit consequatur esse perferendis ipsum earum pariatur et eaque sequi a harum sit similique itaque dicta expedita unde. Animi, quo, facilis laudantium quas commodi aut harum reprehenderit explicabo.</p>
+				                </div>
+							</div>
+						</div>
+					</form>
+					<div class="inbox-mail-footer">
+						<div class="clearfix spmg-2">
+						    <div class="pull-right">
+						    	<a href="#" class="btn btn-success spmg2"><i class="fa fa-paper-plane mr5"></i><span class="hidden-xs">Send</span></a>
+						    </div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+</div> <!-- container-fluid -->

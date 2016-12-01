@@ -1,0 +1,60 @@
+{
+  "brand": "joyent",
+  "image_uuid": "0b5df098-7a12-11e4-9ab6-b7ae3bbd6a5a",
+  "tmpfs": 30720,
+  "hostname": "node-amb1ent-unix-0001",
+  "dns_domain": "test.clusterfabric.io",
+  "resolvers": [
+    "172.16.127.1"
+  ],
+  "alias": "node-amb1ent-unix-0001",
+  "filesystems": [
+    {
+      "source": "/zones/development",
+      "target": "/d",
+      "type": "lofs"
+    },
+	{
+		"source": "/zones/fabric",
+		"target": "/fabric",
+		"type": "lofs"
+	},
+	{
+		"source": "/zones/fabric/nodes/node-amb1ent-unix-0001.test.clusterfabric.io",
+		"target": "/deploy",
+		"type": "lofs"
+	}
+  ],
+  "nics": [
+    {
+      "interface": "net0",
+      "nic_tag": "admin",
+      "gateway": "172.16.73.1",
+      "gateways": [
+        "172.16.73.1"
+      ],
+      "netmask": "255.255.255.0",
+      "ip": "172.16.73.201",
+      "ips": [
+        "172.16.73.201/24"
+      ],
+      "primary": true
+    }
+  ],
+  "cpu_shares": 100,
+  "max_msg_ids": 4096,
+  "max_sem_ids": 4096,
+  "max_shm_ids": 4096,
+  "max_shm_memory": 30720,
+  "zfs_io_priority": 100,
+  "max_lwps": 16777216,
+  "max_physical_memory": 30720,
+  "max_swap": 65536,
+  "customer_metadata": {},
+  "internal_metadata": {
+    "root_pw": "smartos",
+    "admin_pw": "smartos",
+    "root_authorized_keys": "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDiM5Su8HDFXMp8wTmxy5gHlvWSaZlWmgiNCsge7Gcodaa57w1GPCSuKz3SG7lknxkOZsrxnQ7rqYcbvvYGnBe6OmDwbi2JCv+P65FqwnL2BstTDI5yMkZ26tCkhmLf/REl8FOXz/iTqlTtO7LkMI7gw4+pJKYQkuxQDFyZOkvdpYPHfzTMSoVVGQtShmKKc0YesMOg05fgS+3RADOGzef/rfu1XqFbLVqUZrbc7HAmYLzKyT4M6HQE1l7vMADXRfg+IRulGFQGIn6aG5Z4ifFeNizTW4DRPf8S3VjDBVD9TEnTFKIf/tBCM5LqHIYuYMZXsrDEGb+VY4bm2mTmPjwp ben@beast",
+    "user-script": "/usr/sbin/mdata-get root_authorized_keys >> ~root/.ssh/authorized_keys ; /usr/sbin/mdata-get root_authorized_keys >> ~admin/.ssh/authorized_keys"
+  }
+}

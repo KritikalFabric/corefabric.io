@@ -1,0 +1,25 @@
+{
+  "node": {
+	"name": "awfulhak",
+	"zone": "dev",
+    "hostname": "awfulhak.vpn.amb1ent.org",
+    "ip4": "172.16.34.2",
+    "localhostIf": "lo0",
+    "wanIf": "utun1"
+  },
+  "dtn": {
+    "isRouter": false,
+    "routerHostname": "router-amb1ent-pi.test.wanfabric.io",
+    "routerIp4": "172.16.237.128"
+  },
+  "roles": {
+    "dtn-node": [],
+    "mqtt-broker":[],
+    "app-web": [{}],
+    "dtn-mqtt-bridge":[{
+      "subscribe":"nodes/dev/awfulhak/#",
+      "to":"dtn://router-amb1ent-pi.test.wanfabric.io/MqttBridge"
+    }]
+  }
+
+}

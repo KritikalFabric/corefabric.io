@@ -1,0 +1,151 @@
+buildscript {
+    repositories {
+	jcenter() 
+	mavenLocal()
+	maven {
+	    url 'https://plugins.gradle.org/m2/'
+	}
+    }
+    dependencies {
+        classpath 'com.github.jengelman.gradle.plugins:shadow:1.2.3'
+        classpath 'com.google.protobuf:protobuf-gradle-plugin:0.7.7'
+	classpath 'gradle.plugin.de.fuerstenau:BuildConfigPlugin:1.0.5'
+    }
+}
+
+plugins {
+    id "com.eriwen.gradle.js" version "1.12.1"
+    id "com.eriwen.gradle.css" version "1.11.1"
+}
+
+apply plugin: 'java'
+apply plugin: 'com.github.johnrengelman.shadow'
+apply plugin: 'com.google.protobuf'
+apply plugin: 'idea'
+apply plugin: 'application'
+apply plugin: 'de.fuerstenau.buildconfig'
+
+jar {
+	baseName "corefabric.io"
+}
+
+version = '0.1.0-preview' // our version
+vertxVersion = '3.3.3' // vert.x version
+
+sourceCompatibility = '1.8'
+
+buildConfig {
+	sourceSets {
+		main {
+			packageName = 'org.kritikal.fabric.core'
+			appName = 'Kritikal Fabric: Core'
+			version = version
+		}
+	}
+}
+
+sourceSets {
+    contrib
+    main
+}
+
+if (!JavaVersion.current().java8Compatible) {
+    throw new IllegalStateException('''A Haiku:
+                                      |  This needs Java 8,
+                                      |  You are using something else,
+                                      |  Refresh. Try again.'''.stripMargin())
+}
+
+repositories {
+    mavenCentral()
+    maven {
+        url = 'http://oss.sonatype.org/content/repositories/snapshots/'
+    }
+}
+
+protobuf { protoc { path = 'protoc' } }
+
+dependencies {
+
+    contribCompile group: 'org.apache.commons', name: 'commons-dbcp2', version: '2.0.1'
+    contribCompile fileTree(include: ['*.jar'], dir: 'lib')
+    compile fileTree(include: ['*.jar'], dir: 'lib')
+
+    compile sourceSets.contrib.output
+
+    compile group: 'org.slf4j', name: 'slf4j-api', version: '1.7.21'
+
+    compile "io.vertx:vertx-shell:$vertxVersion"
+    compile "io.vertx:vertx-hazelcast:$vertxVersion"
+    compile "io.vertx:vertx-web:$vertxVersion"
+    compile "io.vertx:vertx-unit:$vertxVersion"
+    compile "io.vertx:vertx-dropwizard-metrics:$vertxVersion"
+    compile "io.vertx:vertx-auth-oauth2:$vertxVersion"
+
+    testCompile group: 'junit', name: 'junit', version: '4.12'
+    compile group: 'org.postgresql', name: 'postgresql', version: '9.4.1211.jre7'
+    compile group: 'com.datastax.cassandra', name: 'cassandra-driver-core', version: '2.1.6'
+    compile group: 'com.datastax.cassandra', name: 'cassandra-driver-mapping', version: '2.1.6'
+    compile group: 'org.apache.commons', name: 'commons-dbcp2', version: '2.0.1'
+    compile group: 'com.google.guava', name: 'guava', version: '18.0';
+    compile group: 'com.google.protobuf', name: 'protobuf-java', version: '3.0.0+'
+    compile group: 'commons-codec', name: 'commons-codec', version: '1.10'
+    compile "io.hawt:hawtio-plugin-mbean:1.5-SNAPSHOT"
+    compile "javax.servlet:servlet-api:2.5"
+}
+
+mainClassName = 'org.kritikal.fabric.CoreFabric'
+applicationDefaultJvmArgs = ['-d64','-Xmx512M']
+
+shadowJar {
+    baseName "corefabric.io"
+    classifier = 'fat'
+    manifest {
+        attributes 'Main-Class': 'org.kritikal.fabric.CoreFabric'
+        attributes 'Main-Verticle': 'io.corefabric.pi.MainVerticle'
+    }
+    mergeServiceFiles {
+        include 'META-INF/services/io.vertx.core.spi.VerticleFactory'
+    }
+}
+
+task wrapper(type: Wrapper) {
+    gradleVersion = '2.12'
+}
+
+task cpa2(type: Copy) {
+    from 'a2'
+    into 'build/resources/main/web/a2'
+    exclude '**/*.ts'
+}
+
+shadowJar.dependsOn 'cpa2'
+
+test {
+
+    jvmArgs = ['-d64','-Xmx512M']
+
+    scanForTestClasses = false;
+	exclude 'org/kritikal/fabric/core/**'
+
+    // listen to events in the test execution lifecycle
+    beforeTest { descriptor ->
+        logger.lifecycle(''+descriptor)
+    }
+}
+
+run {
+    args = ['run', 'io.corefabric.pi.MainVerticle']
+}
+
+task packageTests(type: Jar) {
+	manifest {
+		attributes	'Main-Class': 'org.junit.runner.JUnitCore'
+	}
+	dependsOn testClasses
+	from sourceSets.test.output
+	classifier 'tests'
+	from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
+	from { configurations.testCompile.collect { it.isDirectory() ? it : zipTree(it) } }
+	with jar
+}
