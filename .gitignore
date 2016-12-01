@@ -4,6 +4,7 @@ classes/
 .idea
 build
 corefabric.io.*
+corefabric.*
 get-pip.py
 config.json
 jDtnConfig.xml
