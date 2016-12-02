@@ -8,7 +8,7 @@ buildscript {
     }
     dependencies {
         classpath 'com.github.jengelman.gradle.plugins:shadow:1.2.3'
-        classpath 'com.google.protobuf:protobuf-gradle-plugin:0.7.7'
+        classpath 'com.google.protobuf:protobuf-gradle-plugin:0.8.0'
 	classpath 'gradle.plugin.de.fuerstenau:BuildConfigPlugin:1.0.5'
     }
 }
@@ -63,7 +63,10 @@ repositories {
     }
 }
 
-protobuf { protoc { path = '.local/bin/protoc' } }
+protobuf {
+    protoc { path = '.local/bin/protoc' }
+    generatedFilesBaseDir = "$projectDir/.generated"
+}
 
 dependencies {
 
