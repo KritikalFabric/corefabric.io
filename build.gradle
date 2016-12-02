@@ -63,7 +63,7 @@ repositories {
     }
 }
 
-protobuf { protoc { path = 'protoc' } }
+protobuf { protoc { path = '.local/bin/protoc' } }
 
 dependencies {
 
