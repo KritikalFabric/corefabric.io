@@ -8,6 +8,8 @@ import { Scheduler } from 'rxjs/Rx';
 
 import { FabricHelpers } from './fabric.helpers.service';
 
+import { UUID } from '../entities/uuid';
+
 declare var Paho; // vendor/eclipse-paho
 
 export interface FabricCommsOnMessageCallback {
@@ -57,7 +59,7 @@ export class FabricComms {
             console.log('cookie missing!');
             cookie = fabricHelpers.generateRandomUUID();
         }
-        this.clientID = 'corefabric--' + fabricHelpers.getCookie('corefabric') + '--' + new Date().getTime();
+        this.clientID = 'corefabric--' + fabricHelpers.getCookie('corefabric') + '--' + this.uuid.getValue();
         this.mqttClient = new Paho.MQTT.Client(fabricHelpers.getHost(), Number(1080), this.clientID);
         this.connected = false;
         this.activeSubscriptions = [];
@@ -141,6 +143,7 @@ export class FabricComms {
         Scheduler.async.schedule(work, 15000, null);
     }
 
+    private uuid:UUID = new UUID(null);
     private clientID:string;
     private mqttClient:any;
     private connected:boolean;
