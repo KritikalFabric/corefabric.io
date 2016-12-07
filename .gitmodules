@@ -6,6 +6,7 @@
 	url = https://github.com/openssl/openssl.git
 [submodule "tools/dependencies/jep"]
 	path = tools/dependencies/jep
+	url = url = https://github.com/mrj0/jep.git
 [submodule "sv"]
 	path = tools/dependencies/libtool
 	url = http://git.savannah.gnu.org/r/libtool.git
