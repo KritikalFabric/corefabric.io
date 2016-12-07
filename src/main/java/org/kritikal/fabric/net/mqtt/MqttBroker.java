@@ -23,11 +23,9 @@ import io.vertx.core.net.NetSocket;
 
 import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Iterator;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -78,12 +76,23 @@ public class MqttBroker implements IMqttServerCallback, IMqttBroker {
             this.provideTopicName = provideTopicName;
         }
 
-        private AtomicReference<byte[]> payload = new AtomicReference<>(null);
-        private AtomicReference<JsonObject> jsonified = new AtomicReference<>(null);
-        private AtomicReference<MessageEncapsulation> msg = new AtomicReference<>(null);
+        private final AtomicReference<byte[]> payload = new AtomicReference<>(null);
+        private final AtomicReference<JsonObject> jsonified = new AtomicReference<>(null);
+        private final AtomicReference<MessageEncapsulation> msg = new AtomicReference<>(null);
 
         public byte[] payload() {
-            return this.payload.updateAndGet(ary -> ary == null ? this.provideBuffer.apply(null).array() : ary);
+            return this.payload.updateAndGet(ary ->  {
+                if (ary == null) {
+                    final ByteBuffer byteBuffer = this.provideBuffer.apply(null);
+                    if (byteBuffer != null) {
+                        ary = byteBuffer.array();
+                    }
+                    if (ary == null) {
+                        ary = new byte[0];
+                    }
+                }
+                return ary;
+            });
         }
 
         public JsonObject json() {
@@ -255,24 +264,19 @@ public class MqttBroker implements IMqttServerCallback, IMqttBroker {
                 if (queued != null)
                 {
                     queued.parallelStream().mapToLong(publishMessage -> {
-                        byte[] payload = null;
+                        final ContentHelper ch = new ContentHelper(v -> publishMessage.getPayload(), v -> publishMessage.isRetainFlag(), v -> publishMessage.getTopicName());
+                        final QosHelper qh = new QosHelper();
 
-                        boolean match = false;
-                        byte qos = 0;
-
-                        for (MqttSubscription subscription : myMqttServerProtocol.state.subscriptions)
-                        {
+                        myMqttServerProtocol.state.subscriptions.parallelStream().mapToLong(subscription -> {
                             if (subscription.matches(publishMessage.getTopic())) {
-                                match = true;
-                                qos = qos > subscription.qos ? qos : subscription.qos;
-                                if (qos == 2) break;
+                                qh.qos(subscription.qos);
+                                return 1l;
                             }
-                        }
+                            return 0l;
+                        }).anyMatch(l -> qh.terminated());
 
-                        if (match) {
-                            ByteBuffer payloadBuffer = publishMessage.getPayload();
-                            payload = payloadBuffer == null ? null : payloadBuffer.array();
-                            myMqttServerProtocol.publish(publishMessage.getTopicName(), payload, qos, publishMessage.isRetainFlag());
+                        if (qh.isMatch()) {
+                            myMqttServerProtocol.publish(publishMessage.getTopicName(), ch.payload(), qh.getQos(), publishMessage.isRetainFlag());
                         }
 
                         return 1l;
@@ -345,10 +349,9 @@ public class MqttBroker implements IMqttServerCallback, IMqttBroker {
             logger.debug("(API) subscribe " + topic + " --> " + endPoint);
         }
 
-        for (InternalConnection i : internal) {
-            if (i.subscription.topic.equals(topic) && i.endPoint != null && i.endPoint.equals(endPoint))
-                return;
-        }
+        if (internal.parallelStream().mapToLong(i -> {
+            return (i.subscription.topic.equals(topic) && i.endPoint != null && i.endPoint.equals(endPoint)) ? 1l : 0l;
+        }).sum() > 0) return;
         internal.add(new InternalConnection(topic, endPoint));
     }
 
@@ -358,11 +361,9 @@ public class MqttBroker implements IMqttServerCallback, IMqttBroker {
         if (DEBUG) {
             logger.debug("(API) subscribe " + topic + " --> callback");
         }
-
-        for (InternalConnection i : internal) {
-            if (i.subscription.topic.equals(topic) && i.onMessage != null && i.onMessage == onMessage)
-                return;
-        }
+        if (internal.parallelStream().mapToLong(i -> {
+            return (i.subscription.topic.equals(topic) && i.endPoint != null && i.onMessage == onMessage) ? 1l : 0l;
+        }).sum() > 0) return;
         internal.add(new InternalConnection(topic, onMessage));
     }
 
@@ -455,7 +456,19 @@ public class MqttBroker implements IMqttServerCallback, IMqttBroker {
     private final Thread _retainedClusterThread = new Thread(() -> {
         while (!CoreFabric.exit) {
             final long now = new java.util.Date().getTime();
-            retainedCluster.values().removeIf(publishMessage -> publishMessage.expires != 0l && publishMessage.expires < now);
+            ConcurrentLinkedQueue<String> toRemove = new ConcurrentLinkedQueue<>();
+            retainedCluster.entrySet().parallelStream().mapToLong(entry -> {
+                final PublishMessage publishMessage = entry.getValue();
+                if (publishMessage.expires != 0l && publishMessage.expires < now) {
+                    toRemove.add(entry.getKey());
+                    return 1l;
+                }
+                return 0l;
+            }).sum();
+            toRemove.parallelStream().mapToLong(k -> {
+                retainedCluster.remove(k);
+                return 1l;
+            }).sum();
             try { Thread.sleep(9997l); } catch (InterruptedException ie) { }
         }
     });
@@ -531,10 +544,20 @@ public class MqttBroker implements IMqttServerCallback, IMqttBroker {
         // note cannot retain broadcast messages
     }
 
-    public class PublishHelper
+    public class QosHelper
     {
-        public boolean match = false;
-        public byte qos = 0;
+        private AtomicBoolean match = new AtomicBoolean(false);
+        private AtomicInteger qos = new AtomicInteger(0);
+        public void qos(int qos) {
+            this.qos.updateAndGet(q -> {
+                q = qos > q ? qos : q;
+                this.match.compareAndSet(false, true);
+                return q;
+            });
+        }
+        public boolean terminated() { return match.get() && qos.get() >= 2; }
+        public boolean isMatch() { return match.get(); }
+        public byte getQos() { return (byte) qos.get(); }
     }
 
     public static boolean clusterWide(MqttTopic topic) {
@@ -566,19 +589,18 @@ public class MqttBroker implements IMqttServerCallback, IMqttBroker {
         retainedLocal.values().parallelStream().mapToLong(publishMessage -> {
 
             final ContentHelper ch = new ContentHelper(v -> publishMessage.getPayload(), v -> publishMessage.isRetainFlag(), v -> publishMessage.getTopicName());
-            final PublishHelper prh = new PublishHelper();
+            final QosHelper qh = new QosHelper();
 
             newSubscriptions.parallelStream().mapToLong(subscription -> {
                 if (subscription.matches(publishMessage.getTopic())) {
-                    prh.match = true;
-                    prh.qos = prh.qos > subscription.qos ? prh.qos : subscription.qos;
+                    qh.qos(subscription.qos);
                     return 1l;
                 }
                 return 0l;
-            }).sum();
+            }).anyMatch(l -> qh.terminated());
 
-            if (prh.match) {
-                myMqttServerProtocol.publish(publishMessage.getTopicName(), ch.payload(), prh.qos, publishMessage.isRetainFlag());
+            if (qh.isMatch()) {
+                myMqttServerProtocol.publish(publishMessage.getTopicName(), ch.payload(), qh.getQos(), publishMessage.isRetainFlag());
                 return 1l;
             }
             return 0l;
@@ -586,19 +608,18 @@ public class MqttBroker implements IMqttServerCallback, IMqttBroker {
         retainedCluster.values().parallelStream().mapToLong(publishMessage -> {
 
             final ContentHelper ch = new ContentHelper(v -> publishMessage.getPayload(), v -> publishMessage.isRetainFlag(), v -> publishMessage.getTopicName());
-            final PublishHelper prh = new PublishHelper();
+            final QosHelper qh = new QosHelper();
 
             newSubscriptions.parallelStream().mapToLong(subscription -> {
                 if (subscription.matches(publishMessage.getTopic())) {
-                    prh.match = true;
-                    prh.qos = prh.qos > subscription.qos ? prh.qos : subscription.qos;
+                    qh.qos(subscription.qos);
                     return 1l;
                 }
                 return 0l;
-            }).sum();
+            }).anyMatch(l -> qh.terminated());
 
-            if (prh.match) {
-                myMqttServerProtocol.publish(publishMessage.getTopicName(), ch.payload(), prh.qos, publishMessage.isRetainFlag());
+            if (qh.isMatch()) {
+                myMqttServerProtocol.publish(publishMessage.getTopicName(), ch.payload(), qh.getQos(), publishMessage.isRetainFlag());
                 return 1l;
             }
             return 0l;
@@ -610,8 +631,8 @@ public class MqttBroker implements IMqttServerCallback, IMqttBroker {
             this.p = p;
             this.m = m;
         }
-        public MqttServerProtocol p;
-        public PublishMessage m;
+        public final MqttServerProtocol p;
+        public final PublishMessage m;
     }
     private final LinkedTransferQueue<PM> _messageArrivedQ = new LinkedTransferQueue<>();
     private final Thread _messageArrivedThread = new Thread(() -> {
@@ -705,19 +726,18 @@ public class MqttBroker implements IMqttServerCallback, IMqttBroker {
             if (myMqttServerProtocol.state == null) return 0l;
             if (myMqttServerProtocol.state.subscriptions == null) return 0l;
 
-            final PublishHelper ph = new PublishHelper();
+            final QosHelper qh = new QosHelper();
 
             myMqttServerProtocol.state.subscriptions.parallelStream().mapToLong(subscription -> {
                 if (subscription.matches(publishMessage.getTopic())) {
-                    ph.match = true;
-                    ph.qos = ph.qos > subscription.qos ? ph.qos : subscription.qos;
+                    qh.qos(subscription.qos);
                     return 1l;
                 }
                 return 0l;
-            }).sum();
+            }).anyMatch(l -> qh.terminated());
 
-            if (ph.match) {
-                myMqttServerProtocol.publish(publishMessage.getTopicName(), contentHelper.payload(), ph.qos, publishMessage.isRetainFlag());
+            if (qh.isMatch()) {
+                myMqttServerProtocol.publish(publishMessage.getTopicName(), contentHelper.payload(), qh.getQos(), publishMessage.isRetainFlag());
                 return 1l;
             }
             return 0l;
@@ -726,16 +746,15 @@ public class MqttBroker implements IMqttServerCallback, IMqttBroker {
         // queue non-retained messages qos 1 or 2 only?
         if (!publishMessage.isRetainFlag() /* && publishMessage.getQos().ordinal() > 0 */) {
             disconnected.values().parallelStream().mapToLong(state -> {
-                final PublishHelper ph = new PublishHelper();
+                final QosHelper qh = new QosHelper();
                 state.subscriptions.parallelStream().mapToLong(subscription -> {
                     if (subscription.matches(publishMessage.getTopic())) {
-                        ph.match = true;
-                        ph.qos = ph.qos > subscription.qos ? ph.qos : subscription.qos;
+                        qh.qos(subscription.qos);
                         return 1l;
                     }
                     return 0l;
-                }).sum();
-                if (ph.match) {
+                }).anyMatch(l -> qh.terminated());
+                if (qh.isMatch()) {
                     state.enqueue(publishMessage);
                     return 1l;
                 }
