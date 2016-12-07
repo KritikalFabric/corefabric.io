@@ -15,21 +15,7 @@
 
   },
   "cluster": {
-    "tcpip": true,
-    "peers":[
-      {
-        "host":"router-amb1ent-pi.test.wanfabric.io",
-        "port":5701
-      },
-      {
-        "host":"node-amb1ent-pi-0002.test.clusterfabric.io",
-        "port":5701
-      },
-      {
-        "host":"node-amb1ent-pi-0003.test.clusterfabric.io",
-        "port":5701
-      }
-    ]
+    "tcpip": false
   },
   "dtn": {
     "isRouter": false,

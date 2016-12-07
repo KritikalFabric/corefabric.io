@@ -12,6 +12,9 @@
     "routerHostname": "router-amb1ent-pi.test.wanfabric.io",
     "routerIp4": "172.16.237.128"
   },
+  "cluster": {
+    "tcpip": true
+  },
   "roles": {
     "dtn-node": [],
     "mqtt-broker":[],
