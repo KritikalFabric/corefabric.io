@@ -7,6 +7,6 @@
 [submodule "tools/dependencies/jep"]
 	path = tools/dependencies/jep
 	url = https://github.com/mrj0/jep.git
-[submodule "tools/dependencies/libtool"]
+[submodule "sv"]
 	path = tools/dependencies/libtool
-	url = http://git.savannah.gnu.org/libtool.git
+	url = http://git.savannah.gnu.org/r/libtool.git
