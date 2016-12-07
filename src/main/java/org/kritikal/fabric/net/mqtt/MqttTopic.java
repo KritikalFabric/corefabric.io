@@ -8,7 +8,6 @@ import java.util.ArrayList;
 public class MqttTopic {
     public MqttTopic(final String topic)
     {
-        this.topic = topic;
         String[] parts = topic.split("/");
         ArrayList<String> p = new ArrayList<>();
         for (String part : parts)
@@ -18,6 +17,7 @@ public class MqttTopic {
             p.add(part);
         }
         this.parts = new String[p.size()];
+        this.topic = String.join("/", this.parts);
         p.toArray(this.parts);
     }
     public final String topic;

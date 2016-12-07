@@ -8,6 +8,8 @@ import { Scheduler } from 'rxjs/Rx';
 
 import { FabricHelpers } from './fabric.helpers.service';
 
+import { UUID } from '../entities/uuid';
+
 declare var Paho; // vendor/eclipse-paho
 
 export interface FabricCommsOnMessageCallback {
@@ -57,11 +59,10 @@ export class FabricComms {
             console.log('cookie missing!');
             cookie = fabricHelpers.generateRandomUUID();
         }
-        this.clientID = 'corefabric--' + fabricHelpers.getCookie('corefabric') + '--' + new Date().getTime();
+        this.clientID = 'corefabric--' + fabricHelpers.getCookie('corefabric') + '--' + this.uuid.getValue();
         this.mqttClient = new Paho.MQTT.Client(fabricHelpers.getHost(), Number(1080), this.clientID);
         this.connected = false;
         this.activeSubscriptions = [];
-        this.firstConnect = true;
         this.reconnectSubscriptions = [];
         this.reconnectUnsubscriptions = [];
         this.onConnect = [];
@@ -77,6 +78,7 @@ export class FabricComms {
                     }
                     catch (err) { }
                 }
+                comms.connect();
             });
         };
         this.mqttClient.onMessageArrived = function(message) {
@@ -141,11 +143,11 @@ export class FabricComms {
         Scheduler.async.schedule(work, 15000, null);
     }
 
+    private uuid:UUID = new UUID(null);
     private clientID:string;
     private mqttClient:any;
     private connected:boolean;
     private activeSubscriptions:any[];
-    private firstConnect:boolean;
     private reconnectSubscriptions:any[];
     private reconnectUnsubscriptions:any[];
 
@@ -226,13 +228,12 @@ export class FabricComms {
             this.zone.runOutsideAngular(function(){
                 mqttClient.connect({
                     keepAliveInterval: 15,
-                    cleanSession: that.firstConnect,
+                    cleanSession: true,
                     onSuccess: function() {
                         that.zone.run(function(){
                             console.log('MQTT connected');
                             that.connected = true;
-                            if (that.firstConnect) {
-                                that.firstConnect = false;
+                            {
                                 for (var i = 0; i < that.activeSubscriptions.length; ++i) {
                                     var topicPattern = that.activeSubscriptions[i][0];
                                     that.zone.runOutsideAngular(function(){

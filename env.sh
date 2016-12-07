@@ -1,4 +1,5 @@
 #!/bin/sh
+MAKE=make; export MAKE
 COREFABRIC=`pwd`; export COREFABRIC
 COREFABRIC_DEST=`pwd`/.local; export COREFABRIC_DEST
 
@@ -27,7 +28,7 @@ fi
 #
 ###############################################################################
 
-CPPFLAGS="-DCOREFABRIC_ENV__$COREFABRIC_ENV"; export CPPFLAGS
+CPPFLAGS="-DCOREFABRIC_ENV__$COREFABRIC_ENV=1"; export CPPFLAGS
 
 case "X$COREFABRIC_ENV" in
     Xtest)
@@ -67,7 +68,7 @@ MAKE=make; export MAKE
 ###############################################################################
 # macOS sierra                                                                #
 ###############################################################################
-COREFABRIC_SPEED=' -j 4 '
+COREFABRIC_SPEED=''
 COREFABRIC_BUILD='x86_64-apple-darwin`uname -r`'; export COREFABRIC_BUILD
 COREFABRIC_HOST='x86_64-apple-darwin`uname -r`'; export COREFABRIC_HOST
 COREFABRIC_TARGET='x86_64-apple-darwin`uname -r`'; export COREFABRIC_TARGET
@@ -79,10 +80,6 @@ LIBTOOLIZE="glibtoolize"; export LIBTOOLIZE
 BUILDPYTHON="/usr/bin/python2.7"; export BUILDPYTHON
 PYTHON_FOR_BUILD="/usr/bin/python2.7 -E"; export PYTHON_FOR_BUILD
 CONFIG_SITE="$COREFABRIC_DEST/share/config.site"; export CONFIG_SITE
-
-CPPFLAGS="$CPPFLAGS -$CPPFLAGS L$COREFABRIC/lib -Xlinker -rpath=$COREFABRIC_DEST/lib -Xlinker -rpath=$JAVA_HOME/lib"; export CPPFLAGS
-CFLAGS="-std=c1x $CPPFLAGS"; export CFLAGS
-MAKE=gmake; export MAKE
 ###############################################################################
 # macOS sierra                                                                #
 ###############################################################################
@@ -151,11 +148,11 @@ esac
 echo '###############################################################################'
 echo '# environment                                                                 #'
 echo '###############################################################################'
-set | grep '^COREFABRIC'
+set | grep '^COREFABRIC' | grep -v AUTH
 set | grep '^[A-Z_]*FLAGS'
 set | grep '^[A-Z_]*PATH'
 echo '###############################################################################'
-echo "# corefabric.io toolchain build           `date -u -Ins` #"
+echo "# corefabric.io toolchain build                  `date` #"
 echo '###############################################################################'
 echo ''
 

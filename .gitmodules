@@ -9,4 +9,4 @@
 	url = https://github.com/mrj0/jep.git
 [submodule "tools/dependencies/libtool"]
 	path = tools/dependencies/libtool
-	url = git://git.savannah.gnu.org/libtool.git
+	url = http://git.savannah.gnu.org/libtool.git
