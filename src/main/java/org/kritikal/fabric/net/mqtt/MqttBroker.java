@@ -2,15 +2,10 @@ package org.kritikal.fabric.net.mqtt;
 
 import com.hazelcast.core.IMap;
 import com.hazelcast.core.ITopic;
-import com.hazelcast.core.MapStoreFactory;
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
-import io.vertx.core.buffer.Buffer;
 import io.vertx.core.logging.LoggerFactory;
 import org.kritikal.fabric.CoreFabric;
 import org.kritikal.fabric.core.exceptions.FabricError;
 import org.kritikal.fabric.daemon.MqttBrokerVerticle;
-import org.kritikal.fabric.net.mqtt.codec.EncodePublish;
 import org.kritikal.fabric.net.mqtt.entities.AbstractMessage;
 import org.kritikal.fabric.net.mqtt.entities.ConnectMessage;
 import org.kritikal.fabric.net.mqtt.entities.PublishMessage;
@@ -29,11 +24,13 @@ import io.vertx.core.net.NetSocket;
 import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 /**
  * Created by ben on 8/26/14.
@@ -71,10 +68,45 @@ public class MqttBroker implements IMqttServerCallback, IMqttBroker {
     }
 
     final public static class ContentHelper {
-        JsonObject jsonified = null;
-        boolean extracted = false;
-        byte[] payload = null;
-        MessageEncapsulation encapulated = null;
+        private final Function<Void, ByteBuffer> provideBuffer;
+        private final Function<Void, Boolean> provideRetain;
+        private final Function<Void, String> provideTopicName;
+
+        public ContentHelper(Function<Void, ByteBuffer> provideBuffer, Function<Void, Boolean> provideRetain, Function<Void, String> provideTopicName) {
+            this.provideBuffer = provideBuffer;
+            this.provideRetain = provideRetain;
+            this.provideTopicName = provideTopicName;
+        }
+
+        private AtomicReference<byte[]> payload = new AtomicReference<>(null);
+        private AtomicReference<JsonObject> jsonified = new AtomicReference<>(null);
+        private AtomicReference<MessageEncapsulation> msg = new AtomicReference<>(null);
+
+        public byte[] payload() {
+            return this.payload.updateAndGet(ary -> ary == null ? this.provideBuffer.apply(null).array() : ary);
+        }
+
+        public JsonObject json() {
+            return this.jsonified.updateAndGet(j -> {
+                if (j == null) {
+                    j = new JsonObject();
+                    j.put("body", payload());
+                    j.put("qos", 2);
+                    j.put("retain", provideRetain.apply(null));
+                    j.put("topic", provideTopicName.apply(null));
+                }
+                return j;
+            });
+        }
+
+        public MessageEncapsulation encapsulated() {
+            return this.msg.updateAndGet(me -> {
+                if (me == null) {
+                    me = new MessageEncapsulation(provideTopicName.apply(null), payload());
+                }
+                return me;
+            });
+        }
     }
 
     final public static class MyMqttServerProtocol extends MqttServerProtocol
@@ -111,7 +143,22 @@ public class MqttBroker implements IMqttServerCallback, IMqttBroker {
         public MyMqttState(final String clientID) { this.clientID = clientID; }
         public final String clientID;
         public ConcurrentLinkedQueue<MqttSubscription> subscriptions = new ConcurrentLinkedQueue<>();
-        public ConcurrentLinkedQueue<PublishMessage> queued = null;
+        private AtomicReference<ConcurrentLinkedQueue<PublishMessage>> queued = new AtomicReference<>(null);
+        public ConcurrentLinkedQueue<PublishMessage> queue() {
+            return queued.updateAndGet(q -> {
+                ConcurrentLinkedQueue<PublishMessage> r = q;
+                if (q != null) {
+                    q = null;
+                }
+                return r;
+            });
+        }
+        public void enqueue(PublishMessage publishMessage) {
+            queued.updateAndGet(q -> {
+                if (q == null) q = new ConcurrentLinkedQueue<PublishMessage>();
+                return q;
+            }).add(publishMessage);
+        }
         public boolean willRetain = false;
         public String willTopic = null;
         public String willMessage = null;
@@ -202,9 +249,10 @@ public class MqttBroker implements IMqttServerCallback, IMqttBroker {
         if (publishQueuedAndRetained) {
             // publish queued
             {
-                if (myMqttServerProtocol.state.queued != null)
+                ConcurrentLinkedQueue<PublishMessage> queued = myMqttServerProtocol.state.queue();
+                if (queued != null)
                 {
-                    myMqttServerProtocol.state.queued.forEach(publishMessage -> {
+                    queued.parallelStream().mapToLong(publishMessage -> {
                         byte[] payload = null;
 
                         boolean match = false;
@@ -224,8 +272,9 @@ public class MqttBroker implements IMqttServerCallback, IMqttBroker {
                             payload = payloadBuffer == null ? null : payloadBuffer.array();
                             myMqttServerProtocol.publish(publishMessage.getTopicName(), payload, qos, publishMessage.isRetainFlag());
                         }
-                    });
-                    myMqttServerProtocol.state.queued = null;
+
+                        return 1l;
+                    }).sum();
                 }
             }
 
@@ -444,8 +493,8 @@ public class MqttBroker implements IMqttServerCallback, IMqttBroker {
     });
 
     public final void _messageForBroadcast(PublishMessage publishMessage) {
-        final ContentHelper contentHelper = new ContentHelper();
-        MqttSubscription topicMatcher = new MqttSubscription(publishMessage.getTopicName(), (byte)0);
+        final ContentHelper contentHelper = new ContentHelper(v -> publishMessage.getPayload(), v -> publishMessage.isRetainFlag(), v -> publishMessage.getTopicName());
+        final MqttSubscription topicMatcher = new MqttSubscription(publishMessage.getTopicName(), (byte)0);
 
         /* cannot retain broadcast messages
         if (publishMessage.isRetainFlag())
@@ -461,35 +510,14 @@ public class MqttBroker implements IMqttServerCallback, IMqttBroker {
         */
 
         // message arrived, send out to (all) subscribers
-        internal.forEach(i -> {
-            if (i.subscription.isWildcard()) return;
+        internal.parallelStream().mapToLong(i -> {
+            if (i.subscription.isWildcard()) return 0l;
             if (topicMatcher.matches(i.subscription)) {
                 if (i.endPoint != null) {
-                    if (contentHelper.jsonified == null) {
-                        if (!contentHelper.extracted) {
-                            ByteBuffer payloadBuffer = publishMessage.getPayload();
-                            contentHelper.payload = payloadBuffer == null ? null : payloadBuffer.array();
-                            contentHelper.extracted = true;
-                        }
-                        contentHelper.jsonified = new JsonObject();
-                        if (contentHelper.payload != null)
-                            contentHelper.jsonified.put("body", contentHelper.payload);
-                        contentHelper.jsonified.put("qos", 2);
-                        contentHelper.jsonified.put("retain", publishMessage.isRetainFlag());
-                    }
-                    contentHelper.jsonified.put("topic", publishMessage.getTopicName());
-                    vertx.eventBus().send(i.endPoint, contentHelper.jsonified, VERTXDEFINES.DELIVERY_OPTIONS);
+                    vertx.eventBus().send(i.endPoint, contentHelper.json(), VERTXDEFINES.DELIVERY_OPTIONS);
                 } else if (i.onMessage != null) {
-                    if (contentHelper.encapulated == null) {
-                        if (!contentHelper.extracted) {
-                            ByteBuffer payloadBuffer = publishMessage.getPayload();
-                            contentHelper.payload = payloadBuffer == null ? null : payloadBuffer.array();
-                            contentHelper.extracted = true;
-                        }
-                        contentHelper.encapulated = new MessageEncapsulation(publishMessage.getTopicName(), contentHelper.payload);
-                    }
                     try {
-                        i.onMessage.accept(contentHelper.encapulated);
+                        i.onMessage.accept(contentHelper.encapsulated());
                     }
                     catch (Throwable t) {
                         logger.error(i.subscription.toString(), t);
@@ -497,23 +525,22 @@ public class MqttBroker implements IMqttServerCallback, IMqttBroker {
                 } else {
                     throw new FabricError();
                 }
+                return 1l;
             }
-        });
+            return 0l;
+        }).sum();
 
-        connected.forEach(myMqttServerProtocol -> {
-            myMqttServerProtocol.state.subscriptions.forEach(subscription -> {
-                if (subscription == null) return;
-                if (subscription.isWildcard()) return;
+        connected.parallelStream().mapToLong(myMqttServerProtocol -> {
+            return myMqttServerProtocol.state.subscriptions.parallelStream().mapToLong(subscription -> {
+                if (subscription == null) return 0l;
+                if (subscription.isWildcard()) return 0l;
                 if (topicMatcher.matches(subscription)) {
-                    if (!contentHelper.extracted) {
-                        ByteBuffer payloadBuffer = publishMessage.getPayload();
-                        contentHelper.payload = payloadBuffer == null ? null : payloadBuffer.array();
-                        contentHelper.extracted = true;
-                    }
-                    myMqttServerProtocol.publish(subscription.topic, contentHelper.payload, (byte)0, publishMessage.isRetainFlag());
+                    myMqttServerProtocol.publish(subscription.topic, contentHelper.payload(), (byte)0, publishMessage.isRetainFlag());
+                    return 1l;
                 }
-            });
-        });
+                return 0l;
+            }).sum();
+        }).sum();
 
         // note cannot retain broadcast messages
     }
@@ -555,12 +582,14 @@ public class MqttBroker implements IMqttServerCallback, IMqttBroker {
 
             final PublishHelper prh = new PublishHelper();
 
-            newSubscriptions.forEach(subscription -> {
+            newSubscriptions.parallelStream().mapToLong(subscription -> {
                 if (subscription.matches(publishMessage.getTopic())) {
                     prh.match = true;
                     prh.qos = prh.qos > subscription.qos ? prh.qos : subscription.qos;
+                    return 1l;
                 }
-            });
+                return 0l;
+            }).sum();
 
             if (prh.match) {
                 ByteBuffer payloadBuffer = publishMessage.getPayload();
@@ -568,24 +597,28 @@ public class MqttBroker implements IMqttServerCallback, IMqttBroker {
                 myMqttServerProtocol.publish(publishMessage.getTopicName(), payload, prh.qos, publishMessage.isRetainFlag());
             }
         });
-        retainedCluster.forEach((k, publishMessage) -> {
+        retainedCluster.values().parallelStream().mapToLong(publishMessage -> {
             byte[] payload = null;
 
             final PublishHelper prh = new PublishHelper();
 
-            newSubscriptions.forEach(subscription -> {
+            newSubscriptions.parallelStream().mapToLong(subscription -> {
                 if (subscription.matches(publishMessage.getTopic())) {
                     prh.match = true;
                     prh.qos = prh.qos > subscription.qos ? prh.qos : subscription.qos;
+                    return 1l;
                 }
-            });
+                return 0l;
+            }).sum();
 
             if (prh.match) {
                 ByteBuffer payloadBuffer = publishMessage.getPayload();
                 payload = payloadBuffer == null ? null : payloadBuffer.array();
                 myMqttServerProtocol.publish(publishMessage.getTopicName(), payload, prh.qos, publishMessage.isRetainFlag());
+                return 1l;
             }
-        });
+            return 0l;
+        }).sum();
     }
 
     public final static class PM {
@@ -649,37 +682,16 @@ public class MqttBroker implements IMqttServerCallback, IMqttBroker {
             }
         }
 
-        final ContentHelper contentHelper = new ContentHelper();
+        final ContentHelper contentHelper = new ContentHelper(v-> publishMessage.getPayload(), v -> publishMessage.isRetainFlag(), v -> publishMessage.getTopicName());
 
         // message arrived, send out to (all) subscribers
-        internal.forEach(i -> {
+        internal.parallelStream().mapToLong(i -> {
             if (i.subscription.matches(publishMessage.getTopic())) {
                 if (i.endPoint != null) {
-                    if (contentHelper.jsonified == null) {
-                        if (!contentHelper.extracted) {
-                            ByteBuffer payloadBuffer = publishMessage.getPayload();
-                            contentHelper.payload = payloadBuffer == null ? null : payloadBuffer.array();
-                            contentHelper.extracted = true;
-                        }
-                        contentHelper.jsonified = new JsonObject();
-                        if (contentHelper.payload != null)
-                            contentHelper.jsonified.put("body", contentHelper.payload);
-                        contentHelper.jsonified.put("qos", 2);
-                        contentHelper.jsonified.put("retain", publishMessage.isRetainFlag());
-                    }
-                    contentHelper.jsonified.put("topic", publishMessage.getTopicName());
-                    vertx.eventBus().send(i.endPoint, contentHelper.jsonified, VERTXDEFINES.DELIVERY_OPTIONS);
+                    vertx.eventBus().send(i.endPoint, contentHelper.json(), VERTXDEFINES.DELIVERY_OPTIONS);
                 } else if (i.onMessage != null) {
-                    if (contentHelper.encapulated == null) {
-                        if (!contentHelper.extracted) {
-                            ByteBuffer payloadBuffer = publishMessage.getPayload();
-                            contentHelper.payload = payloadBuffer == null ? null : payloadBuffer.array();
-                            contentHelper.extracted = true;
-                        }
-                        contentHelper.encapulated = new MessageEncapsulation(publishMessage.getTopicName(), contentHelper.payload);
-                    }
                     try {
-                        i.onMessage.accept(contentHelper.encapulated);
+                        i.onMessage.accept(contentHelper.encapsulated());
                     }
                     catch (Throwable t) {
                         logger.error(i.subscription.toString(), t);
@@ -687,40 +699,41 @@ public class MqttBroker implements IMqttServerCallback, IMqttBroker {
                 } else {
                     throw new FabricError();
                 }
+                return 1l;
             }
-        });
+            return 0l;
+        }).sum();
 
-        connected.forEach(myMqttServerProtocol -> {
+        connected.parallelStream().mapToLong(myMqttServerProtocol -> {
             if (protocol != null) {
-                if (protocol.noEcho && myMqttServerProtocol == protocol) return; // used for bridges
+                if (protocol.noEcho && myMqttServerProtocol == protocol) return 0l; // used for bridges
             }
 
-            if (myMqttServerProtocol == null) return; // can't help you
-            if (myMqttServerProtocol.state == null) return;
-            if (myMqttServerProtocol.state.subscriptions == null) return;
+            if (myMqttServerProtocol == null) return 0l; // can't help you
+            if (myMqttServerProtocol.state == null) return 0l;
+            if (myMqttServerProtocol.state.subscriptions == null) return 0l;
 
             final PublishHelper ph = new PublishHelper();
 
-            myMqttServerProtocol.state.subscriptions.forEach(subscription -> {
+            myMqttServerProtocol.state.subscriptions.parallelStream().mapToLong(subscription -> {
                 if (subscription.matches(publishMessage.getTopic())) {
                     ph.match = true;
                     ph.qos = ph.qos > subscription.qos ? ph.qos : subscription.qos;
+                    return 1l;
                 }
-            });
+                return 0l;
+            }).sum();
 
             if (ph.match) {
-                if (!contentHelper.extracted) {
-                    ByteBuffer payloadBuffer = publishMessage.getPayload();
-                    contentHelper.payload = payloadBuffer == null ? null : payloadBuffer.array();
-                    contentHelper.extracted = true;
-                }
-                myMqttServerProtocol.publish(publishMessage.getTopicName(), contentHelper.payload, ph.qos, publishMessage.isRetainFlag());
+                myMqttServerProtocol.publish(publishMessage.getTopicName(), contentHelper.payload(), ph.qos, publishMessage.isRetainFlag());
+                return 1l;
             }
-        });
+            return 0l;
+        }).sum();
 
         // queue non-retained messages qos 1 or 2 only?
         if (!publishMessage.isRetainFlag() /* && publishMessage.getQos().ordinal() > 0 */) {
-            disconnected.forEach((k, state) -> {
+            disconnected.values().parallelStream().mapToLong(state -> {
                 final PublishHelper ph = new PublishHelper();
                 state.subscriptions.forEach(subscription -> {
                     if (subscription.matches(publishMessage.getTopic())) {
@@ -729,10 +742,11 @@ public class MqttBroker implements IMqttServerCallback, IMqttBroker {
                     }
                 });
                 if (ph.match) {
-                    if (state.queued == null) state.queued = new ConcurrentLinkedQueue<>();
-                    state.queued.add(publishMessage);
+                    state.enqueue(publishMessage);
+                    return 1l;
                 }
-            });
+                return 0l;
+            }).sum();
         }
     }
     public boolean authorize(String username, byte[] password)
