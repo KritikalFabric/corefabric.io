@@ -509,7 +509,7 @@ public class MqttBroker implements IMqttServerCallback, IMqttBroker {
         */
 
         // message arrived, send out to (all) subscribers
-        internal.stream().mapToLong(i -> {
+        internal.parallelStream().mapToLong(i -> {
             if (i.subscription.isWildcard()) return 0l;
             if (topicMatcher.matches(i.subscription)) {
                 if (i.endPoint != null) {
@@ -529,7 +529,7 @@ public class MqttBroker implements IMqttServerCallback, IMqttBroker {
             return 0l;
         }).sum();
 
-        connected.stream().mapToLong(myMqttServerProtocol -> {
+        connected.parallelStream().mapToLong(myMqttServerProtocol -> {
             return myMqttServerProtocol.state.subscriptions.stream().mapToLong(subscription -> {
                 if (subscription == null) return 0l;
                 if (subscription.isWildcard()) return 0l;
@@ -698,7 +698,7 @@ public class MqttBroker implements IMqttServerCallback, IMqttBroker {
         final ContentHelper contentHelper = new ContentHelper(v-> publishMessage.getPayload(), v -> publishMessage.isRetainFlag(), v -> publishMessage.getTopicName());
 
         // message arrived, send out to (all) subscribers
-        internal.stream().mapToLong(i -> {
+        internal.parallelStream().mapToLong(i -> {
             if (i.subscription.matches(publishMessage.getTopic())) {
                 if (i.endPoint != null) {
                     vertx.eventBus().send(i.endPoint, contentHelper.json(), VERTXDEFINES.DELIVERY_OPTIONS);
@@ -717,7 +717,7 @@ public class MqttBroker implements IMqttServerCallback, IMqttBroker {
             return 0l;
         }).sum();
 
-        connected.stream().mapToLong(myMqttServerProtocol -> {
+        connected.parallelStream().mapToLong(myMqttServerProtocol -> {
             if (protocol != null) {
                 if (protocol.noEcho && myMqttServerProtocol == protocol) return 0l; // used for bridges
             }
@@ -745,7 +745,7 @@ public class MqttBroker implements IMqttServerCallback, IMqttBroker {
 
         // queue non-retained messages qos 1 or 2 only?
         if (!publishMessage.isRetainFlag() /* && publishMessage.getQos().ordinal() > 0 */) {
-            disconnected.values().stream().mapToLong(state -> {
+            disconnected.values().parallelStream().mapToLong(state -> {
                 final QosHelper qh = new QosHelper();
                 state.subscriptions.stream().mapToLong(subscription -> {
                     if (subscription.matches(publishMessage.getTopic())) {
