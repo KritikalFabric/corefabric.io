@@ -112,7 +112,7 @@ public class CoreFabric {
             }
         }
     }
-    private static Vertx gVertx = null;
+    private static volatile Vertx gVertx = null;
     private static HazelcastClusterManager hazelcastClusterManager = null;
     public static HazelcastInstance getHazelcastInstance() {
         if (hazelcastClusterManager != null) return hazelcastClusterManager.getHazelcastInstance();
@@ -195,5 +195,31 @@ public class CoreFabric {
         }
 
         Runtime.getRuntime().exit(-1);
+    }
+    public static Vertx start() {
+        if (gVertx == null) {
+            synchronized (CoreFabric.class) {
+                if (gVertx == null) {
+                    Future<Vertx> ourFutureVertx = clusterVertxInTheFuture();
+                    ourFutureVertx.setHandler(ar -> {
+                        if (ar.failed()) { exit = true; return; }
+                        final Vertx vertx = ar.result();
+                        vertx.deployVerticle("io.corefabric.pi.MainVerticle", f -> {
+                            if (f.failed()) { exit = false; return; }
+                            logger.info("ONLINE, press ^C to exit.");
+                        });
+                    });
+                    while (gVertx == null && !ourFutureVertx.isComplete()) {
+                        try {
+                            Thread.sleep(97);
+                        }
+                        catch (InterruptedException ex) {
+                            // ignore
+                        }
+                    }
+                }
+            }
+        }
+        return gVertx;
     }
 }

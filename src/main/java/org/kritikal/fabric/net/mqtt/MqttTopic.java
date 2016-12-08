@@ -17,8 +17,8 @@ public class MqttTopic {
             p.add(part);
         }
         this.parts = new String[p.size()];
-        this.topic = String.join("/", this.parts);
         p.toArray(this.parts);
+        this.topic = String.join("/", this.parts);
     }
     public final String topic;
     protected final String[] parts;
