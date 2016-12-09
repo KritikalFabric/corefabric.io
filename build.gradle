@@ -128,8 +128,7 @@ test {
 
     jvmArgs = ['-d64','-Xmx512M']
 
-    scanForTestClasses = false;
-	exclude 'org/kritikal/fabric/core/**'
+    scanForTestClasses = true;
 
     // listen to events in the test execution lifecycle
     beforeTest { descriptor ->
