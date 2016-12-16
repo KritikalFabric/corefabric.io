@@ -29,9 +29,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 package com.cisco.qte.jdtn.bp;
 
-import java.io.File;
 import java.util.logging.Logger;
 
+import com.cisco.qte.jdtn.apps.MediaRepository;
 import com.cisco.qte.jdtn.general.DecodeState;
 import com.cisco.qte.jdtn.general.EncodeState;
 import com.cisco.qte.jdtn.general.JDtnException;
@@ -64,7 +64,7 @@ public abstract class Body {
 	protected boolean _bodyDataInFile = false;
 	
 	/** If block body data is in file, this is the file it's in */
-	protected File _bodyDataFile = null;
+	protected MediaRepository.File _bodyDataFile = null;
 	
 	/** If block body data is in file, this is the starting offset w/in File */
 	protected long _bodyDataFileOffset = 0L;
@@ -110,7 +110,7 @@ public abstract class Body {
 	
 	public Body(
 			boolean inFile,
-			File file,
+			MediaRepository.File file,
 			long fileOffset,
 			long fileLength,
 			byte[] memBuffer,
@@ -209,12 +209,12 @@ public abstract class Body {
 	}
 
 	/** If block body data is in file, this is the file it's in */
-	public File getBodyDataFile() {
+	public MediaRepository.File getBodyDataFile() {
 		return _bodyDataFile;
 	}
 
 	/** If block body data is in file, this is the file it's in */
-	public void setBodyDataFile(File bodyDataFile) {
+	public void setBodyDataFile(MediaRepository.File bodyDataFile) {
 		this._bodyDataFile = bodyDataFile;
 	}
 

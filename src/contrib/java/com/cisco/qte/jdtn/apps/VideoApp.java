@@ -89,7 +89,7 @@ public class VideoApp extends AbstractApp {
 	 */
 	public void sendVideo(
 			String toEid, 
-			File filePath, 
+			MediaRepository.File filePath,
 			BundleOptions bundleOptions) 
 	throws InterruptedException, JDtnException {
 		// Determine dest and source Eids
@@ -123,7 +123,7 @@ public class VideoApp extends AbstractApp {
 		Bundle bundle = BpApi.getInstance().receiveBundle(getAppRegistration());
 		Payload payload = bundle.getPayloadBundleBlock().getPayload();
 		
-		File mediaFilename = MediaRepository.getInstance().formMediaFilename(
+		MediaRepository.File mediaFilename = MediaRepository.getInstance().formMediaFilename(
 				APP_NAME, 
 				new Date(), 
 				bundle.getPrimaryBundleBlock().getSourceEndpointId().getHostNodeName(), 

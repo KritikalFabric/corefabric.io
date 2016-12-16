@@ -29,8 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 package com.cisco.qte.jdtn.ltp;
 
-import java.io.File;
-
+import com.cisco.qte.jdtn.apps.MediaRepository;
 import com.cisco.qte.jdtn.general.JDtnException;
 import com.cisco.qte.jdtn.ltp.BlockOptions.CheckpointOption;
 import com.cisco.qte.jdtn.ltp.Segment.SegmentType;
@@ -105,8 +104,8 @@ public class OutboundBlock extends Block {
 	 * @throws JDtnException on immediately detected errors
 	 * @throws InterruptedException 
 	 */
-	public OutboundBlock(LtpNeighbor neighbor, LtpLink link, File file, long length,
-			BlockOptions options) throws JDtnException, InterruptedException {
+	public OutboundBlock(LtpNeighbor neighbor, LtpLink link, MediaRepository.File file, long length,
+						 BlockOptions options) throws JDtnException, InterruptedException {
 		super(neighbor, link, file, length, options);
 		segmentData();
 	}

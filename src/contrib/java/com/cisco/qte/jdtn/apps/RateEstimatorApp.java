@@ -90,7 +90,7 @@ public class RateEstimatorApp extends AbstractApp {
 	 * @param neighbor Given Neighbor
 	 * @param file A File to transfer
 	 */
-	public void estimateRateLimit(LtpNeighbor neighbor, File file)
+	public void estimateRateLimit(LtpNeighbor neighbor, MediaRepository.File file)
 	throws JDtnException {
 		synchronized (_sync) {
 			if (_xmitThread != null) {
@@ -165,7 +165,7 @@ public class RateEstimatorApp extends AbstractApp {
 		public static final long EVENT_WAIT_MSECS = 2 * 60 * 1000L;
 		
 		private final LtpNeighbor _neighbor;
-		private final File _file;
+		private final MediaRepository.File _file;
 		private double _currentRateLimit = INITIAL_RAMP_UP_RATE_LIMIT;
 		private double _initialRateLimit = -1.0d;
 		private double _optimumRateLimit = INITIAL_RAMP_UP_RATE_LIMIT;
@@ -187,7 +187,7 @@ public class RateEstimatorApp extends AbstractApp {
 		 * @param file A File to send in the test Bundles.  This should be a
 		 * large File, such as a 1.3 - 1.6 MB image file.
 		 */
-		public RateEstimatorXmitThread(LtpNeighbor neighbor, File file) {
+		public RateEstimatorXmitThread(LtpNeighbor neighbor, MediaRepository.File file) {
 			_neighbor = neighbor;
 			_file = file;
 			_state = EstimatorState.RAMPING_UP;

@@ -29,18 +29,17 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 package com.cisco.qte.jdtn.general;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.OutputStream;
+import java.io.*;
 import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import com.cisco.qte.jdtn.apps.MediaRepository;
 import com.cisco.qte.jdtn.ltp.LtpException;
 import com.cisco.qte.jdtn.general.XmlRDParser;
 import com.cisco.qte.jdtn.general.XmlRdParserException;
+import org.kritikal.fabric.contrib.jdtn.BlobAndBundleDatabase;
 
 /**
  * Miscellaneous Utilities
@@ -458,7 +457,7 @@ public class Utils {
 	 * End Element, Start Document, or End Document.
 	 * @param parser XML Parser
 	 * @return Next 'significant' event
-	 * @throws XmlPullParserException errors from the parser
+	 * @throws XmlRdParserException errors from the parser
 	 * @throws IOException errors from the parser
 	 */
 	public static XmlRDParser.EventType nextNonTextEvent(XmlRDParser parser)
@@ -918,13 +917,12 @@ public class Utils {
 	/**
 	 * Copy contents of given File to given OutputStream
 	 * @param file Given File
-	 * @param os Given OutputStream
+	 * @param fileOutput Given OutputStream
 	 * @throws IOException on I/O errors
 	 */
-	public static void copyFileToOutputStream(File file, OutputStream os)
+	public static void copyFileToOutputStream(MediaRepository.File file, MediaRepository.File fileOutput)
 	throws IOException {
-		FileInputStream fis = null;
-		fis = new FileInputStream(file);
+		InputStream fis = file.inputStream();
 		byte[] buffer = new byte[BUFFER_LEN];
 		
 		int len = (int)file.length();
@@ -939,7 +937,7 @@ public class Utils {
 					// EOF
 					break;
 				}
-				os.write(buffer, 0, nRead);
+				BlobAndBundleDatabase.getInstance().appendByteArrayToFile(buffer,0,nRead,fileOutput);
 				len -= nRead;
 			}
 		} catch (IOException e) {

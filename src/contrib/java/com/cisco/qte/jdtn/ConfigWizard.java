@@ -195,8 +195,8 @@ public class ConfigWizard {
 		Management.getInstance().stop();
 
 		// Set up bundle store and media store first
-		GeneralManagement.getInstance().setStoragePath(bundleDir.getAbsolutePath());
-		GeneralManagement.getInstance().setMediaRepositoryPath(mediaDir.getAbsolutePath());
+		//GeneralManagement.getInstance().setStoragePath(bundleDir.getAbsolutePath());
+		//GeneralManagement.getInstance().setMediaRepositoryPath(mediaDir.getAbsolutePath());
 		
 		// Thresholds
 		BPManagement.getInstance().setBundleBlockFileThreshold(bundleFileThreshold);

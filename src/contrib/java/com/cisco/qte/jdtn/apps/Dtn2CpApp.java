@@ -94,7 +94,7 @@ public class Dtn2CpApp extends AbstractApp {
 	 * @throws JDtnException On errors
 	 */
 	public void sendFile(
-			File sourceFile, 
+			MediaRepository.File sourceFile,
 			EndPointId destStem, 
 			BundleOptions options) 
 	throws InterruptedException, JDtnException {
@@ -156,7 +156,7 @@ public class Dtn2CpApp extends AbstractApp {
 		
 		// Determine the filename in the media repository
 		Date date = new Date();
-		File mediaFilename = MediaRepository.getInstance().formMediaFilename(
+		MediaRepository.File mediaFilename = MediaRepository.getInstance().formMediaFilename(
 				APP_NAME, 
 				date, 
 				destEid.getHostNodeName(), 

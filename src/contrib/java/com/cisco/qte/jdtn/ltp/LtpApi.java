@@ -29,12 +29,12 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 package com.cisco.qte.jdtn.ltp;
 
-import java.io.File;
 import java.util.HashMap;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import com.cisco.qte.jdtn.apps.MediaRepository;
 import com.cisco.qte.jdtn.component.AbstractStartableComponent;
 import com.cisco.qte.jdtn.general.GeneralManagement;
 import com.cisco.qte.jdtn.general.JDtnException;
@@ -196,7 +196,7 @@ public class LtpApi extends AbstractStartableComponent {
 	 */
 	public Block send(
 			EngineId engineId, 
-			File file, 
+			MediaRepository.File file,
 			long length, 
 			BlockOptions blockOptions)
 	throws InterruptedException, JDtnException {
@@ -219,7 +219,7 @@ public class LtpApi extends AbstractStartableComponent {
 	public Block send(
 			Object userData,
 			EngineId engineId, 
-			File file, 
+			MediaRepository.File file,
 			long length, 
 			BlockOptions blockOptions)
 	throws InterruptedException, JDtnException {

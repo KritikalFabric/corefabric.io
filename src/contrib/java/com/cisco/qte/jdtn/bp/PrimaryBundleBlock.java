@@ -857,7 +857,7 @@ public class PrimaryBundleBlock extends BundleBlock {
 		return _sourceEndpointId;
 	}
 
-	/** The Source EndPointId 
+	/** The Source EndPointId
 	 * @throws BPException if EndPointId invalid */
 	public void setSourceEndpointId(EndPointId sourceEndpointId)
 	throws BPException {

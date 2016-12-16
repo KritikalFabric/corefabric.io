@@ -29,11 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 package com.cisco.qte.jdtn.bp;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -41,10 +37,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
 
+import com.cisco.qte.jdtn.apps.MediaRepository;
 import com.cisco.qte.jdtn.general.GeneralManagement;
 import com.cisco.qte.jdtn.general.JDtnException;
 import com.cisco.qte.jdtn.general.Store;
 import com.cisco.qte.jdtn.general.Utils;
+import org.kritikal.fabric.contrib.jdtn.BlobAndBundleDatabase;
 
 /**
  * Bundle Protocol Fragmentation processor.
@@ -160,13 +158,9 @@ public class BPFragmentation {
 		if (origPayloadLen <= maxPayloadLen) {
 			return null;
 		}
-		FileInputStream fis = null;
+		InputStream fis = null;
 		if (origPayload.isBodyDataInFile()) {
-			try {
-				fis = new FileInputStream(origPayload.getBodyDataFile());
-			} catch (FileNotFoundException e) {
-				throw new BPException("Opening Bundle file", e);
-			}
+			fis = origPayload.getBodyDataFile().inputStream();
 		}
 		for (long offset = 0; offset < origPayloadLen; offset += maxPayloadLen) {
 			int fragPayloadLen = maxPayloadLen;
@@ -442,17 +436,8 @@ public class BPFragmentation {
 		
 		_reassemblyQueue.remove(bundleId);
 
-		File file = Store.getInstance().createBundleFile();
+		MediaRepository.File file = Store.getInstance().createBundleFile();
 		Payload payload = new Payload(file, 0, 0);
-		
-		FileOutputStream fos = null;
-		try {
-			fos = new FileOutputStream(file);
-		} catch (IOException e) {
-			discardFragList(fragList);
-			throw new BPException(
-					"Opening reassembly file " + file.getAbsolutePath(), e);
-		}
 		
 		long totLen = 0;
 		try {
@@ -461,12 +446,9 @@ public class BPFragmentation {
 				Body body = fragPayload.getBody();
 				totLen += body.getLength();
 				if (body.isBodyDataInFile()) {
-					Utils.copyFileToOutputStream(body.getBodyDataFile(), fos);
+					Utils.copyFileToOutputStream(body.getBodyDataFile(), file);
 				} else {
-					fos.write(
-							body.getBodyDataBuffer(), 
-							0, 
-							body.getBodyDataMemLength());
+					BlobAndBundleDatabase.getInstance().copyByteArrayToFile(body.getBodyDataBuffer(), 0, body.getBodyDataMemLength(), file);
 				}
 			}
 			payload.setBodyDataFileLength(totLen);
@@ -475,11 +457,6 @@ public class BPFragmentation {
 			throw new BPException("Writing frag data to reassembled payload", e);
 		} finally {
 			discardFragList(fragList);
-			try {
-				fos.close();
-			} catch (IOException e) {
-				// Ignore
-			}
 		}
 		
 		Bundle reassembledBundle = 
@@ -529,7 +506,7 @@ public class BPFragmentation {
 	/**
 	 * Construct a new Bundle describing the given Payload.  Copy Bundle options
 	 * from given Bundle.
-	 * @param origPrimary Original bundle to copy options from
+	 * @param origBundle Original bundle to copy options from
 	 * @param newPayload Payload of the new Bundle
 	 * @param offset Fragment offset
 	 * @param isFragment True if new Bundle is to be a Fragment

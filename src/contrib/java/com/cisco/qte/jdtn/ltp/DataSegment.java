@@ -29,18 +29,18 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 package com.cisco.qte.jdtn.ltp;
 
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.TimerTask;
 import java.util.logging.Logger;
 
+import com.cisco.qte.jdtn.apps.MediaRepository;
 import com.cisco.qte.jdtn.general.DecodeState;
 import com.cisco.qte.jdtn.general.EncodeState;
 import com.cisco.qte.jdtn.general.JDtnException;
 import com.cisco.qte.jdtn.general.Store;
 import com.cisco.qte.jdtn.general.Utils;
+import org.kritikal.fabric.contrib.jdtn.BlobAndBundleDatabase;
 
 /**
  * DataSegment - A Segment which transports user data.
@@ -74,7 +74,7 @@ public class DataSegment extends Segment {
 	protected boolean _clientDataInFile;
 
 	/** If clientDataInFile is true, then this is the file it is stored in */
-	protected File _clientDataFile;
+	protected MediaRepository.File _clientDataFile;
 
 	/** If clientDataInFile is false, then this is the data buffer */
 	protected byte[] _clientData;
@@ -160,28 +160,11 @@ public class DataSegment extends Segment {
 			// Store payload to a file
 			_clientDataInFile = true;
 			_clientDataFile = Store.getInstance().createNewSegmentFile();
-			FileOutputStream os = null;
-			try {
-				os = new FileOutputStream(_clientDataFile);
-				
-				ByteBuffer buffer = ByteBuffer.wrap(
-						decodeState._memBuffer, 
-						decodeState._memOffset, 
-						_clientDataLength);
-				os.getChannel().write(buffer);
-				decodeState.incrementOffsetBy(_clientDataLength);
-				
-			} catch (IOException e) {
-				throw new JDtnException(e);
-			} finally {
-				if (os != null) {
-					try {
-						os.close();
-					} catch (IOException e) {
-						// Nothing
-					}
-				}
-			}
+			ByteBuffer buffer = ByteBuffer.wrap(
+					decodeState._memBuffer,
+					decodeState._memOffset,
+					_clientDataLength);
+			BlobAndBundleDatabase.getInstance().copyByteBufferToFile(buffer, _clientDataFile);
 			
 		} else {
 			// Save payload to a buffer
@@ -366,11 +349,11 @@ public class DataSegment extends Segment {
 		this._clientDataInFile = clientDataInFile;
 	}
 	/** If clientDataInFile is true, then this is the file it is stored in */
-	public File getClientDataFile() {
+	public MediaRepository.File getClientDataFile() {
 		return _clientDataFile;
 	}
 	/** If clientDataInFile is true, then this is the file it is stored in */
-	public void setClientDataFile(File clientDataFile) {
+	public void setClientDataFile(MediaRepository.File clientDataFile) {
 		this._clientDataFile = clientDataFile;
 	}
 	public long getClientDataOffset() {

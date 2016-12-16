@@ -147,7 +147,7 @@ public class RouterApp extends AbstractApp {
 		DataInputStream dis = null;
 		try {
 			if (payload.isBodyDataInFile()) {
-				is = new FileInputStream(payload.getBodyDataFile());
+				is = payload.getBodyDataFile().inputStream();
 			} else {
 				is = new ByteArrayInputStream(
 						payload.getBodyDataBuffer(), 

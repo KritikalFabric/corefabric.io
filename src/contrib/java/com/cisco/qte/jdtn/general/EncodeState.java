@@ -29,10 +29,12 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 package com.cisco.qte.jdtn.general;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
+
+import com.cisco.qte.jdtn.apps.MediaRepository;
+
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.channels.ClosedByInterruptException;
 import java.util.ArrayList;
 import java.util.logging.Logger;
@@ -56,15 +58,15 @@ public class EncodeState {
 	/** True if encoding to a file */
 	public boolean isEncodingToFile = false;
 	/** If encoding to file, the File we're encoding to */
-	public File file = null;
+	public MediaRepository.File file = null;
 	/** If encoding to file, the number of bytes encoded */
 	public long fileLength = 0;
 	
 	/** If not encoding to file, the buffer we're encoding to */
 	public GrowableArrayOfBytes memList = null;
-	
-	/** If encoding to file, the OutputStream we're using to write */
-	protected FileOutputStream _fos = null;
+
+	private ByteArrayOutputStream _fos = null;
+
 
 	/**
 	 * Constructor for encoding to memory
@@ -79,19 +81,15 @@ public class EncodeState {
 	 * @param aFile File to encode to
 	 * @throws JDtnException If cannot open File
 	 */
-	public EncodeState(File aFile) throws JDtnException {
+	public EncodeState(MediaRepository.File aFile) throws JDtnException {
 		isEncodingToFile = true;
 		this.file = aFile;
-		try {
-			// We must delete the file if it exists, otherwise subsequent
-			// channel operations hang.  Go figure!
-			if (aFile.exists()) {
-				aFile.delete();
-			}
-			_fos = new FileOutputStream(aFile);
-		} catch (IOException e) {
-			throw new JDtnException(e);
+		// We must delete the file if it exists, otherwise subsequent
+		// channel operations hang.  Go figure!
+		if (aFile.exists()) {
+			aFile.delete();
 		}
+		_fos = new ByteArrayOutputStream();
 	}
 	
 	/**
@@ -100,20 +98,16 @@ public class EncodeState {
 	 * @param aFile File to encode to, if isEncodingToFile
 	 * @throws JDtnException If cannot open File
 	 */
-	public EncodeState(boolean aIsEncodingToFile, File aFile) throws JDtnException {
+	public EncodeState(boolean aIsEncodingToFile, MediaRepository.File aFile) throws JDtnException {
 		this.isEncodingToFile = aIsEncodingToFile;
 		if (aIsEncodingToFile) {
 			this.file = aFile;
-			try {
-				// We must delete the file if it exists, otherwise subsequent
-				// channel operations hang.  Go figure!
-				if (aFile.exists()) {
-					aFile.delete();
-				}
-				_fos = new FileOutputStream(aFile);
-			} catch (IOException e) {
-				throw new JDtnException(e);
+			// We must delete the file if it exists, otherwise subsequent
+			// channel operations hang.  Go figure!
+			if (aFile.exists()) {
+				aFile.delete();
 			}
+			_fos = new ByteArrayOutputStream();
 		}
 		else {
 			memList = new GrowableArrayOfBytes();
@@ -127,12 +121,8 @@ public class EncodeState {
 	 */
 	public void put(byte bite) throws JDtnException {
 		if (isEncodingToFile) {
-			try {
-				_fos.write(Utils.byteToIntUnsigned(bite));
-				fileLength++;
-			} catch (IOException e) {
-				throw new JDtnException(e);
-			}
+			_fos.write(Utils.byteToIntUnsigned(bite));
+			fileLength++;
 		} else {
 			memList.add(bite);
 		}
@@ -145,12 +135,8 @@ public class EncodeState {
 	 */
 	public void put(int intBite) throws JDtnException {
 		if (isEncodingToFile) {
-			try {
-				_fos.write(intBite);
-				fileLength++;
-			} catch (IOException e) {
-				throw new JDtnException(e);
-			}
+			_fos.write(intBite);
+			fileLength++;
 		} else {
 			memList.add(Utils.intToByteUnsigned(intBite));
 		}
@@ -175,7 +161,7 @@ public class EncodeState {
 	 */
 	public byte[] getByteBuffer() throws JDtnException {
 		if (isEncodingToFile) {
-			throw new JDtnException("Cannot get Byte Buffer from File encoding");
+			return _fos.toByteArray();
 		}
 		return memList.gather();
 	}
@@ -208,10 +194,10 @@ public class EncodeState {
 	 */
 	public void append(EncodeState encodeState) throws JDtnException, InterruptedException {
 		if (encodeState.isEncodingToFile) {
-			// Source is a File
+			// StorageType is a File
 			append(encodeState.file, 0, encodeState.getLength());
 		} else {
-			// Source is a buffer
+			// StorageType is a buffer
 			if (isEncodingToFile) {
 				// Dest (this) is a file; source is a buffer
 				append(encodeState.getByteBuffer(), 0, (int)encodeState.getLength());
@@ -230,14 +216,14 @@ public class EncodeState {
 	 * @throws JDtnException on encoding errors
 	 * @throws InterruptedException 
 	 */
-	public void append(File sourceFile, long offset, long length)
+	public void append(MediaRepository.File sourceFile, long offset, long length)
 	throws JDtnException, InterruptedException {
 		if (isEncodingToFile) {
 			// append given File to this' File
-			FileInputStream raf2 = null;
+			InputStream raf2 = null;
 			try {
 				// Open the source file
-				raf2 = new FileInputStream(sourceFile);
+				raf2 = sourceFile.inputStream();
 				
 				// Position the source file to the specified offset
 				if (offset != 0) {
@@ -276,10 +262,10 @@ public class EncodeState {
 		} else {
 			// Append given File to in-memory buffer
 			byte[] buf2 = new byte[(int)length];
-			FileInputStream raf2 = null;
+			InputStream raf2 = null;
 			try {
 				// Open source file
-				raf2 = new FileInputStream(sourceFile);
+				raf2 = sourceFile.inputStream();
 				
 				// Position source file
 				if (offset != 0) {
@@ -325,13 +311,8 @@ public class EncodeState {
 	public void append(byte[] buffer, int offset, int length)
 	throws JDtnException {
 		if (isEncodingToFile) {
-			try {
-				_fos.write(buffer, offset, length);
-				fileLength += length;
-				
-			} catch (IOException e) {
-				throw new JDtnException(e);
-			}
+			_fos.write(buffer, offset, length);
+			fileLength += length;
 		} else {
 			for (int ix = 0; ix < length; ix++) {
 				memList.add(buffer[offset + ix]);

@@ -82,7 +82,7 @@ public class BPSendFileApp extends AbstractApp {
 	}
 
 	public void sendFile(
-			File filePath, 
+			MediaRepository.File filePath,
 			EndPointId dest,
 			BundleOptions bundleOptions) 
 	throws JDtnException, InterruptedException {
@@ -122,7 +122,7 @@ public class BPSendFileApp extends AbstractApp {
 			_logger.fine("Bundle Dest = " + dest);
 			_logger.fine("Dest service path = " + dest.getServicePath());
 		}
-		File mediaFilename = MediaRepository.getInstance().formMediaFilename(
+		MediaRepository.File mediaFilename = MediaRepository.getInstance().formMediaFilename(
 				APP_NAME, 
 				new Date(), 
 				bundle.getPrimaryBundleBlock().getSourceEndpointId().getHostNodeName(), 

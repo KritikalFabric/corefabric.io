@@ -139,7 +139,7 @@ public interface LtpListener {
 	 *     Length of the red-part of the block.
 	 *     Indication as to whether or not the last byte of the red-part is
 	 *     also the end of the block.
-	 *     Source LTP engine ID.
+	 *     StorageType LTP engine ID.
 	 * Called when a checkpoint segment is received when it is known that
 	 * EORP has already or coincidentally received.  We notify listeners.
 	 * @param block Affected Block
@@ -156,7 +156,7 @@ public interface LtpListener {
      * Length of the data segment's content.
      * Indication as to whether or not the last byte of this data
      * segment's content is also the end of the block.
-     * Source LTP engine ID.
+     * StorageType LTP engine ID.
 	 * Called when a Green DataSegment is received
 	 * @param dataSegment Received Green DataSegment
 	 */

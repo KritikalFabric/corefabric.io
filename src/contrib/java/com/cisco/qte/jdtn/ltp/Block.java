@@ -29,13 +29,13 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 package com.cisco.qte.jdtn.ltp;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.TimerTask;
 import java.util.logging.Logger;
 
+import com.cisco.qte.jdtn.apps.MediaRepository;
 import com.cisco.qte.jdtn.general.JDtnException;
 import com.cisco.qte.jdtn.general.LinksList;
 import com.cisco.qte.jdtn.general.Store;
@@ -74,7 +74,7 @@ public abstract class Block implements Iterable<DataSegment> {
 	protected boolean _dataInFile;
 	
 	// If data is in file, the path to the file
-	protected File _dataFile;
+	protected MediaRepository.File _dataFile;
 	
 	// If data is in memory, the buffer containing the data
 	protected byte[] _dataBuffer;
@@ -135,7 +135,7 @@ public abstract class Block implements Iterable<DataSegment> {
 	public Block(
 			LtpNeighbor neighbor, 
 			LtpLink link, 
-			File file, 
+			MediaRepository.File file,
 			long length,
 			BlockOptions options) throws LtpException {
 		
@@ -179,7 +179,6 @@ public abstract class Block implements Iterable<DataSegment> {
 	 * @param dataInFile True => data to send is in a File
 	 * @param dataFile if dataInFile is true, File containing data to be sent
 	 * @param dataBuffer If dataInFile is false, buffer containing data to send
-	 * @param dataOffset Starting offset into File
 	 * @param dataLength Length of data to be sent
 	 * @param options Options for transmission; if null, default BlockOptions
 	 * will be used: all bytes red, checkpoint requested, no header or trailer
@@ -190,7 +189,7 @@ public abstract class Block implements Iterable<DataSegment> {
 			LtpNeighbor neighbor, 
 			LtpLink link, 
 			boolean dataInFile,
-			File dataFile,
+			MediaRepository.File dataFile,
 			byte[] dataBuffer,
 			long dataLength,
 			SessionId sessionId,
@@ -456,7 +455,7 @@ public abstract class Block implements Iterable<DataSegment> {
 	/**
 	 * If data is in file, the path to the file
 	 */
-	public File getDataFile() {
+	public MediaRepository.File getDataFile() {
 		return _dataFile;
 	}
 

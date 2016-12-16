@@ -44,6 +44,7 @@ public interface BundleDatabaseConstants {
 	public static final String SEQUENCE_NO_COL = "sequenceNo";
 	public static final String FRAG_OFFSET_COL = "fragOffset";
 	public static final String PATH_COL = "path";
+	public static final String STORAGETYPE_COL = "storageType";
 	public static final String LENGTH_COL = "length";
 	public static final String SOURCE_COL = "source";
 	public static final String STATE_COL = "state";

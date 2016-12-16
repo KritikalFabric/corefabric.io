@@ -29,7 +29,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 package com.cisco.qte.jdtn.apps;
 
-import java.io.File;
 import java.util.Date;
 import java.util.logging.Logger;
 
@@ -89,7 +88,7 @@ public class PhotoApp extends AbstractApp {
 	 */
 	public void sendPhoto(
 			String toEid, 
-			File filePath, 
+			MediaRepository.File filePath,
 			BundleOptions bundleOptions) 
 	throws InterruptedException, JDtnException {
 		// Determine dest and source Eids
@@ -123,7 +122,7 @@ public class PhotoApp extends AbstractApp {
 		Bundle bundle = BpApi.getInstance().receiveBundle(getAppRegistration());
 		Payload payload = bundle.getPayloadBundleBlock().getPayload();
 		
-		File mediaFilename = MediaRepository.getInstance().formMediaFilename(
+		MediaRepository.File mediaFilename = MediaRepository.getInstance().formMediaFilename(
 				APP_NAME, 
 				new Date(), 
 				bundle.getPrimaryBundleBlock().getSourceEndpointId().getHostNodeName(), 

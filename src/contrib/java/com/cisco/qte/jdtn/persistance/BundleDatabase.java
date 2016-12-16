@@ -35,6 +35,7 @@ import java.io.PrintWriter;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import com.cisco.qte.jdtn.apps.MediaRepository;
 import com.cisco.qte.jdtn.bp.Bundle;
 import com.cisco.qte.jdtn.bp.EidScheme;
 import com.cisco.qte.jdtn.component.AbstractStartableComponent;
@@ -49,6 +50,7 @@ import com.cisco.qte.jdtn.general.Store;
 import com.cisco.qte.jdtn.general.Utils;
 import com.cisco.qte.jdtn.general.XmlRDParser;
 import com.cisco.qte.jdtn.general.XmlRdParserException;
+import org.kritikal.fabric.contrib.jdtn.BlobAndBundleDatabase;
 
 /**
  * The Bundle Database; persistent store for state information about each Bundle
@@ -77,7 +79,7 @@ public class BundleDatabase extends AbstractStartableComponent {
 	private static final Logger _logger =
 		Logger.getLogger(BundleDatabase.class.getCanonicalName());
 	
-	private static BundleDatabase _instance = null;
+	//private static BundleDatabase _instance = null;
 	
 	/** StartClean property */
 	private boolean _startClean = START_CLEAN_DEFAULT;
@@ -88,17 +90,20 @@ public class BundleDatabase extends AbstractStartableComponent {
 	 * Get singleton instance of this component
 	 * @return Singleton instance
 	 */
+	//public static BundleDatabase getInstance() {
+	//	if (_instance == null) {
+	//		_instance = new BundleDatabase();
+	//	}
+	//	return _instance;
+	//}
 	public static BundleDatabase getInstance() {
-		if (_instance == null) {
-			_instance = new BundleDatabase();
-		}
-		return _instance;
+		return BlobAndBundleDatabase.getInstance();
 	}
 	
 	/**
 	 * Private constructor
 	 */
-	private BundleDatabase() {
+	protected BundleDatabase() {
 		super("BundleDatabase");
 		if (GeneralManagement.isDebugLogging()) {
 			_logger.finer("BundleDatabase");
@@ -124,7 +129,7 @@ public class BundleDatabase extends AbstractStartableComponent {
 	 * @param parser Given XML parser
 	 * @throws IOException On I/O errors
 	 * @throws JDtnException On JDTN specific errors
-	 * @throws XMLStreamException On XML Parsing errors
+	 * @throws XmlRdParserException On XML Parsing errors
 	 */
 	public void parse(XmlRDParser parser) 
 	throws IOException, JDtnException, XmlRdParserException {
@@ -232,7 +237,7 @@ public class BundleDatabase extends AbstractStartableComponent {
 		}
 		
 		// Encode the entire Bundle to a File
-		File path = Store.getInstance().createBundleFile();
+		MediaRepository.File path = Store.getInstance().createBundleFile();
 		EncodeState encodeState = new EncodeState(path);
 		bundle.encode(encodeState, eidScheme);
 		encodeState.close();
@@ -260,6 +265,7 @@ public class BundleDatabase extends AbstractStartableComponent {
 				statementText =
 					"update " + BundleDatabaseConstants.TABLE_NAME + " set " +
 					BundleDatabaseConstants.PATH_COL + "='" + path.getAbsolutePath() + "', " +
+							BundleDatabaseConstants.STORAGETYPE_COL + "=" + BlobAndBundleDatabase.intOf(path.getStorageType()) + ", " +
 					BundleDatabaseConstants.LENGTH_COL + "=" + path.length() + ", " +
 					BundleDatabaseConstants.SOURCE_COL + "='" + BundleSource.toParseableString(source) + "', " +
 					BundleDatabaseConstants.STATE_COL + "='" + BundleState.toParseableString(state) + "', " +
@@ -292,6 +298,7 @@ public class BundleDatabase extends AbstractStartableComponent {
 					bundle.getPrimaryBundleBlock().getCreationTimestamp().getSequenceNumber() + ", " +
 					bundle.getPrimaryBundleBlock().getFragmentOffset() + ", " +
 					"'" + path.getAbsolutePath() + "', " +
+						BlobAndBundleDatabase.intOf(path.getStorageType()) + ", " +
 					path.length() + ", " +
 					"'" + BundleSource.toParseableString(source) + "', " +
 					"'" + BundleState.toParseableString(state) + "', " +
@@ -482,7 +489,7 @@ public class BundleDatabase extends AbstractStartableComponent {
 		// Select entry from DB corresponding to given bundle
 		String statementText = 
 			"select " + 
-			BundleDatabaseConstants.PATH_COL + ", " + BundleDatabaseConstants.EID_SCHEME_COL +
+			BundleDatabaseConstants.PATH_COL + ", " + BundleDatabaseConstants.EID_SCHEME_COL + ", " + BundleDatabaseConstants.STORAGETYPE_COL +
 			" from " + BundleDatabaseConstants.TABLE_NAME + " where " +
 			BundleDatabaseConstants.SOURCE_EID_COL + "='" + bundle.getBundleId().sourceEndPointId.getEndPointIdString() + "' and " +
 			BundleDatabaseConstants.TIME_SECS_COL + "=" + bundle.getBundleId().timestamp.getTimeSecsSinceY2K() + " and " +
@@ -501,10 +508,11 @@ public class BundleDatabase extends AbstractStartableComponent {
 			}
 			String pathnameStr = qr.getString(1);
 			EidScheme eidScheme = EidScheme.parseEidScheme(qr.getString(2));
+			BlobAndBundleDatabase.StorageType storageType = BlobAndBundleDatabase.storageTypeOf(qr.getInt(3));
 			qr.close();
 			
 			// Encode the bundle to its file
-			EncodeState encodeState = new EncodeState(new File(pathnameStr));
+			EncodeState encodeState = new EncodeState(new MediaRepository.File(storageType, pathnameStr));
 			bundle.encode(encodeState, eidScheme);
 			encodeState.close();
 		} catch (DBInterfaceException e) {
@@ -719,8 +727,9 @@ public class BundleDatabase extends AbstractStartableComponent {
 			BundleDatabaseConstants.EID_SCHEME_COL + ", " + 
 			BundleDatabaseConstants.LINK_NAME_COL + ", " +
 			BundleDatabaseConstants.IS_INBOUND_COL + ", " + 
-			BundleDatabaseConstants.RETENTION_CONSTRAINT_COL +
-			" from " + BundleDatabaseConstants.TABLE_NAME + 
+			BundleDatabaseConstants.RETENTION_CONSTRAINT_COL + ", " +
+				BundleDatabaseConstants.STORAGETYPE_COL +
+			" from " + BundleDatabaseConstants.TABLE_NAME +
 			" order by " +
 			BundleDatabaseConstants.SOURCE_EID_COL + ", " + 
 			BundleDatabaseConstants.TIME_SECS_COL + ", " + 
@@ -746,6 +755,7 @@ public class BundleDatabase extends AbstractStartableComponent {
 				String linkName = qr.getString(6);
 				boolean isInbound = qr.getBoolean(7);
 				int retentionConstraint = qr.getInt(8);
+				BlobAndBundleDatabase.StorageType storageType = BlobAndBundleDatabase.storageTypeOf(qr.getInt(9));
 				
 				if (GeneralManagement.isDebugLogging() && _logger.isLoggable(Level.FINEST)) {
 					_logger.finest("Bundle Restoration: pathnameStr=" + pathnameStr);
@@ -757,7 +767,7 @@ public class BundleDatabase extends AbstractStartableComponent {
 					_logger.finest("Bundle Restoration: isInbound=" + isInbound);
 					_logger.finest("Bundle Restoration: retentionConstraint=" + retentionConstraint);
 				}
-				File file = new File(pathnameStr);
+				MediaRepository.File file = new MediaRepository.File(storageType, pathnameStr);
 				DecodeState decodeState = new DecodeState(file, 0L, fileLength);
 				Bundle bundle = new Bundle(decodeState, eidScheme);
 				

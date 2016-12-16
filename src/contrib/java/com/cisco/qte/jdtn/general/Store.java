@@ -29,10 +29,13 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 package com.cisco.qte.jdtn.general;
 
-import java.io.File;
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Logger;
 
+import com.cisco.qte.jdtn.apps.MediaRepository;
 import com.cisco.qte.jdtn.component.AbstractStartableComponent;
+import org.kritikal.fabric.contrib.jdtn.BlobAndBundleDatabase;
 
 
 /**
@@ -47,9 +50,9 @@ public class Store extends AbstractStartableComponent {
 		Logger.getLogger(Store.class.getCanonicalName());
 	
 	private static Store _instance = null;
-	private static long _serialNumber = 0;
-	private static final Object _syncObj = new Object();
-	
+	private static final AtomicLong _serialNumber = new AtomicLong(0l);
+	private static final String _serialUUID = UUID.randomUUID().toString();
+
 	/**
 	 * Get singleton instance
 	 * @return Singleton instance
@@ -84,30 +87,11 @@ public class Store extends AbstractStartableComponent {
 	 * delete all files in the configured Storage Directory
 	 */
 	public void clean() {
-		File dir = new File(getStorageDirectory());
-		if (dir.isDirectory()) {
-			clean(dir);
-		}
-		if (!dir.exists() && !dir.mkdirs()) {
-			_logger.severe("Cannot create Storage Directory: " + getStorageDirectory());
-		}
+		BlobAndBundleDatabase.getInstance().cleanMediaRepository(BlobAndBundleDatabase.StorageType.STORE);
 	}
 	
-	private void clean(File dir) {
-		// Don't clean the media repository if it happens to be a subdir of
-		// the store.
-		if (dir.equals(new File(GeneralManagement.getInstance().getMediaRepositoryPath()))) {
-			return;
-		}
-		File[] files = dir.listFiles();
-		for (File file : files) {
-			if (file.isDirectory()) {
-				clean(file);
-			} else if (!file.delete()) {
-				_logger.severe("Cannot delete Storage File: " + file.getAbsolutePath());
-			}
-		}
-		dir.delete();
+	private void clean(MediaRepository.File dir) {
+		BlobAndBundleDatabase.getInstance().cleanMediaRepository(BlobAndBundleDatabase.StorageType.STORE, dir);
 	}
 	
 	
@@ -116,17 +100,7 @@ public class Store extends AbstractStartableComponent {
 	 * @return Configured Storage Directory.
 	 */
 	public String getStorageDirectory() {
-		String result = GeneralManagement.getInstance().getStoragePath();
-		File file = new File(result);
-		
-		// The Storage Directory might have been reconfigured on the fly.
-		// So make sure it exists and create it if it doesn't.
-		if (!file.exists()) {
-			if (!file.mkdir()) {
-				_logger.severe("Cannot create Storage directory");
-			}
-		}
-		return result;
+		return "$store";
 	}
 	
 	/**
@@ -134,8 +108,8 @@ public class Store extends AbstractStartableComponent {
 	 * @return The File
 	 * @throws JDtnException if we've overrun quotas on Segment data files
 	 */
-	public File createNewSegmentFile() throws JDtnException {
-		File file = new File(getStorageDirectory(), getUniqueFilename("Segment"));
+	public MediaRepository.File createNewSegmentFile() throws JDtnException {
+		MediaRepository.File file = new MediaRepository.File(BlobAndBundleDatabase.StorageType.STORE, getUniqueFilename("Segment"));
 		return file;
 	}
 	
@@ -144,8 +118,8 @@ public class Store extends AbstractStartableComponent {
 	 * @return The File
 	 * @throws JDtnException if we've overrun quotas on Block data files
 	 */
-	public File createNewBlockFile() throws JDtnException {
-		File file = new File(getStorageDirectory(), getUniqueFilename("Block"));
+	public MediaRepository.File createNewBlockFile() throws JDtnException {
+		MediaRepository.File file = new MediaRepository.File(BlobAndBundleDatabase.StorageType.STORE, getUniqueFilename("Block"));
 		return file;
 	}
 	
@@ -154,8 +128,8 @@ public class Store extends AbstractStartableComponent {
 	 * @return The File
 	 * @throws JDtnException if we've overrun quotas on Payload data files
 	 */
-	public File createNewPayloadFile() throws JDtnException {
-		File file = new File(getStorageDirectory(), getUniqueFilename("Payload"));
+	public MediaRepository.File createNewPayloadFile() throws JDtnException {
+		MediaRepository.File file = new MediaRepository.File(BlobAndBundleDatabase.StorageType.STORE, getUniqueFilename("Payload"));
 		return file;
 	}
 	
@@ -164,8 +138,8 @@ public class Store extends AbstractStartableComponent {
 	 * @return The File
 	 * @throws JDtnException if we've overrun quotas on Temporary data Files
 	 */
-	public File createNewTemporaryFile() throws JDtnException {
-		File file = new File(getStorageDirectory(), getUniqueFilename("Tmp"));
+	public MediaRepository.File createNewTemporaryFile() throws JDtnException {
+		MediaRepository.File file = new MediaRepository.File(BlobAndBundleDatabase.StorageType.STORE, getUniqueFilename("Tmp"));
 		return file;
 	}
 	
@@ -174,14 +148,17 @@ public class Store extends AbstractStartableComponent {
 	 * @return The File
 	 * @throws JDtnException if we've overrun quotas on Bundle data files
 	 */
-	public File createBundleFile() throws JDtnException {
-		File file = new File(getStorageDirectory(), getUniqueFilename("Bundle"));
+	public MediaRepository.File createBundleFile() throws JDtnException {
+		MediaRepository.File file = new MediaRepository.File(BlobAndBundleDatabase.StorageType.STORE, getUniqueFilename(
+				"Bundle"));
 		return file;
 	}
 	
 	public String getUniqueFilename(String prefix) throws JDtnException {
-		synchronized (_syncObj) {
-			return prefix + _serialNumber++;
-		}
+		StringBuilder sb = new StringBuilder();
+		sb.append(prefix).append('+');
+		sb.append(_serialUUID).append('+');
+		sb.append(_serialNumber.getAndIncrement());
+		return sb.toString();
 	}
 }

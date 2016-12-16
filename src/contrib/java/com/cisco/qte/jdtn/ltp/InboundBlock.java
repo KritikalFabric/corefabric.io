@@ -29,10 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 package com.cisco.qte.jdtn.ltp;
 
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.logging.Logger;
@@ -41,6 +38,7 @@ import com.cisco.qte.jdtn.general.GeneralManagement;
 import com.cisco.qte.jdtn.general.JDtnException;
 import com.cisco.qte.jdtn.general.Store;
 import com.cisco.qte.jdtn.general.Utils;
+import org.kritikal.fabric.contrib.jdtn.BlobAndBundleDatabase;
 
 /**
  * An Inbound LTP Block - A Block received or in the process of being Received
@@ -256,9 +254,9 @@ public class InboundBlock extends Block {
 	throws JDtnException {
 		if (dataSegment.isClientDataInFile()) {
 			// Gather from segment file to buffer[]
-			FileInputStream fis = null;
+			InputStream fis = null;
 			try {
-				fis = new FileInputStream(dataSegment.getClientDataFile());
+				fis = dataSegment.getClientDataFile().inputStream();
 				int nRead = fis.read(buffer, (int)dataSegment.getClientDataOffset(), dataSegment.getClientDataLength());
 				if (nRead != dataSegment.getClientDataLength()) {
 					throw new JDtnException("nRead " + nRead + " != amount requested " + dataSegment.getClientDataLength());
@@ -295,8 +293,7 @@ public class InboundBlock extends Block {
 	 */
 	private void spillSegmentDataToBlockFile()
 	throws LtpException {
-		FileInputStream fis = null;
-		FileOutputStream fos = null;
+		InputStream fis = null;
 		
 		if (_dataFile == null) {
 			try {
@@ -304,12 +301,6 @@ public class InboundBlock extends Block {
 			} catch (JDtnException e) {
 				throw new LtpException("spillSegmentDataToBlockFile()", e);
 			}
-		}
-
-		try {
-			fos = new FileOutputStream(_dataFile);
-		} catch (FileNotFoundException e) {
-			throw new LtpException(e);
 		}
 		
 		try {
@@ -327,7 +318,7 @@ public class InboundBlock extends Block {
 								dataSegment.getClientDataFile().getAbsolutePath() +
 								" does not exist");
 					}
-					fis = new FileInputStream(dataSegment.getClientDataFile());
+					fis = dataSegment.getClientDataFile().inputStream();
 					long remaining = dataSegment.getClientDataLength();
 					while (remaining > 0) {
 						int nRead = fis.read(buffer);
@@ -335,24 +326,19 @@ public class InboundBlock extends Block {
 							throw new LtpException("Read count returned " + nRead);
 						}
 						remaining -= nRead;
-						fos.write(buffer, 0, nRead);
+						BlobAndBundleDatabase.getInstance().appendByteArrayToFile(buffer, 0, nRead, _dataFile);
 						dataSegment.discardData();
 					}
 					fis.close();
 					fis = null;
 				} else {
 					// Spill segment buffer to block file
-					fos.write(dataSegment.getClientData(), 0, dataSegment.getClientDataLength());
+					BlobAndBundleDatabase.getInstance().appendByteArrayToFile(dataSegment.getClientData(), 0, dataSegment.getClientDataLength(), _dataFile);
 				}
 			}
 		} catch (IOException e) {
 			throw new LtpException("Spilling block data", e);
 		} finally {
-			try {
-				fos.close();
-			} catch (IOException e) {
-				// Nothing
-			}
 			if (fis != null) {
 				try {
 					fis.close();

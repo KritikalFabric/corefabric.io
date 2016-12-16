@@ -152,7 +152,7 @@ public class TextApp extends AbstractApp {
 		// Extract the text note from the Bundle
 		InputStream is;
 		if (payload.isBodyDataInFile()) {
-			is = new FileInputStream(payload.getBodyDataFile());
+			is = payload.getBodyDataFile().inputStream();
 		} else {
 			is = new ByteArrayInputStream(
 					payload.getBodyDataBuffer(), 
@@ -180,7 +180,7 @@ public class TextApp extends AbstractApp {
 		}
 		
 		// Save message to media repository
-		File file =
+		MediaRepository.File file =
 			MediaRepository.getInstance().formMediaFilename(
 					APP_NAME, 
 					new Date(), 

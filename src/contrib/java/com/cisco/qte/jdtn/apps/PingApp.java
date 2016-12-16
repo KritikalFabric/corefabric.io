@@ -174,7 +174,7 @@ public class PingApp extends AbstractApp {
 					payload = recvBundle.getPayloadBundleBlock().getPayload();
 					InputStream is = null;
 					if (payload.isBodyDataInFile()) {
-						is = new FileInputStream(payload.getBodyDataFile());
+						is = payload.getBodyDataFile().inputStream();
 					
 					} else {
 						is = new ByteArrayInputStream(
