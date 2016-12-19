@@ -84,7 +84,7 @@ public class BundleDatabase extends AbstractStartableComponent {
 	/** StartClean property */
 	private boolean _startClean = START_CLEAN_DEFAULT;
 	
-	private DBInterface _dbInterface = null;
+	protected DBInterface _dbInterface = null;
 	
 	/**
 	 * Get singleton instance of this component
@@ -246,8 +246,9 @@ public class BundleDatabase extends AbstractStartableComponent {
 		String statementText = null;
 		statementText = 
 			"select " + 
-			BundleDatabaseConstants.PATH_COL + 
+			BundleDatabaseConstants.PATH_COL +
 			" from " + BundleDatabaseConstants.TABLE_NAME + " where " +
+					BundleDatabaseConstants.STORAGETYPE_COL + " = " + BlobAndBundleDatabase.intOf(path.getStorageType()) + " and " +
 			BundleDatabaseConstants.SOURCE_EID_COL + "='" + bundle.getBundleId().sourceEndPointId.getEndPointIdString() + "' and " +
 			BundleDatabaseConstants.TIME_SECS_COL + "=" + bundle.getBundleId().timestamp.getTimeSecsSinceY2K() + " and " +
 			BundleDatabaseConstants.SEQUENCE_NO_COL + "=" + bundle.getBundleId().timestamp.getSequenceNumber() + " and " +
@@ -277,6 +278,7 @@ public class BundleDatabase extends AbstractStartableComponent {
 							BundleDatabaseConstants.IS_INBOUND_COL + "=1, " :
 							BundleDatabaseConstants.IS_INBOUND_COL + "=0, ") +
 							BundleDatabaseConstants.RETENTION_CONSTRAINT_COL + "=" + bundle.getRetentionConstraint() + " " +
+							BundleDatabaseConstants.DATA_BLOB_COL + "=" + path.getOid() + " " +
 					"where " +
 					BundleDatabaseConstants.SOURCE_EID_COL + "='" + bundle.getBundleId().sourceEndPointId.getEndPointIdString() + "' and " +
 					BundleDatabaseConstants.TIME_SECS_COL + "=" + bundle.getBundleId().timestamp.getTimeSecsSinceY2K() + " and " +
@@ -286,6 +288,7 @@ public class BundleDatabase extends AbstractStartableComponent {
 					;
 			    _logger.fine(statementText);
 			    _dbInterface.executeUpdate(statementText);
+			    _dbInterface.commit();
 			    return;
 			}
 			qr.close();
@@ -307,10 +310,12 @@ public class BundleDatabase extends AbstractStartableComponent {
 						"NULL, " :
 						"'" + bundle.getLink().getName() + "', ") +
 					"'" + bundle.isInboundBundle() + "', " +
-					bundle.getRetentionConstraint() +
+					bundle.getRetentionConstraint() + ", " +
+						path.getOid() +
 					");";
 			_logger.fine(statementText);
 			_dbInterface.executeInsert(statementText);
+			_dbInterface.commit();
 		} catch (IllegalArgumentException e) {
 			_logger.log(Level.SEVERE, "introduceBundle()", e);
 		} catch (DBInterfaceException e) {
@@ -347,6 +352,7 @@ public class BundleDatabase extends AbstractStartableComponent {
 	    _logger.fine(statementText);
 		try {
 			_dbInterface.executeUpdate(statementText);
+			_dbInterface.commit();
 		} catch (DBInterfaceException e) {
 			throw new JDtnException(e);
 		}
@@ -382,6 +388,7 @@ public class BundleDatabase extends AbstractStartableComponent {
 	    _logger.fine(statementText);
 		try {
 			_dbInterface.executeUpdate(statementText);
+			_dbInterface.commit();
 		} catch (DBInterfaceException e) {
 			throw new JDtnException(e);
 		}
@@ -419,6 +426,7 @@ public class BundleDatabase extends AbstractStartableComponent {
 	    _logger.fine(statementText);
 		try {
 			_dbInterface.executeUpdate(statementText);
+			_dbInterface.commit();
 		} catch (DBInterfaceException e) {
 			throw new JDtnException(e);
 		}
@@ -489,7 +497,7 @@ public class BundleDatabase extends AbstractStartableComponent {
 		// Select entry from DB corresponding to given bundle
 		String statementText = 
 			"select " + 
-			BundleDatabaseConstants.PATH_COL + ", " + BundleDatabaseConstants.EID_SCHEME_COL + ", " + BundleDatabaseConstants.STORAGETYPE_COL +
+			BundleDatabaseConstants.PATH_COL + ", " + BundleDatabaseConstants.EID_SCHEME_COL + ", " + BundleDatabaseConstants.STORAGETYPE_COL + ", " + BundleDatabaseConstants.DATA_BLOB_COL +
 			" from " + BundleDatabaseConstants.TABLE_NAME + " where " +
 			BundleDatabaseConstants.SOURCE_EID_COL + "='" + bundle.getBundleId().sourceEndPointId.getEndPointIdString() + "' and " +
 			BundleDatabaseConstants.TIME_SECS_COL + "=" + bundle.getBundleId().timestamp.getTimeSecsSinceY2K() + " and " +
@@ -509,12 +517,23 @@ public class BundleDatabase extends AbstractStartableComponent {
 			String pathnameStr = qr.getString(1);
 			EidScheme eidScheme = EidScheme.parseEidScheme(qr.getString(2));
 			BlobAndBundleDatabase.StorageType storageType = BlobAndBundleDatabase.storageTypeOf(qr.getInt(3));
+			MediaRepository.File file = new MediaRepository.File(storageType, pathnameStr);
+			file.setOid(qr.getLong(4));
 			qr.close();
 			
 			// Encode the bundle to its file
-			EncodeState encodeState = new EncodeState(new MediaRepository.File(storageType, pathnameStr));
+			EncodeState encodeState = new EncodeState();
 			bundle.encode(encodeState, eidScheme);
 			encodeState.close();
+
+			_dbInterface.executeUpdate("UPDATE " + BundleDatabaseConstants.TABLE_NAME + " SET " + BundleDatabaseConstants.DATA_BLOB_COL + "=" + file.getOid() + " where " +
+					BundleDatabaseConstants.SOURCE_EID_COL + "='" + bundle.getBundleId().sourceEndPointId.getEndPointIdString() + "' and " +
+					BundleDatabaseConstants.TIME_SECS_COL + "=" + bundle.getBundleId().timestamp.getTimeSecsSinceY2K() + " and " +
+					BundleDatabaseConstants.SEQUENCE_NO_COL + "=" + bundle.getBundleId().timestamp.getSequenceNumber() + " and " +
+					BundleDatabaseConstants.FRAG_OFFSET_COL + "=" + bundle.getPrimaryBundleBlock().getFragmentOffset() +
+					";");
+			_dbInterface.commit();
+
 		} catch (DBInterfaceException e) {
 			throw new JDtnException(e);
 		}
@@ -554,6 +573,7 @@ public class BundleDatabase extends AbstractStartableComponent {
 	    _logger.fine(statementText);
 		try {
 			_dbInterface.executeUpdate(statementText);
+			_dbInterface.commit();
 		} catch (DBInterfaceException e) {
 			throw new JDtnException(e);
 		}
@@ -592,6 +612,7 @@ public class BundleDatabase extends AbstractStartableComponent {
 	    _logger.fine(statementText);
 		try {
 			_dbInterface.executeUpdate(statementText);
+			_dbInterface.commit();
 		} catch (DBInterfaceException e) {
 			throw new JDtnException(e);
 		}
@@ -631,6 +652,7 @@ public class BundleDatabase extends AbstractStartableComponent {
 	    _logger.fine(statementText);
 		try {
 			_dbInterface.executeUpdate(statementText);
+			_dbInterface.commit();
 		} catch (DBInterfaceException e) {
 			throw new JDtnException(e);
 		}
@@ -695,6 +717,8 @@ public class BundleDatabase extends AbstractStartableComponent {
 			if (!file.delete()) {
 				throw new IllegalStateException("Cannot delete bundle file " + pathnameStr);
 			}
+
+			_dbInterface.commit();
 		} catch (DBInterfaceException e) {
 			throw new JDtnException(e);
 		}
@@ -720,7 +744,7 @@ public class BundleDatabase extends AbstractStartableComponent {
 		// Select entry from DB all Bundles
 		String statementText =
 			"select " + 
-			BundleDatabaseConstants.PATH_COL + ", " + 
+			BundleDatabaseConstants.PATH_COL + ", " +
 			BundleDatabaseConstants.LENGTH_COL + ", " + 
 			BundleDatabaseConstants.STATE_COL + ", " + 
 			BundleDatabaseConstants.SOURCE_COL + ", " + 
@@ -728,7 +752,8 @@ public class BundleDatabase extends AbstractStartableComponent {
 			BundleDatabaseConstants.LINK_NAME_COL + ", " +
 			BundleDatabaseConstants.IS_INBOUND_COL + ", " + 
 			BundleDatabaseConstants.RETENTION_CONSTRAINT_COL + ", " +
-				BundleDatabaseConstants.STORAGETYPE_COL +
+					BundleDatabaseConstants.STORAGETYPE_COL + ", " +
+					BundleDatabaseConstants.DATA_BLOB_COL +
 			" from " + BundleDatabaseConstants.TABLE_NAME +
 			" order by " +
 			BundleDatabaseConstants.SOURCE_EID_COL + ", " + 
@@ -756,6 +781,7 @@ public class BundleDatabase extends AbstractStartableComponent {
 				boolean isInbound = qr.getBoolean(7);
 				int retentionConstraint = qr.getInt(8);
 				BlobAndBundleDatabase.StorageType storageType = BlobAndBundleDatabase.storageTypeOf(qr.getInt(9));
+				long oid = qr.getLong(10);
 				
 				if (GeneralManagement.isDebugLogging() && _logger.isLoggable(Level.FINEST)) {
 					_logger.finest("Bundle Restoration: pathnameStr=" + pathnameStr);
@@ -768,6 +794,7 @@ public class BundleDatabase extends AbstractStartableComponent {
 					_logger.finest("Bundle Restoration: retentionConstraint=" + retentionConstraint);
 				}
 				MediaRepository.File file = new MediaRepository.File(storageType, pathnameStr);
+				file.setOid(oid);
 				DecodeState decodeState = new DecodeState(file, 0L, fileLength);
 				Bundle bundle = new Bundle(decodeState, eidScheme);
 				
@@ -849,7 +876,9 @@ public class BundleDatabase extends AbstractStartableComponent {
 			BundleDatabaseConstants.EID_SCHEME_COL + ", " + 
 			BundleDatabaseConstants.LINK_NAME_COL + ", " +
 			BundleDatabaseConstants.IS_INBOUND_COL + ", " + 
-			BundleDatabaseConstants.RETENTION_CONSTRAINT_COL +
+			BundleDatabaseConstants.RETENTION_CONSTRAINT_COL + ", " +
+					BundleDatabaseConstants.STORAGETYPE_COL + ", " +
+					BundleDatabaseConstants.DATA_BLOB_COL +
 			" from " + BundleDatabaseConstants.TABLE_NAME + 
 			" order by " +
 			BundleDatabaseConstants.SOURCE_EID_COL + ", " + 
@@ -870,11 +899,15 @@ public class BundleDatabase extends AbstractStartableComponent {
 				String linkName = qr.getString(6);
 				boolean isInbound = qr.getBoolean(7);
 				int retentionConstraint = qr.getInt(8);
+				int storageType = qr.getInt(9);
+				long oid = qr.getLong(10);
 				
 				sb.append(indent + "  Bundle\n");
 				sb.append(indent + "    BundleState=" + BundleState.toParseableString(bundleState) + "\n");
 				sb.append(indent + "    BundleSource=" + BundleSource.toParseableString(bundleSource) + "\n");
 				sb.append(indent + "    pathname=" + pathnameStr + "\n");
+				sb.append(indent + "    storageType=" + storageType + "\n");
+				sb.append(indent + "    oid="+oid+"\n");
 				sb.append(indent + "    fileLength=" + fileLength + "\n");
 				sb.append(indent + "    bundleState=" + bundleState + "\n");
 				sb.append(indent + "    bundleSource=" + bundleSource + "\n");

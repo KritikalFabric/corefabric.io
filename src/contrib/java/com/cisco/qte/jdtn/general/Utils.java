@@ -940,11 +940,12 @@ public class Utils {
 				BlobAndBundleDatabase.getInstance().appendByteArrayToFile(buffer,0,nRead,fileOutput);
 				len -= nRead;
 			}
-		} catch (IOException e) {
+			fileOutput.getConnection().commit();
+		} catch (Exception e) {
 			_logger.severe(
 					"Copying file " + file.getAbsolutePath() + ": " + 
 					e.getMessage());
-			throw e;
+			throw new Error("", e);
 		} finally {
 			fis.close();
 		}

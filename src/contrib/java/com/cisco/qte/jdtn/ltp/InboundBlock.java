@@ -330,13 +330,15 @@ public class InboundBlock extends Block {
 						dataSegment.discardData();
 					}
 					fis.close();
+					_dataFile.getConnection().commit();
 					fis = null;
 				} else {
 					// Spill segment buffer to block file
 					BlobAndBundleDatabase.getInstance().appendByteArrayToFile(dataSegment.getClientData(), 0, dataSegment.getClientDataLength(), _dataFile);
+					_dataFile.getConnection().commit();
 				}
 			}
-		} catch (IOException e) {
+		} catch (Exception e) {
 			throw new LtpException("Spilling block data", e);
 		} finally {
 			if (fis != null) {

@@ -31,6 +31,7 @@ package com.cisco.qte.jdtn.apps;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
+import java.sql.Connection;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -63,10 +64,28 @@ import org.kritikal.fabric.contrib.jdtn.BlobAndBundleDatabase;
  */
 public class MediaRepository extends AbstractStartableComponent {
 
+	/**
+	 * A class allowing us to do file-like operations on database objects.
+	 */
 	public final static class File {
-		public File(final BlobAndBundleDatabase.StorageType storageType, final String fileName) {
+		public File(final BlobAndBundleDatabase.StorageType storageType, final String fileName, final Connection con) {
+			if (fileName.contains("'")) throw new Error("Invalid filename");
 			this.storageType = storageType;
 			this.fileName = fileName;
+			this.con = con;
+		}
+		public File(final BlobAndBundleDatabase.StorageType storageType, final String fileName) {
+			if (fileName.contains("'")) throw new Error("Invalid filename");
+			this.storageType = storageType;
+			this.fileName = fileName;
+			this.con = null;
+		}
+		public void setConnection(final Connection con) {
+			if (this.con == null) this.con = con;
+		}
+		Connection con = null;
+		public final Connection getConnection() {
+			return con;
 		}
 		final BlobAndBundleDatabase.StorageType storageType;
 		final String fileName;
@@ -95,6 +114,9 @@ public class MediaRepository extends AbstractStartableComponent {
 			File o = (File)other;
 			return this.storageType == o.storageType && this.fileName.equals(o.fileName);
 		}
+		long oid = 0l;
+		public long getOid() { return oid; }
+		public void setOid(long oid) { this.oid = oid; }
 
 		@Override
 		public int hashCode() {

@@ -29,6 +29,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 package com.cisco.qte.jdtn.persistance;
 
+import java.sql.Connection;
+
 /**
  * Interface to Bundles database.
  */
@@ -46,6 +48,14 @@ public interface DBInterface {
 	 * @throws DBInterfaceException on errors
 	 */
 	public void closeDB() throws DBInterfaceException;
+
+	/**
+	 * commit the transaction
+	 * @throws DBInterfaceException
+	 */
+	void commit() throws DBInterfaceException;
+
+	Connection getConnection();
 	
 	/**
 	 * Execute an Insert SQL statement w/in a single transaction

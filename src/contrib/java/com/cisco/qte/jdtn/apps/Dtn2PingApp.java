@@ -416,7 +416,7 @@ public class Dtn2PingApp extends AbstractApp {
 			} else {
 				_logger.severe("No Application is registered to handle incoming Bundle; " +
 						"Destination EID= " + dest.getEndPointIdString());
-				_logger.severe("StorageType EID: " + source.getEndPointIdString());
+				_logger.severe("Source EID: " + source.getEndPointIdString());
 				payload.delete();
 			}
 		}

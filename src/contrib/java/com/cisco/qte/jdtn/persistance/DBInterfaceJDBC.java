@@ -75,7 +75,7 @@ public class DBInterfaceJDBC implements DBInterface {
             basicDataSource.setTestOnReturn(false);
             basicDataSource.setTestWhileIdle(false);
             basicDataSource.setLifo(false);
-            basicDataSource.setRollbackOnReturn(false);
+            basicDataSource.setRollbackOnReturn(true);
             basicDataSource.setDefaultTransactionIsolation(Connection.TRANSACTION_READ_UNCOMMITTED);
             config.accept(basicDataSource);
             basicDataSource.setInitialSize(concurrency);
@@ -96,6 +96,8 @@ public class DBInterfaceJDBC implements DBInterface {
     public static String password;
 
     private Connection _connection;
+
+    public Connection getConnection() { return _connection; }
 
 	private boolean _isStarted = false;
 	
@@ -139,7 +141,7 @@ public class DBInterfaceJDBC implements DBInterface {
                     basicDataSource.setUrl("jdbc:postgresql://" + host + ":5432/" + db + "?charSet=UTF8");
                     basicDataSource.setUsername(user);
                     basicDataSource.setPassword(password);
-                    basicDataSource.setDefaultAutoCommit(true);
+                    basicDataSource.setDefaultAutoCommit(false);
                     basicDataSource.setDefaultTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
                 });
             }
@@ -147,8 +149,13 @@ public class DBInterfaceJDBC implements DBInterface {
             _connection = pool.getConnection();
             Statement statement = _connection.createStatement();
             try {
+                // TODO:FIXME
+                // DROP old table anyway
+                try { statement.executeUpdate("DROP TABLE " + BundleDatabaseConstants.TABLE_NAME_OLD); } catch (SQLException ignore) { }
+                // Start clean - from unit tests only!
                 if (startClean) {
                     try { statement.executeUpdate("DROP TABLE " + BundleDatabaseConstants.TABLE_NAME); } catch (SQLException ignore) { }
+                    try { statement.executeUpdate("DROP TABLE " + BundleDatabaseConstants.FILE_TABLE_NAME); } catch (SQLException ignore) { }
                 }
                 String statementText =
                         "CREATE TABLE IF NOT EXISTS " + BundleDatabaseConstants.TABLE_NAME +
@@ -158,6 +165,7 @@ public class DBInterfaceJDBC implements DBInterface {
                                 BundleDatabaseConstants.SEQUENCE_NO_COL + " int8, " +
                                 BundleDatabaseConstants.FRAG_OFFSET_COL + " int8, " +
                                 BundleDatabaseConstants.PATH_COL + " varchar, " +
+                                BundleDatabaseConstants.STORAGETYPE_COL + " int4, " +
                                 BundleDatabaseConstants.LENGTH_COL + " int8," +
                                 BundleDatabaseConstants.SOURCE_COL + " varchar, " +
                                 BundleDatabaseConstants.STATE_COL + " varchar," +
@@ -165,19 +173,44 @@ public class DBInterfaceJDBC implements DBInterface {
                                 BundleDatabaseConstants.LINK_NAME_COL + " varchar, " +
                                 BundleDatabaseConstants.IS_INBOUND_COL + " varchar, " +
                                 BundleDatabaseConstants.RETENTION_CONSTRAINT_COL +" varchar, " +
+                                BundleDatabaseConstants.DATA_BLOB_COL + " oid," +
                                 "CONSTRAINT stsf primary key (" +
                                 BundleDatabaseConstants.SOURCE_EID_COL + ", " +
                                 BundleDatabaseConstants.TIME_SECS_COL + ", " +
                                 BundleDatabaseConstants.SEQUENCE_NO_COL + ", " +
                                 BundleDatabaseConstants.FRAG_OFFSET_COL +
+                                ") " +
+                                "CONSTRAINT stpath1 unique key (" +
+                                BundleDatabaseConstants.PATH_COL + " varchar_pattern_ops, " +
+                                BundleDatabaseConstants.STORAGETYPE_COL +
+                                ")" +
+                                "CONSTRAINT stblob1 KEY (" +
+                                BundleDatabaseConstants.DATA_BLOB_COL +
                                 "));";
                                 //") on conflict abort);";
+                _logger.fine(statementText);
+                statement.executeUpdate(statementText);
+                statementText =
+                        "CREATE TABLE IF NOT EXISTS " + BundleDatabaseConstants.FILE_TABLE_NAME +
+                                " (" +
+                                BundleDatabaseConstants.PATH_COL + " varchar NOT NULL, " +
+                                BundleDatabaseConstants.STORAGETYPE_COL + " int4 NOT NULL, " +
+                                BundleDatabaseConstants.DATA_BLOB_COL + " oid NOT NULL," +
+                                "CONSTRAINT stpath2 primary key (" +
+                                BundleDatabaseConstants.PATH_COL + " varchar_pattern_ops, " +
+                                BundleDatabaseConstants.STORAGETYPE_COL +
+                                ") " +
+                                "CONSTRAINT stblob2 unique key(" +
+                                BundleDatabaseConstants.DATA_BLOB_COL +
+                                "));";
+                //") on conflict abort);";
                 _logger.fine(statementText);
                 statement.executeUpdate(statementText);
             }
             finally {
                 statement.close();
             }
+            _connection.commit();
 
 		} catch (SQLException e) {
 			throw new DBInterfaceException(e);
@@ -217,6 +250,7 @@ public class DBInterfaceJDBC implements DBInterface {
             finally {
                 statement.close();
             }
+            _connection.commit();
 		} catch (SQLException e) {
 			throw new DBInterfaceException(e);
 		}
@@ -239,6 +273,7 @@ public class DBInterfaceJDBC implements DBInterface {
             finally {
                 statement.close();
             }
+            _connection.commit();
         } catch (SQLException e) {
             throw new DBInterfaceException(e);
         }
@@ -305,4 +340,12 @@ public class DBInterfaceJDBC implements DBInterface {
 	private boolean isStarted() {
 		return _isStarted;
 	}
+
+	public void commit() throws DBInterfaceException {
+        try {
+            _connection.commit();
+        } catch (SQLException e) {
+            throw new DBInterfaceException(e);
+        }
+    }
 }
