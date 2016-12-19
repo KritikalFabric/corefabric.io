@@ -75,10 +75,7 @@ public class MediaRepository extends AbstractStartableComponent {
 			this.con = con;
 		}
 		public File(final BlobAndBundleDatabase.StorageType storageType, final String fileName) {
-			if (fileName.contains("'")) throw new Error("Invalid filename");
-			this.storageType = storageType;
-			this.fileName = fileName;
-			this.con = null;
+			this(storageType, fileName, BlobAndBundleDatabase.getInstance().getInterface().getConnection());
 		}
 		public void setConnection(final Connection con) {
 			if (this.con == null) this.con = con;

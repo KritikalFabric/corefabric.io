@@ -99,6 +99,8 @@ public class BundleDatabase extends AbstractStartableComponent {
 	public static BundleDatabase getInstance() {
 		return BlobAndBundleDatabase.getInstance();
 	}
+
+	public DBInterface getInterface() { return _dbInterface; }
 	
 	/**
 	 * Private constructor

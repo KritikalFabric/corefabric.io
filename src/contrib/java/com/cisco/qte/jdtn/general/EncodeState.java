@@ -31,6 +31,7 @@ package com.cisco.qte.jdtn.general;
 
 
 import com.cisco.qte.jdtn.apps.MediaRepository;
+import org.kritikal.fabric.contrib.jdtn.BlobAndBundleDatabase;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -65,7 +66,7 @@ public class EncodeState {
 	/** If not encoding to file, the buffer we're encoding to */
 	public GrowableArrayOfBytes memList = null;
 
-	private ByteArrayOutputStream _fos = null;
+	BlobAndBundleDatabase blobAndBundleDatabase = null;
 
 
 	/**
@@ -84,12 +85,12 @@ public class EncodeState {
 	public EncodeState(MediaRepository.File aFile) throws JDtnException {
 		isEncodingToFile = true;
 		this.file = aFile;
+		blobAndBundleDatabase = BlobAndBundleDatabase.getInstance();
 		// We must delete the file if it exists, otherwise subsequent
 		// channel operations hang.  Go figure!
 		if (aFile.exists()) {
 			aFile.delete();
 		}
-		_fos = new ByteArrayOutputStream();
 	}
 	
 	/**
@@ -102,12 +103,12 @@ public class EncodeState {
 		this.isEncodingToFile = aIsEncodingToFile;
 		if (aIsEncodingToFile) {
 			this.file = aFile;
+			blobAndBundleDatabase = BlobAndBundleDatabase.getInstance();
 			// We must delete the file if it exists, otherwise subsequent
 			// channel operations hang.  Go figure!
 			if (aFile.exists()) {
 				aFile.delete();
 			}
-			_fos = new ByteArrayOutputStream();
 		}
 		else {
 			memList = new GrowableArrayOfBytes();
@@ -121,7 +122,9 @@ public class EncodeState {
 	 */
 	public void put(byte bite) throws JDtnException {
 		if (isEncodingToFile) {
-			_fos.write(Utils.byteToIntUnsigned(bite));
+			byte[] bytes = new byte[1];
+			bytes[0] = bite;
+			blobAndBundleDatabase.appendByteArrayToFile(bytes, 0, bytes.length, file);
 			fileLength++;
 		} else {
 			memList.add(bite);
@@ -135,7 +138,9 @@ public class EncodeState {
 	 */
 	public void put(int intBite) throws JDtnException {
 		if (isEncodingToFile) {
-			_fos.write(intBite);
+			byte[] bytes = new byte[1];
+			bytes[0] = (byte)intBite;
+			blobAndBundleDatabase.appendByteArrayToFile(bytes, 0, bytes.length, file);
 			fileLength++;
 		} else {
 			memList.add(Utils.intToByteUnsigned(intBite));
@@ -148,7 +153,7 @@ public class EncodeState {
 	 */
 	public long getLength() {
 		if (isEncodingToFile) {
-			return fileLength;
+			return file.length();
 		} else {
 			return memList.length();
 		}
@@ -161,7 +166,7 @@ public class EncodeState {
 	 */
 	public byte[] getByteBuffer() throws JDtnException {
 		if (isEncodingToFile) {
-			return _fos.toByteArray();
+			return blobAndBundleDatabase.mediaGetBodyData(file);
 		}
 		return memList.gather();
 	}
@@ -175,8 +180,8 @@ public class EncodeState {
 		if (isEncodingToFile) {
 			byte[] biteArray = Utils.arrayListToByteArray(bites);
 			try {
-				_fos.write(biteArray);
-			} catch (IOException e) {
+				blobAndBundleDatabase.appendByteArrayToFile(biteArray, 0, biteArray.length, file);
+			} catch (Exception e) {
 				throw new JDtnException(e);
 			}
 			fileLength += biteArray.length;
@@ -240,7 +245,7 @@ public class EncodeState {
 				while (remainingBytes > 0) {
 					int nRead = raf2.read(buffer);
 					if (nRead > 0) {
-						_fos.write(buffer, 0, nRead);
+						blobAndBundleDatabase.appendByteArrayToFile(buffer, 0, nRead, file);
 						remainingBytes -= nRead;
 						fileLength += nRead;
 					} else {
@@ -311,7 +316,7 @@ public class EncodeState {
 	public void append(byte[] buffer, int offset, int length)
 	throws JDtnException {
 		if (isEncodingToFile) {
-			_fos.write(buffer, offset, length);
+			blobAndBundleDatabase.appendByteArrayToFile(buffer, 0, length, file);
 			fileLength += length;
 		} else {
 			for (int ix = 0; ix < length; ix++) {
@@ -338,13 +343,10 @@ public class EncodeState {
 	public void close() {
 		if (isEncodingToFile) {
 			try {
-				if (_fos != null) {
-					_fos.close();
-				}
-			} catch (IOException e) {
+				blobAndBundleDatabase.getInterface().commit();
+			} catch (Exception e) {
 				// Ignore
 			}
-			_fos = null;
 		} else {
 			memList.close();
 		}
