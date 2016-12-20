@@ -386,6 +386,7 @@ public class BlobAndBundleDatabase extends BundleDatabase {
                 }
             } finally {
                 stmt.close();
+                file.setOid(0l);
             }
             return true;
         } catch (SQLException e) {
