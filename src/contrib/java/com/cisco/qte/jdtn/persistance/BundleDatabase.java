@@ -32,6 +32,7 @@ package com.cisco.qte.jdtn.persistance;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.sql.SQLException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -237,91 +238,109 @@ public class BundleDatabase extends AbstractStartableComponent {
 		if (_dbInterface == null) {
 			throw new JDtnException("Database has not been connected");
 		}
-		
-		// Encode the entire Bundle to a File
-		MediaRepository.File path = Store.getInstance().createBundleFile();
-		EncodeState encodeState = new EncodeState(path);
-		bundle.encode(encodeState, eidScheme);
-		encodeState.close();
-		
-		// Query to see if Bundle is already in Database.  If so, replace it.
-		String statementText = null;
-		statementText = 
-			"select " + 
-			BundleDatabaseConstants.PATH_COL +
-			" from " + BundleDatabaseConstants.TABLE_NAME + " where " +
-					BundleDatabaseConstants.STORAGETYPE_COL + " = " + BlobAndBundleDatabase.intOf(path.getStorageType()) + " and " +
-			BundleDatabaseConstants.SOURCE_EID_COL + "='" + bundle.getBundleId().sourceEndPointId.getEndPointIdString() + "' and " +
-			BundleDatabaseConstants.TIME_SECS_COL + "=" + bundle.getBundleId().timestamp.getTimeSecsSinceY2K() + " and " +
-			BundleDatabaseConstants.SEQUENCE_NO_COL + "=" + bundle.getBundleId().timestamp.getSequenceNumber() + " and " +
-			BundleDatabaseConstants.FRAG_OFFSET_COL + "=" + bundle.getPrimaryBundleBlock().getFragmentOffset() +
-			";"
-			;
-	    _logger.fine(statementText);
-	    
-	    try {
-			QueryResults qr = _dbInterface.executeQuery(statementText);
-			if (qr.next()) {
-				qr.close();
-				
-				// Already in Database; replace it
-				statementText =
-					"update " + BundleDatabaseConstants.TABLE_NAME + " set " +
-					BundleDatabaseConstants.PATH_COL + "='" + path.getAbsolutePath() + "', " +
-							BundleDatabaseConstants.STORAGETYPE_COL + "=" + BlobAndBundleDatabase.intOf(path.getStorageType()) + ", " +
-					BundleDatabaseConstants.LENGTH_COL + "=" + path.length() + ", " +
-					BundleDatabaseConstants.SOURCE_COL + "='" + BundleSource.toParseableString(source) + "', " +
-					BundleDatabaseConstants.STATE_COL + "='" + BundleState.toParseableString(state) + "', " +
-					BundleDatabaseConstants.EID_SCHEME_COL + "='" + EidScheme.eidSchemeToString(eidScheme) + "', " +
-					(bundle.getLink() != null ?
-							BundleDatabaseConstants.LINK_NAME_COL + "='" + bundle.getLink().getName() + "', " :
-								BundleDatabaseConstants.LINK_NAME_COL + "=null, ") +
-					(bundle.isInboundBundle() ?
-							BundleDatabaseConstants.IS_INBOUND_COL + "=1, " :
-							BundleDatabaseConstants.IS_INBOUND_COL + "=0, ") +
-							BundleDatabaseConstants.RETENTION_CONSTRAINT_COL + "=" + bundle.getRetentionConstraint() + " " +
-							BundleDatabaseConstants.DATA_BLOB_COL + "=" + path.getOid() + " " +
-					"where " +
-					BundleDatabaseConstants.SOURCE_EID_COL + "='" + bundle.getBundleId().sourceEndPointId.getEndPointIdString() + "' and " +
-					BundleDatabaseConstants.TIME_SECS_COL + "=" + bundle.getBundleId().timestamp.getTimeSecsSinceY2K() + " and " +
-					BundleDatabaseConstants.SEQUENCE_NO_COL + "=" + bundle.getBundleId().timestamp.getSequenceNumber() + " and " +
-					BundleDatabaseConstants.FRAG_OFFSET_COL + "=" + bundle.getPrimaryBundleBlock().getFragmentOffset() +
-					";"
-					;
-			    _logger.fine(statementText);
-			    _dbInterface.executeUpdate(statementText);
-			    _dbInterface.commit();
-			    return;
-			}
-			qr.close();
-			
-			// Not already in database; Create an entry in the Database
+
+		java.sql.Connection con = getInterface().createConnection();
+		try {
+
+			// Encode the entire Bundle to a File
+			MediaRepository.File path = Store.getInstance().createBundleFile();
+			EncodeState encodeState = new EncodeState(con, path);
+			bundle.encode(con, encodeState, eidScheme);
+			encodeState.close();
+
+			// Query to see if Bundle is already in Database.  If so, replace it.
+			String statementText = null;
 			statementText =
-				"insert into " + BundleDatabaseConstants.TABLE_NAME + " values (" +
-					"'" + bundle.getExtendedBundleId().getBundleId().sourceEndPointId.getEndPointIdString() + "', " +
-					bundle.getPrimaryBundleBlock().getCreationTimestamp().getTimeSecsSinceY2K() + ", " +
-					bundle.getPrimaryBundleBlock().getCreationTimestamp().getSequenceNumber() + ", " +
-					bundle.getPrimaryBundleBlock().getFragmentOffset() + ", " +
-					"'" + path.getAbsolutePath() + "', " +
-						BlobAndBundleDatabase.intOf(path.getStorageType()) + ", " +
-					path.length() + ", " +
-					"'" + BundleSource.toParseableString(source) + "', " +
-					"'" + BundleState.toParseableString(state) + "', " +
-					"'" + EidScheme.eidSchemeToString(eidScheme) + "', " +
-					((bundle.getLink() == null) ?
-						"NULL, " :
-						"'" + bundle.getLink().getName() + "', ") +
-					"'" + bundle.isInboundBundle() + "', " +
-					bundle.getRetentionConstraint() + ", " +
-						path.getOid() +
-					");";
+					"select " +
+							BundleDatabaseConstants.PATH_COL +
+							" from " + BundleDatabaseConstants.TABLE_NAME + " where " +
+							BundleDatabaseConstants.STORAGETYPE_COL + " = " + BlobAndBundleDatabase.intOf(path.getStorageType()) + " and " +
+							BundleDatabaseConstants.SOURCE_EID_COL + "='" + bundle.getBundleId().sourceEndPointId.getEndPointIdString() + "' and " +
+							BundleDatabaseConstants.TIME_SECS_COL + "=" + bundle.getBundleId().timestamp.getTimeSecsSinceY2K() + " and " +
+							BundleDatabaseConstants.SEQUENCE_NO_COL + "=" + bundle.getBundleId().timestamp.getSequenceNumber() + " and " +
+							BundleDatabaseConstants.FRAG_OFFSET_COL + "=" + bundle.getPrimaryBundleBlock().getFragmentOffset() +
+							";"
+			;
 			_logger.fine(statementText);
-			_dbInterface.executeInsert(statementText);
-			_dbInterface.commit();
-		} catch (IllegalArgumentException e) {
-			_logger.log(Level.SEVERE, "introduceBundle()", e);
-		} catch (DBInterfaceException e) {
-			_logger.log(Level.SEVERE, "introduceBundle()", e);
+
+			try {
+				QueryResults qr = _dbInterface.executeQuery(con, statementText);
+				if (qr.next()) {
+					qr.close();
+
+					// Already in Database; replace it
+					statementText =
+							"update " + BundleDatabaseConstants.TABLE_NAME + " set " +
+									BundleDatabaseConstants.PATH_COL + "='" + path.getAbsolutePath() + "', " +
+									BundleDatabaseConstants.STORAGETYPE_COL + "=" + BlobAndBundleDatabase.intOf(path.getStorageType()) + ", " +
+									BundleDatabaseConstants.LENGTH_COL + "=" + path.length(con) + ", " +
+									BundleDatabaseConstants.SOURCE_COL + "='" + BundleSource.toParseableString(source) + "', " +
+									BundleDatabaseConstants.STATE_COL + "='" + BundleState.toParseableString(state) + "', " +
+									BundleDatabaseConstants.EID_SCHEME_COL + "='" + EidScheme.eidSchemeToString(eidScheme) + "', " +
+									(bundle.getLink() != null ?
+											BundleDatabaseConstants.LINK_NAME_COL + "='" + bundle.getLink().getName() + "', " :
+											BundleDatabaseConstants.LINK_NAME_COL + "=null, ") +
+									(bundle.isInboundBundle() ?
+											BundleDatabaseConstants.IS_INBOUND_COL + "=1, " :
+											BundleDatabaseConstants.IS_INBOUND_COL + "=0, ") +
+									BundleDatabaseConstants.RETENTION_CONSTRAINT_COL + "=" + bundle.getRetentionConstraint() + " " +
+									BundleDatabaseConstants.DATA_BLOB_COL + "=" + path.getOid() + " " +
+									"where " +
+									BundleDatabaseConstants.SOURCE_EID_COL + "='" + bundle.getBundleId().sourceEndPointId.getEndPointIdString() + "' and " +
+									BundleDatabaseConstants.TIME_SECS_COL + "=" + bundle.getBundleId().timestamp.getTimeSecsSinceY2K() + " and " +
+									BundleDatabaseConstants.SEQUENCE_NO_COL + "=" + bundle.getBundleId().timestamp.getSequenceNumber() + " and " +
+									BundleDatabaseConstants.FRAG_OFFSET_COL + "=" + bundle.getPrimaryBundleBlock().getFragmentOffset() +
+									";"
+					;
+					_logger.fine(statementText);
+					_dbInterface.executeUpdate(con, statementText);
+					try { con.commit(); } catch (SQLException e) {
+						_logger.warning(e.getMessage());
+					}
+					return;
+				}
+				qr.close();
+
+				// Not already in database; Create an entry in the Database
+				statementText =
+						"insert into " + BundleDatabaseConstants.TABLE_NAME + " values (" +
+								"'" + bundle.getExtendedBundleId().getBundleId().sourceEndPointId.getEndPointIdString() + "', " +
+								bundle.getPrimaryBundleBlock().getCreationTimestamp().getTimeSecsSinceY2K() + ", " +
+								bundle.getPrimaryBundleBlock().getCreationTimestamp().getSequenceNumber() + ", " +
+								bundle.getPrimaryBundleBlock().getFragmentOffset() + ", " +
+								"'" + path.getAbsolutePath() + "', " +
+								BlobAndBundleDatabase.intOf(path.getStorageType()) + ", " +
+								path.length(con) + ", " +
+								"'" + BundleSource.toParseableString(source) + "', " +
+								"'" + BundleState.toParseableString(state) + "', " +
+								"'" + EidScheme.eidSchemeToString(eidScheme) + "', " +
+								((bundle.getLink() == null) ?
+										"NULL, " :
+										"'" + bundle.getLink().getName() + "', ") +
+								"'" + bundle.isInboundBundle() + "', " +
+								bundle.getRetentionConstraint() + ", " +
+								path.getOid() +
+								");";
+				_logger.fine(statementText);
+				_dbInterface.executeInsert(con, statementText);
+
+				try { con.commit(); } catch (SQLException e) {
+					_logger.warning(e.getMessage());
+				}
+				return;
+
+			} catch (IllegalArgumentException e) {
+				_logger.log(Level.SEVERE, "introduceBundle()", e);
+				try { con.rollback(); } catch (SQLException ignore) { }
+			} catch (DBInterfaceException e) {
+				_logger.log(Level.SEVERE, "introduceBundle()", e);
+				try { con.rollback(); } catch (SQLException ignore) { }
+			}
+		}
+		finally {
+			try { con.close(); } catch (SQLException e) {
+				_logger.warning(e.getMessage());
+			}
 		}
 	}
 	
@@ -341,24 +360,37 @@ public class BundleDatabase extends AbstractStartableComponent {
 		if (_dbInterface == null) {
 			throw new JDtnException("Database has not been connected");
 		}
-		String statementText =
-			"update " + BundleDatabaseConstants.TABLE_NAME + " set " +
-			BundleDatabaseConstants.RETENTION_CONSTRAINT_COL + "=" + bundle.getRetentionConstraint() + " " +
-			"where " +
-			BundleDatabaseConstants.SOURCE_EID_COL + "='" + bundle.getBundleId().sourceEndPointId.getEndPointIdString() + "' and " +
-			BundleDatabaseConstants.TIME_SECS_COL + "=" + bundle.getBundleId().timestamp.getTimeSecsSinceY2K() + " and " +
-			BundleDatabaseConstants.SEQUENCE_NO_COL + "=" + bundle.getBundleId().timestamp.getSequenceNumber() + " and " +
-			BundleDatabaseConstants.FRAG_OFFSET_COL + "=" + bundle.getPrimaryBundleBlock().getFragmentOffset() +
-			";"
-			;
-	    _logger.fine(statementText);
+		java.sql.Connection con = getInterface().createConnection();
 		try {
-			_dbInterface.executeUpdate(statementText);
-			_dbInterface.commit();
-		} catch (DBInterfaceException e) {
-			throw new JDtnException(e);
+
+			String statementText =
+				"update " + BundleDatabaseConstants.TABLE_NAME + " set " +
+				BundleDatabaseConstants.RETENTION_CONSTRAINT_COL + "=" + bundle.getRetentionConstraint() + " " +
+				"where " +
+				BundleDatabaseConstants.SOURCE_EID_COL + "='" + bundle.getBundleId().sourceEndPointId.getEndPointIdString() + "' and " +
+				BundleDatabaseConstants.TIME_SECS_COL + "=" + bundle.getBundleId().timestamp.getTimeSecsSinceY2K() + " and " +
+				BundleDatabaseConstants.SEQUENCE_NO_COL + "=" + bundle.getBundleId().timestamp.getSequenceNumber() + " and " +
+				BundleDatabaseConstants.FRAG_OFFSET_COL + "=" + bundle.getPrimaryBundleBlock().getFragmentOffset() +
+				";"
+				;
+			_logger.fine(statementText);
+			try {
+				_dbInterface.executeUpdate(con, statementText);
+				try { con.commit(); } catch (SQLException e) {
+					_logger.warning(e.getMessage());
+				}
+				return;
+			} catch (DBInterfaceException e) {
+				try { con.rollback(); } catch (SQLException ignore) { }
+				throw new JDtnException(e);
+			}
+
 		}
-	    return;
+		finally {
+			try { con.close(); } catch (SQLException e) {
+				_logger.warning(e.getMessage());
+			}
+		}
 	}
 	
 	/**
@@ -377,24 +409,35 @@ public class BundleDatabase extends AbstractStartableComponent {
 		if (_dbInterface == null) {
 			throw new JDtnException("Database has not been connected");
 		}
-		String statementText =
-			"update " + BundleDatabaseConstants.TABLE_NAME + " set " +
-			BundleDatabaseConstants.LINK_NAME_COL + "='" + link.getName() + "' " +
-			"where " +
-			BundleDatabaseConstants.SOURCE_EID_COL + "='" + bundle.getBundleId().sourceEndPointId.getEndPointIdString() + "' and " +
-			BundleDatabaseConstants.TIME_SECS_COL + "=" + bundle.getBundleId().timestamp.getTimeSecsSinceY2K() + " and " +
-			BundleDatabaseConstants.SEQUENCE_NO_COL + "=" + bundle.getBundleId().timestamp.getSequenceNumber() + " and " +
-			BundleDatabaseConstants.FRAG_OFFSET_COL + "=" + bundle.getPrimaryBundleBlock().getFragmentOffset() +
-			";"
-			;
-	    _logger.fine(statementText);
+		java.sql.Connection con = getInterface().createConnection();
 		try {
-			_dbInterface.executeUpdate(statementText);
-			_dbInterface.commit();
-		} catch (DBInterfaceException e) {
-			throw new JDtnException(e);
+			String statementText =
+				"update " + BundleDatabaseConstants.TABLE_NAME + " set " +
+				BundleDatabaseConstants.LINK_NAME_COL + "='" + link.getName() + "' " +
+				"where " +
+				BundleDatabaseConstants.SOURCE_EID_COL + "='" + bundle.getBundleId().sourceEndPointId.getEndPointIdString() + "' and " +
+				BundleDatabaseConstants.TIME_SECS_COL + "=" + bundle.getBundleId().timestamp.getTimeSecsSinceY2K() + " and " +
+				BundleDatabaseConstants.SEQUENCE_NO_COL + "=" + bundle.getBundleId().timestamp.getSequenceNumber() + " and " +
+				BundleDatabaseConstants.FRAG_OFFSET_COL + "=" + bundle.getPrimaryBundleBlock().getFragmentOffset() +
+				";"
+				;
+			_logger.fine(statementText);
+			try {
+				_dbInterface.executeUpdate(con, statementText);
+				try { con.commit(); } catch (SQLException e) {
+					_logger.warning(e.getMessage());
+				}
+				return;
+			} catch (DBInterfaceException e) {
+				try { con.rollback(); } catch (SQLException ignore) { }
+				throw new JDtnException(e);
+			}
 		}
-	    return;
+		finally {
+			try { con.close(); } catch (SQLException e) {
+				_logger.warning(e.getMessage());
+			}
+		}
 	}
 	
 	/**
@@ -415,24 +458,35 @@ public class BundleDatabase extends AbstractStartableComponent {
 		if (_dbInterface == null) {
 			throw new JDtnException("Database has not been connected");
 		}
-		String statementText =
-			"update " + BundleDatabaseConstants.TABLE_NAME + " set " +
-			BundleDatabaseConstants.EID_SCHEME_COL + "='" + EidScheme.eidSchemeToString(eidScheme) + "' " +
-			"where " +
-			BundleDatabaseConstants.SOURCE_EID_COL + "='" + bundle.getBundleId().sourceEndPointId.getEndPointIdString() + "' and " +
-			BundleDatabaseConstants.TIME_SECS_COL + "=" + bundle.getBundleId().timestamp.getTimeSecsSinceY2K() + " and " +
-			BundleDatabaseConstants.SEQUENCE_NO_COL + "=" + bundle.getBundleId().timestamp.getSequenceNumber() + " and " +
-			BundleDatabaseConstants.FRAG_OFFSET_COL + "=" + bundle.getPrimaryBundleBlock().getFragmentOffset() +
-			";"
-			;
-	    _logger.fine(statementText);
+		java.sql.Connection con = getInterface().createConnection();
 		try {
-			_dbInterface.executeUpdate(statementText);
-			_dbInterface.commit();
-		} catch (DBInterfaceException e) {
-			throw new JDtnException(e);
+			String statementText =
+				"update " + BundleDatabaseConstants.TABLE_NAME + " set " +
+				BundleDatabaseConstants.EID_SCHEME_COL + "='" + EidScheme.eidSchemeToString(eidScheme) + "' " +
+				"where " +
+				BundleDatabaseConstants.SOURCE_EID_COL + "='" + bundle.getBundleId().sourceEndPointId.getEndPointIdString() + "' and " +
+				BundleDatabaseConstants.TIME_SECS_COL + "=" + bundle.getBundleId().timestamp.getTimeSecsSinceY2K() + " and " +
+				BundleDatabaseConstants.SEQUENCE_NO_COL + "=" + bundle.getBundleId().timestamp.getSequenceNumber() + " and " +
+				BundleDatabaseConstants.FRAG_OFFSET_COL + "=" + bundle.getPrimaryBundleBlock().getFragmentOffset() +
+				";"
+				;
+			_logger.fine(statementText);
+			try {
+				_dbInterface.executeUpdate(con, statementText);
+				try { con.commit(); } catch (SQLException e) {
+					_logger.warning(e.getMessage());
+				}
+				return;
+			} catch (DBInterfaceException e) {
+				try { con.rollback(); } catch (SQLException ignore) { }
+				throw new JDtnException(e);
+			}
 		}
-	    return;
+		finally {
+			try { con.close(); } catch (SQLException e) {
+				_logger.warning(e.getMessage());
+			}
+		}
 	}
 	
 	/**
@@ -452,30 +506,43 @@ public class BundleDatabase extends AbstractStartableComponent {
 		if (_dbInterface == null) {
 			throw new JDtnException("Database has not been connected");
 		}
-		String statementText =
-			"select " + BundleDatabaseConstants.EID_SCHEME_COL + " from " + BundleDatabaseConstants.TABLE_NAME +
-			"where " +
-			BundleDatabaseConstants.SOURCE_EID_COL + "='" + bundle.getBundleId().sourceEndPointId.getEndPointIdString() + "' and " +
-			BundleDatabaseConstants.TIME_SECS_COL + "=" + bundle.getBundleId().timestamp.getTimeSecsSinceY2K() + " and " +
-			BundleDatabaseConstants.SEQUENCE_NO_COL + "=" + bundle.getBundleId().timestamp.getSequenceNumber() + " and " +
-			BundleDatabaseConstants.FRAG_OFFSET_COL + "=" + bundle.getPrimaryBundleBlock().getFragmentOffset() +
-			";"
-			;
-		_logger.fine(statementText);
+		java.sql.Connection con = getInterface().createConnection();
 		try {
-			QueryResults qr = _dbInterface.executeQuery(statementText);
-			if (qr.next()) {
-				qr.close();
-				EidScheme eidScheme =
-					EidScheme.parseEidScheme(qr.getString(1));
-				return eidScheme;
-				
-			} else {
-				qr.close();
-				throw new JDtnException("No such Bundle: " + bundle.getExtendedBundleId().dump("", false));
+			String statementText =
+				"select " + BundleDatabaseConstants.EID_SCHEME_COL + " from " + BundleDatabaseConstants.TABLE_NAME +
+				"where " +
+				BundleDatabaseConstants.SOURCE_EID_COL + "='" + bundle.getBundleId().sourceEndPointId.getEndPointIdString() + "' and " +
+				BundleDatabaseConstants.TIME_SECS_COL + "=" + bundle.getBundleId().timestamp.getTimeSecsSinceY2K() + " and " +
+				BundleDatabaseConstants.SEQUENCE_NO_COL + "=" + bundle.getBundleId().timestamp.getSequenceNumber() + " and " +
+				BundleDatabaseConstants.FRAG_OFFSET_COL + "=" + bundle.getPrimaryBundleBlock().getFragmentOffset() +
+				";"
+				;
+			_logger.fine(statementText);
+			try {
+				QueryResults qr = _dbInterface.executeQuery(con, statementText);
+				if (qr.next()) {
+					qr.close();
+					EidScheme eidScheme =
+						EidScheme.parseEidScheme(qr.getString(1));
+					try { con.commit(); } catch (SQLException e) {
+						_logger.warning(e.getMessage());
+					}
+					return eidScheme;
+
+				} else {
+					qr.close();
+					try { con.rollback(); } catch (SQLException ignore) { }
+					throw new JDtnException("No such Bundle: " + bundle.getExtendedBundleId().dump("", false));
+				}
+			} catch (DBInterfaceException e) {
+				try { con.rollback(); } catch (SQLException ignore) { }
+				throw new JDtnException(e);
 			}
-		} catch (DBInterfaceException e) {
-			throw new JDtnException(e);
+		}
+		finally {
+			try { con.close(); } catch (SQLException e) {
+				_logger.warning(e.getMessage());
+			}
 		}
 	}
 	
@@ -496,50 +563,60 @@ public class BundleDatabase extends AbstractStartableComponent {
 		if (_dbInterface == null) {
 			throw new JDtnException("Database has not been connected");
 		}
-		// Select entry from DB corresponding to given bundle
-		String statementText = 
-			"select " + 
-			BundleDatabaseConstants.PATH_COL + ", " + BundleDatabaseConstants.EID_SCHEME_COL + ", " + BundleDatabaseConstants.STORAGETYPE_COL + ", " + BundleDatabaseConstants.DATA_BLOB_COL +
-			" from " + BundleDatabaseConstants.TABLE_NAME + " where " +
-			BundleDatabaseConstants.SOURCE_EID_COL + "='" + bundle.getBundleId().sourceEndPointId.getEndPointIdString() + "' and " +
-			BundleDatabaseConstants.TIME_SECS_COL + "=" + bundle.getBundleId().timestamp.getTimeSecsSinceY2K() + " and " +
-			BundleDatabaseConstants.SEQUENCE_NO_COL + "=" + bundle.getBundleId().timestamp.getSequenceNumber() + " and " +
-			BundleDatabaseConstants.FRAG_OFFSET_COL + "=" + bundle.getPrimaryBundleBlock().getFragmentOffset() +
-			";"
-			;
-	    _logger.fine(statementText);
-	    try {
-			QueryResults qr = _dbInterface.executeQuery(statementText);
-			
-			// Pull queried column values from ResultSet of query
-			if (!qr.next()) {
+		java.sql.Connection con = getInterface().createConnection();
+		try {
+			// Select entry from DB corresponding to given bundle
+			String statementText =
+				"select " +
+				BundleDatabaseConstants.PATH_COL + ", " + BundleDatabaseConstants.EID_SCHEME_COL + ", " + BundleDatabaseConstants.STORAGETYPE_COL + ", " + BundleDatabaseConstants.DATA_BLOB_COL +
+				" from " + BundleDatabaseConstants.TABLE_NAME + " where " +
+				BundleDatabaseConstants.SOURCE_EID_COL + "='" + bundle.getBundleId().sourceEndPointId.getEndPointIdString() + "' and " +
+				BundleDatabaseConstants.TIME_SECS_COL + "=" + bundle.getBundleId().timestamp.getTimeSecsSinceY2K() + " and " +
+				BundleDatabaseConstants.SEQUENCE_NO_COL + "=" + bundle.getBundleId().timestamp.getSequenceNumber() + " and " +
+				BundleDatabaseConstants.FRAG_OFFSET_COL + "=" + bundle.getPrimaryBundleBlock().getFragmentOffset() +
+				";"
+				;
+			_logger.fine(statementText);
+			try {
+				QueryResults qr = _dbInterface.executeQuery(con, statementText);
+
+				// Pull queried column values from ResultSet of query
+				if (!qr.next()) {
+					qr.close();
+					throw new IllegalStateException("Query for bundle returned no results");
+				}
+				String pathnameStr = qr.getString(1);
+				EidScheme eidScheme = EidScheme.parseEidScheme(qr.getString(2));
+				BlobAndBundleDatabase.StorageType storageType = BlobAndBundleDatabase.storageTypeOf(qr.getInt(3));
+				MediaRepository.File file = new MediaRepository.File(storageType, pathnameStr);
+				file.setOid(qr.getLong(4));
 				qr.close();
-				throw new IllegalStateException("Query for bundle returned no results");
+
+				// Encode the bundle to its file
+				EncodeState encodeState = new EncodeState();
+				bundle.encode(con, encodeState, eidScheme);
+				encodeState.close();
+
+				_dbInterface.executeUpdate(con, "UPDATE " + BundleDatabaseConstants.TABLE_NAME + " SET " + BundleDatabaseConstants.DATA_BLOB_COL + "=" + file.getOid() + " where " +
+						BundleDatabaseConstants.SOURCE_EID_COL + "='" + bundle.getBundleId().sourceEndPointId.getEndPointIdString() + "' and " +
+						BundleDatabaseConstants.TIME_SECS_COL + "=" + bundle.getBundleId().timestamp.getTimeSecsSinceY2K() + " and " +
+						BundleDatabaseConstants.SEQUENCE_NO_COL + "=" + bundle.getBundleId().timestamp.getSequenceNumber() + " and " +
+						BundleDatabaseConstants.FRAG_OFFSET_COL + "=" + bundle.getPrimaryBundleBlock().getFragmentOffset() +
+						";");
+				try { con.commit(); } catch (SQLException e) {
+					_logger.warning(e.getMessage());
+				}
+				return;
+			} catch (DBInterfaceException e) {
+				try { con.rollback(); } catch (SQLException ignore) { }
+				throw new JDtnException(e);
 			}
-			String pathnameStr = qr.getString(1);
-			EidScheme eidScheme = EidScheme.parseEidScheme(qr.getString(2));
-			BlobAndBundleDatabase.StorageType storageType = BlobAndBundleDatabase.storageTypeOf(qr.getInt(3));
-			MediaRepository.File file = new MediaRepository.File(storageType, pathnameStr);
-			file.setOid(qr.getLong(4));
-			qr.close();
-			
-			// Encode the bundle to its file
-			EncodeState encodeState = new EncodeState();
-			bundle.encode(encodeState, eidScheme);
-			encodeState.close();
-
-			_dbInterface.executeUpdate("UPDATE " + BundleDatabaseConstants.TABLE_NAME + " SET " + BundleDatabaseConstants.DATA_BLOB_COL + "=" + file.getOid() + " where " +
-					BundleDatabaseConstants.SOURCE_EID_COL + "='" + bundle.getBundleId().sourceEndPointId.getEndPointIdString() + "' and " +
-					BundleDatabaseConstants.TIME_SECS_COL + "=" + bundle.getBundleId().timestamp.getTimeSecsSinceY2K() + " and " +
-					BundleDatabaseConstants.SEQUENCE_NO_COL + "=" + bundle.getBundleId().timestamp.getSequenceNumber() + " and " +
-					BundleDatabaseConstants.FRAG_OFFSET_COL + "=" + bundle.getPrimaryBundleBlock().getFragmentOffset() +
-					";");
-			_dbInterface.commit();
-
-		} catch (DBInterfaceException e) {
-			throw new JDtnException(e);
 		}
-
+		finally {
+			try { con.close(); } catch (SQLException e) {
+				_logger.warning(e.getMessage());
+			}
+		}
 	}
 	
 	/**
@@ -559,25 +636,36 @@ public class BundleDatabase extends AbstractStartableComponent {
 		if (_dbInterface == null) {
 			throw new JDtnException("Database has not been connected");
 		}
-		
-		// Update the BundleState and Retention constraint in the DB
-		String statementText =
-			"update " + BundleDatabaseConstants.TABLE_NAME + " set " +
-			BundleDatabaseConstants.STATE_COL + "='" + BundleState.toParseableString(BundleState.FORWARD_ENQUEUED) + "', " +
-			BundleDatabaseConstants.RETENTION_CONSTRAINT_COL + "=" + bundle.getRetentionConstraint() +
-			" where " +
-			BundleDatabaseConstants.SOURCE_EID_COL + "='" + bundle.getBundleId().sourceEndPointId.getEndPointIdString() + "' and " +
-			BundleDatabaseConstants.TIME_SECS_COL + "=" + bundle.getBundleId().timestamp.getTimeSecsSinceY2K() + " and " +
-			BundleDatabaseConstants.SEQUENCE_NO_COL + "=" + bundle.getBundleId().timestamp.getSequenceNumber() + " and " +
-			BundleDatabaseConstants.FRAG_OFFSET_COL + "=" + bundle.getPrimaryBundleBlock().getFragmentOffset() +
-			";"
-			;
-	    _logger.fine(statementText);
+		java.sql.Connection con = getInterface().createConnection();
 		try {
-			_dbInterface.executeUpdate(statementText);
-			_dbInterface.commit();
-		} catch (DBInterfaceException e) {
-			throw new JDtnException(e);
+			// Update the BundleState and Retention constraint in the DB
+			String statementText =
+				"update " + BundleDatabaseConstants.TABLE_NAME + " set " +
+				BundleDatabaseConstants.STATE_COL + "='" + BundleState.toParseableString(BundleState.FORWARD_ENQUEUED) + "', " +
+				BundleDatabaseConstants.RETENTION_CONSTRAINT_COL + "=" + bundle.getRetentionConstraint() +
+				" where " +
+				BundleDatabaseConstants.SOURCE_EID_COL + "='" + bundle.getBundleId().sourceEndPointId.getEndPointIdString() + "' and " +
+				BundleDatabaseConstants.TIME_SECS_COL + "=" + bundle.getBundleId().timestamp.getTimeSecsSinceY2K() + " and " +
+				BundleDatabaseConstants.SEQUENCE_NO_COL + "=" + bundle.getBundleId().timestamp.getSequenceNumber() + " and " +
+				BundleDatabaseConstants.FRAG_OFFSET_COL + "=" + bundle.getPrimaryBundleBlock().getFragmentOffset() +
+				";"
+				;
+			_logger.fine(statementText);
+			try {
+				_dbInterface.executeUpdate(con, statementText);
+				try { con.commit(); } catch (SQLException e) {
+					_logger.warning(e.getMessage());
+				}
+				return;
+			} catch (DBInterfaceException e) {
+				try { con.rollback(); } catch (SQLException ignore) { }
+				throw new JDtnException(e);
+			}
+		}
+		finally {
+			try { con.close(); } catch (SQLException e) {
+				_logger.warning(e.getMessage());
+			}
 		}
 	}
 	
@@ -598,25 +686,36 @@ public class BundleDatabase extends AbstractStartableComponent {
 		if (_dbInterface == null) {
 			throw new JDtnException("Database has not been connected");
 		}
-
-		// Update the BundleState and Retention Constraint in the DB
-		String statementText =
-			"update " + BundleDatabaseConstants.TABLE_NAME + " set " +
-			BundleDatabaseConstants.STATE_COL + "='" + BundleState.toParseableString(BundleState.HELD) + "', " +
-			BundleDatabaseConstants.RETENTION_CONSTRAINT_COL + "=" + bundle.getRetentionConstraint() +
-			" where " +
-			BundleDatabaseConstants.SOURCE_EID_COL + "='" + bundle.getBundleId().sourceEndPointId.getEndPointIdString() + "' and " +
-			BundleDatabaseConstants.TIME_SECS_COL + "=" + bundle.getBundleId().timestamp.getTimeSecsSinceY2K() + " and " +
-			BundleDatabaseConstants.SEQUENCE_NO_COL + "=" + bundle.getBundleId().timestamp.getSequenceNumber() + " and " +
-			BundleDatabaseConstants.FRAG_OFFSET_COL + "=" + bundle.getPrimaryBundleBlock().getFragmentOffset() +
-			";"
-			;
-	    _logger.fine(statementText);
+		java.sql.Connection con = getInterface().createConnection();
 		try {
-			_dbInterface.executeUpdate(statementText);
-			_dbInterface.commit();
-		} catch (DBInterfaceException e) {
-			throw new JDtnException(e);
+			// Update the BundleState and Retention Constraint in the DB
+			String statementText =
+				"update " + BundleDatabaseConstants.TABLE_NAME + " set " +
+				BundleDatabaseConstants.STATE_COL + "='" + BundleState.toParseableString(BundleState.HELD) + "', " +
+				BundleDatabaseConstants.RETENTION_CONSTRAINT_COL + "=" + bundle.getRetentionConstraint() +
+				" where " +
+				BundleDatabaseConstants.SOURCE_EID_COL + "='" + bundle.getBundleId().sourceEndPointId.getEndPointIdString() + "' and " +
+				BundleDatabaseConstants.TIME_SECS_COL + "=" + bundle.getBundleId().timestamp.getTimeSecsSinceY2K() + " and " +
+				BundleDatabaseConstants.SEQUENCE_NO_COL + "=" + bundle.getBundleId().timestamp.getSequenceNumber() + " and " +
+				BundleDatabaseConstants.FRAG_OFFSET_COL + "=" + bundle.getPrimaryBundleBlock().getFragmentOffset() +
+				";"
+				;
+			_logger.fine(statementText);
+			try {
+				_dbInterface.executeUpdate(con, statementText);
+				try { con.commit(); } catch (SQLException e) {
+					_logger.warning(e.getMessage());
+				}
+				return;
+			} catch (DBInterfaceException e) {
+				try { con.rollback(); } catch (SQLException ignore) { }
+				throw new JDtnException(e);
+			}
+		}
+		finally {
+			try { con.close(); } catch (SQLException e) {
+				_logger.warning(e.getMessage());
+			}
 		}
 	}
 	
@@ -638,25 +737,36 @@ public class BundleDatabase extends AbstractStartableComponent {
 		if (_dbInterface == null) {
 			throw new JDtnException("Database has not been connected");
 		}
-
-		// Update the BundleState in the DB
-		String statementText =
-			"update " + BundleDatabaseConstants.TABLE_NAME + " set " +
-			BundleDatabaseConstants.STATE_COL + "='" + BundleState.toParseableString(BundleState.IN_CUSTODY) + "', " +
-			BundleDatabaseConstants.RETENTION_CONSTRAINT_COL + "=" + bundle.getRetentionConstraint() +
-			" where " +
-			BundleDatabaseConstants.SOURCE_EID_COL + "='" + bundle.getBundleId().sourceEndPointId.getEndPointIdString() + "' and " +
-			BundleDatabaseConstants.TIME_SECS_COL + "=" + bundle.getBundleId().timestamp.getTimeSecsSinceY2K() + " and " +
-			BundleDatabaseConstants.SEQUENCE_NO_COL + "=" + bundle.getBundleId().timestamp.getSequenceNumber() + " and " +
-			BundleDatabaseConstants.FRAG_OFFSET_COL + "=" + bundle.getPrimaryBundleBlock().getFragmentOffset() +
-			";"
-			;
-	    _logger.fine(statementText);
+		java.sql.Connection con = getInterface().createConnection();
 		try {
-			_dbInterface.executeUpdate(statementText);
-			_dbInterface.commit();
-		} catch (DBInterfaceException e) {
-			throw new JDtnException(e);
+			// Update the BundleState in the DB
+			String statementText =
+				"update " + BundleDatabaseConstants.TABLE_NAME + " set " +
+				BundleDatabaseConstants.STATE_COL + "='" + BundleState.toParseableString(BundleState.IN_CUSTODY) + "', " +
+				BundleDatabaseConstants.RETENTION_CONSTRAINT_COL + "=" + bundle.getRetentionConstraint() +
+				" where " +
+				BundleDatabaseConstants.SOURCE_EID_COL + "='" + bundle.getBundleId().sourceEndPointId.getEndPointIdString() + "' and " +
+				BundleDatabaseConstants.TIME_SECS_COL + "=" + bundle.getBundleId().timestamp.getTimeSecsSinceY2K() + " and " +
+				BundleDatabaseConstants.SEQUENCE_NO_COL + "=" + bundle.getBundleId().timestamp.getSequenceNumber() + " and " +
+				BundleDatabaseConstants.FRAG_OFFSET_COL + "=" + bundle.getPrimaryBundleBlock().getFragmentOffset() +
+				";"
+				;
+			_logger.fine(statementText);
+			try {
+				_dbInterface.executeUpdate(con, statementText);
+				try { con.commit(); } catch (SQLException e) {
+					_logger.warning(e.getMessage());
+				}
+				return;
+			} catch (DBInterfaceException e) {
+				try { con.rollback(); } catch (SQLException ignore) { }
+				throw new JDtnException(e);
+			}
+		}
+		finally {
+			try { con.close(); } catch (SQLException e) {
+				_logger.warning(e.getMessage());
+			}
 		}
 	}
 	
@@ -676,35 +786,13 @@ public class BundleDatabase extends AbstractStartableComponent {
 		if (_dbInterface == null) {
 			throw new JDtnException("Database has not been connected");
 		}
-		
-		// Select entry from DB corresponding to given bundle
-		String statementText =
-			"select " + 
-			BundleDatabaseConstants.PATH_COL +
-			" from " + BundleDatabaseConstants.TABLE_NAME + " where " +
-			BundleDatabaseConstants.SOURCE_EID_COL + "='" + bundle.getBundleId().sourceEndPointId.getEndPointIdString() + "' and " +
-			BundleDatabaseConstants.TIME_SECS_COL + "=" + bundle.getBundleId().timestamp.getTimeSecsSinceY2K() + " and " +
-			BundleDatabaseConstants.SEQUENCE_NO_COL + "=" + bundle.getBundleId().timestamp.getSequenceNumber() + " and " +
-			BundleDatabaseConstants.FRAG_OFFSET_COL + "=" + bundle.getPrimaryBundleBlock().getFragmentOffset() +
-			";"
-			;
-	    _logger.fine(statementText);
-	    String pathnameStr;
+		java.sql.Connection con = getInterface().createConnection();
 		try {
-			QueryResults qr = _dbInterface.executeQuery(statementText);
-			
-			// Pull queried column values from ResultSet of query
-			if (!qr.next()) {
-				// No such Bundle.  Silently ignore this.
-				qr.close();
-				return;
-			}
-			pathnameStr = qr.getString(1);
-			qr.close();
-			
-			// Delete entry from DB corresponding to given bundle
-			statementText = 
-				"delete from " + BundleDatabaseConstants.TABLE_NAME + " where " +
+			// Select entry from DB corresponding to given bundle
+			String statementText =
+				"select " +
+				BundleDatabaseConstants.PATH_COL + "," + BundleDatabaseConstants.STORAGETYPE_COL +
+				" from " + BundleDatabaseConstants.TABLE_NAME + " where " +
 				BundleDatabaseConstants.SOURCE_EID_COL + "='" + bundle.getBundleId().sourceEndPointId.getEndPointIdString() + "' and " +
 				BundleDatabaseConstants.TIME_SECS_COL + "=" + bundle.getBundleId().timestamp.getTimeSecsSinceY2K() + " and " +
 				BundleDatabaseConstants.SEQUENCE_NO_COL + "=" + bundle.getBundleId().timestamp.getSequenceNumber() + " and " +
@@ -712,17 +800,52 @@ public class BundleDatabase extends AbstractStartableComponent {
 				";"
 				;
 			_logger.fine(statementText);
-			_dbInterface.executeDelete(statementText);
+			String pathnameStr;
+			int storageType;
+			try {
+				QueryResults qr = _dbInterface.executeQuery(con, statementText);
 
-			// Delete Bundle storage file
-			File file = new File(pathnameStr);
-			if (!file.delete()) {
-				throw new IllegalStateException("Cannot delete bundle file " + pathnameStr);
+				// Pull queried column values from ResultSet of query
+				if (!qr.next()) {
+					// No such Bundle.  Silently ignore this.
+					qr.close();
+					return;
+				}
+				pathnameStr = qr.getString(1);
+				storageType = qr.getInt(2);
+				qr.close();
+
+				// Delete entry from DB corresponding to given bundle
+				statementText =
+					"delete from " + BundleDatabaseConstants.TABLE_NAME + " where " +
+					BundleDatabaseConstants.SOURCE_EID_COL + "='" + bundle.getBundleId().sourceEndPointId.getEndPointIdString() + "' and " +
+					BundleDatabaseConstants.TIME_SECS_COL + "=" + bundle.getBundleId().timestamp.getTimeSecsSinceY2K() + " and " +
+					BundleDatabaseConstants.SEQUENCE_NO_COL + "=" + bundle.getBundleId().timestamp.getSequenceNumber() + " and " +
+					BundleDatabaseConstants.FRAG_OFFSET_COL + "=" + bundle.getPrimaryBundleBlock().getFragmentOffset() +
+					";"
+					;
+				_logger.fine(statementText);
+				_dbInterface.executeDelete(con, statementText);
+
+				// Delete Bundle storage file
+				MediaRepository.File file = new MediaRepository.File(BlobAndBundleDatabase.storageTypeOf(storageType), pathnameStr);
+				if (!file.delete(con)) {
+					throw new IllegalStateException("Cannot delete bundle file " + pathnameStr);
+				}
+
+				try { con.commit(); } catch (SQLException e) {
+					_logger.warning(e.getMessage());
+				}
+				return;
+			} catch (DBInterfaceException e) {
+				try { con.rollback(); } catch (SQLException ignore) { }
+				throw new JDtnException(e);
 			}
-
-			_dbInterface.commit();
-		} catch (DBInterfaceException e) {
-			throw new JDtnException(e);
+		}
+		finally {
+			try { con.close(); } catch (SQLException e) {
+				_logger.warning(e.getMessage());
+			}
 		}
 	}
 	
@@ -742,81 +865,95 @@ public class BundleDatabase extends AbstractStartableComponent {
 		if (_dbInterface == null) {
 			throw new JDtnException("Database has not been connected");
 		}
+		java.sql.Connection con = getInterface().createConnection();
+		try {
+			// Select entry from DB all Bundles
+			String statementText =
+				"select " +
+				BundleDatabaseConstants.PATH_COL + ", " +
+				BundleDatabaseConstants.LENGTH_COL + ", " +
+				BundleDatabaseConstants.STATE_COL + ", " +
+				BundleDatabaseConstants.SOURCE_COL + ", " +
+				BundleDatabaseConstants.EID_SCHEME_COL + ", " +
+				BundleDatabaseConstants.LINK_NAME_COL + ", " +
+				BundleDatabaseConstants.IS_INBOUND_COL + ", " +
+				BundleDatabaseConstants.RETENTION_CONSTRAINT_COL + ", " +
+						BundleDatabaseConstants.STORAGETYPE_COL + ", " +
+						BundleDatabaseConstants.DATA_BLOB_COL +
+				" from " + BundleDatabaseConstants.TABLE_NAME +
+				" order by " +
+				BundleDatabaseConstants.SOURCE_EID_COL + ", " +
+				BundleDatabaseConstants.TIME_SECS_COL + ", " +
+				BundleDatabaseConstants.SEQUENCE_NO_COL + ", " +
+				BundleDatabaseConstants.FRAG_OFFSET_COL +
+				";"
+				;
+			_logger.fine(statementText);
+			try {
+				QueryResults qr = _dbInterface.executeQuery(con, statementText);
+				while (qr.next()) {
+					if (GeneralManagement.isDebugLogging() && _logger.isLoggable(Level.FINEST)) {
+						_logger.finest("resultSet[1]=" + qr.getString(1));
+						_logger.finest("resultSet[2]=" + qr.getLong(2));
+						_logger.finest("resultSet[3]=" + qr.getString(3));
+						_logger.finest("resultSet[4]=" + qr.getString(4));
+					}
+					String pathnameStr = qr.getString(1);
+					long fileLength = qr.getLong(2);
+					BundleState bundleState = BundleState.parseBundleState(qr.getString(3));
+					BundleSource bundleSource = BundleSource.parseBundleSource(qr.getString(4));
+					EidScheme eidScheme = EidScheme.parseEidScheme(qr.getString(5));
+					String linkName = qr.getString(6);
+					boolean isInbound = qr.getBoolean(7);
+					int retentionConstraint = qr.getInt(8);
+					BlobAndBundleDatabase.StorageType storageType = BlobAndBundleDatabase.storageTypeOf(qr.getInt(9));
+					long oid = qr.getLong(10);
 
-		// Select entry from DB all Bundles
-		String statementText =
-			"select " + 
-			BundleDatabaseConstants.PATH_COL + ", " +
-			BundleDatabaseConstants.LENGTH_COL + ", " + 
-			BundleDatabaseConstants.STATE_COL + ", " + 
-			BundleDatabaseConstants.SOURCE_COL + ", " + 
-			BundleDatabaseConstants.EID_SCHEME_COL + ", " + 
-			BundleDatabaseConstants.LINK_NAME_COL + ", " +
-			BundleDatabaseConstants.IS_INBOUND_COL + ", " + 
-			BundleDatabaseConstants.RETENTION_CONSTRAINT_COL + ", " +
-					BundleDatabaseConstants.STORAGETYPE_COL + ", " +
-					BundleDatabaseConstants.DATA_BLOB_COL +
-			" from " + BundleDatabaseConstants.TABLE_NAME +
-			" order by " +
-			BundleDatabaseConstants.SOURCE_EID_COL + ", " + 
-			BundleDatabaseConstants.TIME_SECS_COL + ", " + 
-			BundleDatabaseConstants.SEQUENCE_NO_COL + ", " + 
-			BundleDatabaseConstants.FRAG_OFFSET_COL +
-			";"
-			;
-	    _logger.fine(statementText);
-	    try {
-			QueryResults qr = _dbInterface.executeQuery(statementText);
-			while (qr.next()) {
-				if (GeneralManagement.isDebugLogging() && _logger.isLoggable(Level.FINEST)) {
-					_logger.finest("resultSet[1]=" + qr.getString(1));
-					_logger.finest("resultSet[2]=" + qr.getLong(2));
-					_logger.finest("resultSet[3]=" + qr.getString(3));
-					_logger.finest("resultSet[4]=" + qr.getString(4));
+					if (GeneralManagement.isDebugLogging() && _logger.isLoggable(Level.FINEST)) {
+						_logger.finest("Bundle Restoration: pathnameStr=" + pathnameStr);
+						_logger.finest("Bundle Restoration: fileLength=" + fileLength);
+						_logger.finest("Bundle Restoration: bundleState=" + bundleState);
+						_logger.finest("Bundle Restoration: bundleSource=" + bundleSource);
+						_logger.finest("Bundle Restoration: eidScheme=" + eidScheme);
+						_logger.finest("Bundle Restoration: linkName=" + linkName);
+						_logger.finest("Bundle Restoration: isInbound=" + isInbound);
+						_logger.finest("Bundle Restoration: retentionConstraint=" + retentionConstraint);
+					}
+					MediaRepository.File file = new MediaRepository.File(storageType, pathnameStr);
+					file.setOid(oid);
+					DecodeState decodeState = new DecodeState(file, 0L, fileLength);
+					Bundle bundle = new Bundle(decodeState, eidScheme);
+
+					Link link = LinksList.getInstance().findLinkByName(linkName);
+					bundle.setLink(link);
+					bundle.setInboundBundle(isInbound);
+					bundle.setRetentionConstraint(retentionConstraint);
+
+					if (GeneralManagement.isDebugLogging()  && _logger.isLoggable(Level.FINEST)) {
+						_logger.finest("Restored Bundle:");
+						_logger.finest(bundle.dump("", true));
+					}
+
+					try { con.commit(); } catch (SQLException e) {
+						_logger.warning(e.getMessage());
+					}
+
+					callback.restoreBundle(bundle, bundleSource, bundleState);
 				}
-				String pathnameStr = qr.getString(1);
-				long fileLength = qr.getLong(2);
-				BundleState bundleState = BundleState.parseBundleState(qr.getString(3));
-				BundleSource bundleSource = BundleSource.parseBundleSource(qr.getString(4));
-				EidScheme eidScheme = EidScheme.parseEidScheme(qr.getString(5));
-				String linkName = qr.getString(6);
-				boolean isInbound = qr.getBoolean(7);
-				int retentionConstraint = qr.getInt(8);
-				BlobAndBundleDatabase.StorageType storageType = BlobAndBundleDatabase.storageTypeOf(qr.getInt(9));
-				long oid = qr.getLong(10);
-				
-				if (GeneralManagement.isDebugLogging() && _logger.isLoggable(Level.FINEST)) {
-					_logger.finest("Bundle Restoration: pathnameStr=" + pathnameStr);
-					_logger.finest("Bundle Restoration: fileLength=" + fileLength);
-					_logger.finest("Bundle Restoration: bundleState=" + bundleState);
-					_logger.finest("Bundle Restoration: bundleSource=" + bundleSource);
-					_logger.finest("Bundle Restoration: eidScheme=" + eidScheme);
-					_logger.finest("Bundle Restoration: linkName=" + linkName);
-					_logger.finest("Bundle Restoration: isInbound=" + isInbound);
-					_logger.finest("Bundle Restoration: retentionConstraint=" + retentionConstraint);
-				}
-				MediaRepository.File file = new MediaRepository.File(storageType, pathnameStr);
-				file.setOid(oid);
-				DecodeState decodeState = new DecodeState(file, 0L, fileLength);
-				Bundle bundle = new Bundle(decodeState, eidScheme);
-				
-				Link link = LinksList.getInstance().findLinkByName(linkName);
-				bundle.setLink(link);
-				bundle.setInboundBundle(isInbound);
-				bundle.setRetentionConstraint(retentionConstraint);
-				
-				if (GeneralManagement.isDebugLogging()  && _logger.isLoggable(Level.FINEST)) {
-					_logger.finest("Restored Bundle:");
-					_logger.finest(bundle.dump("", true));
-				}
-				
-				callback.restoreBundle(bundle, bundleSource, bundleState);
+				qr.close();
+				return;
+			} catch (IllegalArgumentException e) {
+				try { con.rollback(); } catch (SQLException ignore) { }
+				throw new JDtnException(e);
+			} catch (DBInterfaceException e) {
+				try { con.rollback(); } catch (SQLException ignore) { }
+				throw new JDtnException(e);
 			}
-			qr.close();
-		} catch (IllegalArgumentException e) {
-			throw new JDtnException(e);
-		} catch (DBInterfaceException e) {
-			throw new JDtnException(e);
+		}
+		finally {
+			try { con.close(); } catch (SQLException e) {
+				_logger.warning(e.getMessage());
+			}
 		}
 	}
 
@@ -834,20 +971,36 @@ public class BundleDatabase extends AbstractStartableComponent {
 		if (_dbInterface == null) {
 			throw new JDtnException("Database has not been connected");
 		}
+		java.sql.Connection con = getInterface().createConnection();
 		try {
-			_dbInterface.clear();
-			
-			// Make sure everything removed
-			String statement = "select * from " + BundleDatabaseConstants.TABLE_NAME + ";";
-			_logger.fine(statement);
-			QueryResults qr = _dbInterface.executeQuery(statement);
-			if (qr.next()) {
+			try {
+				_dbInterface.clear(con);
+				try { con.commit(); } catch (SQLException e) {
+					_logger.warning(e.getMessage());
+				}
+
+				// Make sure everything removed
+				String statement = "select * from " + BundleDatabaseConstants.TABLE_NAME + ";";
+				_logger.fine(statement);
+				QueryResults qr = _dbInterface.executeQuery(con, statement);
+				if (qr.next()) {
+					qr.close();
+					throw new JDtnException("Empty database did not work!");
+				}
 				qr.close();
-				throw new JDtnException("Empty database did not work!");
+				try { con.commit(); } catch (SQLException e) {
+					_logger.warning(e.getMessage());
+				}
+
+			} catch (DBInterfaceException e) {
+				try { con.rollback(); } catch (SQLException ignore) { }
+				throw new JDtnException(e);
 			}
-			qr.close();
-		} catch (DBInterfaceException e) {
-			throw new JDtnException(e);
+		}
+		finally {
+			try { con.close(); } catch (SQLException e) {
+				_logger.warning(e.getMessage());
+			}
 		}
 	}
 	
@@ -865,64 +1018,73 @@ public class BundleDatabase extends AbstractStartableComponent {
 		if (_dbInterface == null) {
 			throw new IllegalStateException("Database has not been connected");
 		}
-		StringBuilder sb = new StringBuilder(indent + "BundleDatabase\n");
-		sb.append(indent + "  StartClean=" + isStartClean() + "\n");
-		sb.append(super.dump(indent + "  ", detailed));
-		// Select entry from DB all Bundles
-		String statementText =
-			"select " + 
-			BundleDatabaseConstants.PATH_COL + ", " + 
-			BundleDatabaseConstants.LENGTH_COL + ", " + 
-			BundleDatabaseConstants.STATE_COL + ", " + 
-			BundleDatabaseConstants.SOURCE_COL + ", " + 
-			BundleDatabaseConstants.EID_SCHEME_COL + ", " + 
-			BundleDatabaseConstants.LINK_NAME_COL + ", " +
-			BundleDatabaseConstants.IS_INBOUND_COL + ", " + 
-			BundleDatabaseConstants.RETENTION_CONSTRAINT_COL + ", " +
-					BundleDatabaseConstants.STORAGETYPE_COL + ", " +
-					BundleDatabaseConstants.DATA_BLOB_COL +
-			" from " + BundleDatabaseConstants.TABLE_NAME + 
-			" order by " +
-			BundleDatabaseConstants.SOURCE_EID_COL + ", " + 
-			BundleDatabaseConstants.TIME_SECS_COL + ", " + 
-			BundleDatabaseConstants.SEQUENCE_NO_COL + ", " + 
-			BundleDatabaseConstants.FRAG_OFFSET_COL +
-			";"
-			;
-	    _logger.fine(statementText);
+		java.sql.Connection con = getInterface().createConnection();
 		try {
-			QueryResults qr = _dbInterface.executeQuery(statementText);
-			while (qr.next()) {
-				String pathnameStr = qr.getString(1);
-				long fileLength = qr.getLong(2);
-				BundleState bundleState = BundleState.parseBundleState(qr.getString(3));
-				BundleSource bundleSource = BundleSource.parseBundleSource(qr.getString(4));
-				EidScheme eidScheme = EidScheme.parseEidScheme(qr.getString(5));
-				String linkName = qr.getString(6);
-				boolean isInbound = qr.getBoolean(7);
-				int retentionConstraint = qr.getInt(8);
-				int storageType = qr.getInt(9);
-				long oid = qr.getLong(10);
-				
-				sb.append(indent + "  Bundle\n");
-				sb.append(indent + "    BundleState=" + BundleState.toParseableString(bundleState) + "\n");
-				sb.append(indent + "    BundleSource=" + BundleSource.toParseableString(bundleSource) + "\n");
-				sb.append(indent + "    pathname=" + pathnameStr + "\n");
-				sb.append(indent + "    storageType=" + storageType + "\n");
-				sb.append(indent + "    oid="+oid+"\n");
-				sb.append(indent + "    fileLength=" + fileLength + "\n");
-				sb.append(indent + "    bundleState=" + bundleState + "\n");
-				sb.append(indent + "    bundleSource=" + bundleSource + "\n");
-				sb.append(indent + "    eidScheme=" + eidScheme + "\n");
-				sb.append(indent + "    linkName=" + linkName + "\n");
-				sb.append(indent + "    isInbound=" + isInbound + "\n");
-				sb.append(indent + "    retentionConstraint=" + retentionConstraint + "\n");
+			StringBuilder sb = new StringBuilder(indent + "BundleDatabase\n");
+			sb.append(indent + "  StartClean=" + isStartClean() + "\n");
+			sb.append(super.dump(indent + "  ", detailed));
+			// Select entry from DB all Bundles
+			String statementText =
+				"select " +
+				BundleDatabaseConstants.PATH_COL + ", " +
+				BundleDatabaseConstants.LENGTH_COL + ", " +
+				BundleDatabaseConstants.STATE_COL + ", " +
+				BundleDatabaseConstants.SOURCE_COL + ", " +
+				BundleDatabaseConstants.EID_SCHEME_COL + ", " +
+				BundleDatabaseConstants.LINK_NAME_COL + ", " +
+				BundleDatabaseConstants.IS_INBOUND_COL + ", " +
+				BundleDatabaseConstants.RETENTION_CONSTRAINT_COL + ", " +
+						BundleDatabaseConstants.STORAGETYPE_COL + ", " +
+						BundleDatabaseConstants.DATA_BLOB_COL +
+				" from " + BundleDatabaseConstants.TABLE_NAME +
+				" order by " +
+				BundleDatabaseConstants.SOURCE_EID_COL + ", " +
+				BundleDatabaseConstants.TIME_SECS_COL + ", " +
+				BundleDatabaseConstants.SEQUENCE_NO_COL + ", " +
+				BundleDatabaseConstants.FRAG_OFFSET_COL +
+				";"
+				;
+			_logger.fine(statementText);
+			try {
+				QueryResults qr = _dbInterface.executeQuery(con, statementText);
+				while (qr.next()) {
+					String pathnameStr = qr.getString(1);
+					long fileLength = qr.getLong(2);
+					BundleState bundleState = BundleState.parseBundleState(qr.getString(3));
+					BundleSource bundleSource = BundleSource.parseBundleSource(qr.getString(4));
+					EidScheme eidScheme = EidScheme.parseEidScheme(qr.getString(5));
+					String linkName = qr.getString(6);
+					boolean isInbound = qr.getBoolean(7);
+					int retentionConstraint = qr.getInt(8);
+					int storageType = qr.getInt(9);
+					long oid = qr.getLong(10);
+
+					sb.append(indent + "  Bundle\n");
+					sb.append(indent + "    BundleState=" + BundleState.toParseableString(bundleState) + "\n");
+					sb.append(indent + "    BundleSource=" + BundleSource.toParseableString(bundleSource) + "\n");
+					sb.append(indent + "    pathname=" + pathnameStr + "\n");
+					sb.append(indent + "    storageType=" + storageType + "\n");
+					sb.append(indent + "    oid="+oid+"\n");
+					sb.append(indent + "    fileLength=" + fileLength + "\n");
+					sb.append(indent + "    bundleState=" + bundleState + "\n");
+					sb.append(indent + "    bundleSource=" + bundleSource + "\n");
+					sb.append(indent + "    eidScheme=" + eidScheme + "\n");
+					sb.append(indent + "    linkName=" + linkName + "\n");
+					sb.append(indent + "    isInbound=" + isInbound + "\n");
+					sb.append(indent + "    retentionConstraint=" + retentionConstraint + "\n");
+				}
+				qr.close();
+			} catch (Exception e) {
+				_logger.log(Level.SEVERE, "BundleState.dump()", e);
 			}
-			qr.close();
-		} catch (Exception e) {
-			_logger.log(Level.SEVERE, "BundleState.dump()", e);
+			try { con.rollback(); } catch (SQLException ignore) { }
+			return sb.toString();
 		}
-		return sb.toString();
+		finally {
+			try { con.close(); } catch (SQLException e) {
+				_logger.warning(e.getMessage());
+			}
+		}
 	}
 	
 	/**

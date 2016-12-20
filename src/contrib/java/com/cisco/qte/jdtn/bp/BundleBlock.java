@@ -85,6 +85,6 @@ public abstract class BundleBlock {
 	 * @param eidScheme The EidScheme to use to encode the Bundle Block
 	 * @throws JDtnException On Encoding errors
 	 */
-	public abstract void encode(EncodeState encodeState, EidScheme eidScheme)
+	public abstract void encode(java.sql.Connection con, EncodeState encodeState, EidScheme eidScheme)
 	throws JDtnException, InterruptedException;
 }

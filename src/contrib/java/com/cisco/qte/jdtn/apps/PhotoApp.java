@@ -29,6 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 package com.cisco.qte.jdtn.apps;
 
+import java.sql.SQLException;
 import java.util.Date;
 import java.util.logging.Logger;
 
@@ -40,6 +41,7 @@ import com.cisco.qte.jdtn.bp.BundleOptions;
 import com.cisco.qte.jdtn.bp.EndPointId;
 import com.cisco.qte.jdtn.bp.Payload;
 import com.cisco.qte.jdtn.general.JDtnException;
+import org.kritikal.fabric.contrib.jdtn.BlobAndBundleDatabase;
 
 /**
  * Photo Note Application
@@ -94,21 +96,33 @@ public class PhotoApp extends AbstractApp {
 		// Determine dest and source Eids
 		EndPointId dest = EndPointId.createEndPointId(toEid + "/" + APP_NAME.toLowerCase());
 		EndPointId source = BPManagement.getInstance().getEndPointIdStem().append("/" + APP_NAME.toLowerCase());
-		
-		if (!filePath.exists()) {
-			throw new JDtnException("File " + filePath.getAbsolutePath() + " does not exist");
+
+		java.sql.Connection con = BlobAndBundleDatabase.getInstance().getInterface().createConnection();
+		try {
+
+			if (!filePath.exists(con)) {
+				throw new JDtnException("File " + filePath.getAbsolutePath() + " does not exist");
+			}
+
+			// Set up bundle payload - in-file Payload
+			Payload payload = new Payload(filePath, 0L, filePath.length(con));
+
+			try { con.commit(); } catch (SQLException e) {
+				_logger.warning(e.getMessage());
+			}
+
+			// Send a Bundle containing the Payload.
+			BpApi.getInstance().sendBundle(
+					getAppRegistration(),
+					source,
+					dest,
+					payload,
+					bundleOptions);
+
 		}
-		
-		// Set up bundle payload - in-file Payload
-		Payload payload = new Payload(filePath, 0L, filePath.length());
-		
-		// Send a Bundle containing the Payload.
-		BpApi.getInstance().sendBundle(
-				getAppRegistration(), 
-				source, 
-				dest, 
-				payload, 
-				bundleOptions);
+		finally {
+			try { con.close(); } catch (SQLException e) { _logger.warning(e.getMessage()); }
+		}
 	}
 	
 	/**

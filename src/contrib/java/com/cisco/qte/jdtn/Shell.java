@@ -32,6 +32,7 @@ package com.cisco.qte.jdtn;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.UnknownHostException;
+import java.sql.SQLException;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -3540,10 +3541,19 @@ public class Shell {
 			return;
 		}
 		LtpNeighbor ltpNeighbor = (LtpNeighbor)neighbor;
-		MediaRepository.File file = new MediaRepository.File(BlobAndBundleDatabase.StorageType.MEDIA, filename);
-		if (!file.exists()) {
-			System.err.println(" File " + filename + " does not exist");
-			return;
+		MediaRepository.File file = null;
+		{
+			java.sql.Connection con = BlobAndBundleDatabase.getInstance().getInterface().createConnection();
+			try {
+				file = new MediaRepository.File(BlobAndBundleDatabase.StorageType.MEDIA, filename);
+				if (!file.exists(con)) {
+					System.err.println(" File " + filename + " does not exist");
+					return;
+				}
+			}
+			finally {
+				try { con.close(); } catch (SQLException ignore) { }
+			}
 		}
 		
 		RateEstimatorApp estimator =

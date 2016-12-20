@@ -29,6 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 package com.cisco.qte.jdtn.ltp;
 
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -56,6 +57,7 @@ import com.cisco.qte.jdtn.general.LinksList;
 import com.cisco.qte.jdtn.general.Neighbor;
 import com.cisco.qte.jdtn.ltp.InboundBlock.LtpReceiverState;
 import com.cisco.qte.jdtn.ltp.Segment.SegmentType;
+import org.kritikal.fabric.contrib.jdtn.BlobAndBundleDatabase;
 
 /**
  * Inbound processing for Ltp.  Performs the state processing for inbound
@@ -142,10 +144,17 @@ implements LinkListener, SegmentTransmitCallback {
 				link.removeLinkListener(this);
 			}
 		}
-		
-		while (!_inboundBlockList.isEmpty()) {
-			InboundBlock block = _inboundBlockList.remove(0);
-			removeInboundBlock(block);
+
+		java.sql.Connection con = BlobAndBundleDatabase.getInstance().getInterface().createConnection();
+		try {
+			while (!_inboundBlockList.isEmpty()) {
+				InboundBlock block = _inboundBlockList.remove(0);
+				removeInboundBlock(con, block);
+			}
+			try { con.commit(); } catch (SQLException e) { _logger.warning(e.getMessage()); }
+		}
+		finally {
+			try { con.close(); } catch (SQLException e) { _logger.warning(e.getMessage()); }
 		}
 	}
 	
@@ -241,63 +250,70 @@ implements LinkListener, SegmentTransmitCallback {
 				throw new IllegalArgumentException("Event not instance of JDTNEvent");
 			}
 			JDTNEvent event = (JDTNEvent)iEvent;
-			switch (event.getEventType()) {
+			java.sql.Connection con = BlobAndBundleDatabase.getInstance().getInterface().createConnection();
+			try {
+				switch (event.getEventType()) {
 
-			case LINKS_EVENT:
-				LinksEvent lEvent = (LinksEvent)iEvent;
-				switch (lEvent.getLinksEventSubtype()) {
-				case LINK_ADDED_EVENT:
-					onLinkAdded(lEvent.getLink());
+				case LINKS_EVENT:
+					LinksEvent lEvent = (LinksEvent)iEvent;
+					switch (lEvent.getLinksEventSubtype()) {
+					case LINK_ADDED_EVENT:
+						onLinkAdded(lEvent.getLink());
+						break;
+					case LINK_REMOVED_EVENT:
+						onLinkRemoved(lEvent.getLink());
+						break;
+					default:
+						_logger.severe("Unknown LinksEvent (" + lEvent.getLinksEventSubtype() + ")");
+						break;
+					}
 					break;
-				case LINK_REMOVED_EVENT:
-					onLinkRemoved(lEvent.getLink());
+
+				case INBOUND_SEGMENT:
+					InboundSegmentEvent ise =
+						(InboundSegmentEvent)event;
+						processInboundSegment(con, ise.getSegment());
 					break;
+
+				case CANCEL_TIMER_EXPIRED:
+					CancelTimerExpiredEvent ctee =
+						(CancelTimerExpiredEvent)event;
+					processCancelTimerExpired(
+							con,
+							(CancelSegment)ctee.getSegment(),
+							(InboundBlock)ctee.getBlock());
+					break;
+
+				case REPORT_SEGMENT_TIMER_EXPIRED:
+					ReportSegmentTimerExpiredEvent rstee =
+						(ReportSegmentTimerExpiredEvent)event;
+					processReportSegmentTimerExpired(
+							(ReportSegment)rstee.getSegment());
+					break;
+
+				case SEGMENT_TRANSMIT_STARTED:
+					SegmentTransmitStartedEvent stse =
+						(SegmentTransmitStartedEvent)event;
+					processSegmentTransmitStarted(stse.getLink(), stse.getSegment());
+					break;
+
+				case NEIGHBOR_SCHEDULED_STATE_CHANGE:
+					NeighborScheduledStateChangeEvent nssce =
+						(NeighborScheduledStateChangeEvent)event;
+					processNeighborScheduledStateChange(
+							nssce.getNeighbor(),
+							nssce.isUp());
+					break;
+
 				default:
-					_logger.severe("Unknown LinksEvent (" + lEvent.getLinksEventSubtype() + ")");
+					_logger.severe("Unknown event " + event.getEventType());
 					break;
 				}
-				break;
-				
-			case INBOUND_SEGMENT:
-				InboundSegmentEvent ise =
-					(InboundSegmentEvent)event;
-				processInboundSegment(ise.getSegment());
-				break;
-				
-			case CANCEL_TIMER_EXPIRED:
-				CancelTimerExpiredEvent ctee =
-					(CancelTimerExpiredEvent)event;
-				processCancelTimerExpired(
-						(CancelSegment)ctee.getSegment(), 
-						(InboundBlock)ctee.getBlock());
-				break;
-				
-			case REPORT_SEGMENT_TIMER_EXPIRED:
-				ReportSegmentTimerExpiredEvent rstee =
-					(ReportSegmentTimerExpiredEvent)event;
-				processReportSegmentTimerExpired(
-						(ReportSegment)rstee.getSegment());
-				break;
-				
-			case SEGMENT_TRANSMIT_STARTED:
-				SegmentTransmitStartedEvent stse =
-					(SegmentTransmitStartedEvent)event;
-				processSegmentTransmitStarted(stse.getLink(), stse.getSegment());
-				break;
-				
-			case NEIGHBOR_SCHEDULED_STATE_CHANGE:
-				NeighborScheduledStateChangeEvent nssce =
-					(NeighborScheduledStateChangeEvent)event;
-				processNeighborScheduledStateChange(
-						nssce.getNeighbor(), 
-						nssce.isUp());
-				break;
-				
-			default:
-				_logger.severe("Unknown event " + event.getEventType());
-				break;
+				try { con.commit();} catch (SQLException e) { _logger.warning(e.getMessage()); };
 			}
-			
+			finally {
+				try { con.close(); } catch (SQLException e) { _logger.warning(e.getMessage()); };
+			}
 		} catch (InterruptedException e) {
 			if (GeneralManagement.isDebugLogging()) {
 				_logger.fine("LtpInbound interrupted");
@@ -395,14 +411,14 @@ implements LinkListener, SegmentTransmitCallback {
 	 * it up.
 	 * @param block Given Block
 	 */
-	private void removeInboundBlock(InboundBlock block) {
+	private void removeInboundBlock(java.sql.Connection con, InboundBlock block) {
 		_inboundBlockList.remove(block);
 		_mapSessionIdToBlock.remove(block.getSessionId());
 		block.setLtpReceiverState(LtpReceiverState.CLOSED);
 		if (GeneralManagement.isDebugLogging()) {
 			_logger.fine("Session => " + block.getLtpReceiverState());
 		}
-		block.closeBlock();
+		block.closeBlock(con);
 	}
 	
 	/**
@@ -420,7 +436,7 @@ implements LinkListener, SegmentTransmitCallback {
 	 * @param segment Newly arrived Segment
 	 * @throws InterruptedException If interrupted when blocked.
 	 */
-	private void processInboundSegment(Segment segment) 
+	private void processInboundSegment(java.sql.Connection con, Segment segment)
 	throws InterruptedException {
 		if (GeneralManagement.isDebugLogging()) {
 			_logger.fine("processInboundSegment(type=" + segment.getSegmentType() + ")");
@@ -432,22 +448,22 @@ implements LinkListener, SegmentTransmitCallback {
 		if (segment instanceof DataSegment) {
 			LtpManagement.getInstance()._ltpStats.nDataSegmentsReceived++;
 			DataSegment dataSegment = (DataSegment)segment;
-			processInboundDataSegment(dataSegment);
+			processInboundDataSegment(con, dataSegment);
 			
 		} else if (segment instanceof CancelSegment) {
 			LtpManagement.getInstance()._ltpStats.nCancelsReceived++;
 			CancelSegment cancelSegment = (CancelSegment)segment;
-			processInboundCancelSegment(cancelSegment);
+			processInboundCancelSegment(con, cancelSegment);
 
 		} else if (segment instanceof CancelAckSegment) {
 			LtpManagement.getInstance()._ltpStats.nCancelAcksReceived++;
 			CancelAckSegment cancelAckSegment = (CancelAckSegment)segment;
-			processInboundCancelAckSegment(cancelAckSegment);
+			processInboundCancelAckSegment(con, cancelAckSegment);
 			
 		} else if (segment instanceof ReportAckSegment) {
 			LtpManagement.getInstance()._ltpStats.nReportAcksReceived++;
 			ReportAckSegment reportAckSegment = (ReportAckSegment)segment;
-			processInboundReportAckSegment(reportAckSegment);
+			processInboundReportAckSegment(con, reportAckSegment);
 			
 		} else {
 			_logger.warning("Received segment with unexpected segment type");
@@ -461,7 +477,7 @@ implements LinkListener, SegmentTransmitCallback {
 	 * @param dataSegment
 	 * @throws InterruptedException
 	 */
-	private void processInboundDataSegment(DataSegment dataSegment) 
+	private void processInboundDataSegment(java.sql.Connection con, DataSegment dataSegment)
 	throws InterruptedException {
 		
 		if (GeneralManagement.isDebugLogging()) {
@@ -716,7 +732,7 @@ implements LinkListener, SegmentTransmitCallback {
 					}
 					if (block.isInboundBlockComplete()) {
 						if (block.isAllGreenDataReceived()) {
-							deliverCompletedBlock(block);
+							deliverCompletedBlock(con, block);
 						} else {
 							_logger.warning("Received Green EOB but not all green segments received");
 							cancelBlock(block, CancelSegment.REASON_CODE_SYSTEM_CANCELED);
@@ -820,7 +836,7 @@ implements LinkListener, SegmentTransmitCallback {
 	 * @param cancelSegment Newly arrived CancelSegment
 	 * @throws InterruptedException If interrupted while blocked
 	 */
-	private void processInboundCancelSegment(CancelSegment cancelSegment) 
+	private void processInboundCancelSegment(java.sql.Connection con, CancelSegment cancelSegment)
 	throws InterruptedException {
 		
 		if (GeneralManagement.isDebugLogging()) {
@@ -871,7 +887,7 @@ implements LinkListener, SegmentTransmitCallback {
 		block.getLink().onBlockCancelled(block);
 		
 		// Remove Block and all its segments from our queues
-		removeInboundBlock(block);
+		removeInboundBlock(con, block);
 		// Deliver BlockCancelled notice to LtpApi
 		LtpApi.getInstance().onBlockReceiveCancelled(block, cancelSegment.getReasonCode());
 	}
@@ -893,7 +909,7 @@ implements LinkListener, SegmentTransmitCallback {
 	 * @param cancelAckSegment
 	 * @throws InterruptedException if interrupted
 	 */
-	private void processInboundCancelAckSegment(CancelAckSegment cancelAckSegment)
+	private void processInboundCancelAckSegment(java.sql.Connection con, CancelAckSegment cancelAckSegment)
 	throws InterruptedException {
 		
 		if (GeneralManagement.isDebugLogging()) {
@@ -935,7 +951,7 @@ implements LinkListener, SegmentTransmitCallback {
 			if (GeneralManagement.isDebugLogging()) {
 				_logger.fine("Inbound Session Cancelled");
 			}
-			removeInboundBlock(block);
+			removeInboundBlock(con, block);
 			// Deliver BlockCancelled notice to LtpApi
 			byte reason = CancelSegment.REASON_CODE_SYSTEM_CANCELED;
 			if (block.getOutstandingCancelSegment() != null) {
@@ -961,7 +977,7 @@ implements LinkListener, SegmentTransmitCallback {
 	 * @param reportAckSegment newly arrived ReportAckSegment.
 	 * @throws InterruptedException 
 	 */
-	private void processInboundReportAckSegment(ReportAckSegment reportAckSegment) 
+	private void processInboundReportAckSegment(java.sql.Connection con, ReportAckSegment reportAckSegment)
 	throws InterruptedException {
 
 		if (GeneralManagement.isDebugLogging()) {
@@ -1039,7 +1055,7 @@ implements LinkListener, SegmentTransmitCallback {
 			// If all DataSegments in the Block are acked, then deliver the
 			// Block.
 			if (block.isInboundBlockComplete()) {
-				deliverCompletedBlock(block);
+				deliverCompletedBlock(con, block);
 			}			
 			break;
 			
@@ -1165,7 +1181,7 @@ implements LinkListener, SegmentTransmitCallback {
 	 * @param block Given Block
 	 * @throws InterruptedException 
 	 */
-	private void deliverCompletedBlock(InboundBlock block) 
+	private void deliverCompletedBlock(java.sql.Connection con, InboundBlock block)
 	throws InterruptedException {
 		if (GeneralManagement.isDebugLogging()) {
 			_logger.fine("deliverCompletedBlock()");
@@ -1177,11 +1193,13 @@ implements LinkListener, SegmentTransmitCallback {
 			}
 		}
 		
-		removeInboundBlock(block);
+		removeInboundBlock(con, block);
 		
 		try {
-			block.inboundBlockComplete();
-			LtpApi.getInstance().onBlockReceived(block);
+			block.inboundBlockComplete(con);
+			try { con.commit(); } catch (SQLException e) { throw new JDtnException(e); }
+			LtpApi.getInstance().onBlockReceived(con, block);
+			try { con.commit(); } catch (SQLException e) { throw new JDtnException(e); }
 		} catch (JDtnException e) {
 			_logger.log(Level.SEVERE, "Delivering Completed Block", e);
 			LtpApi.getInstance().onSystemError("Delivering Completed Block", e);
@@ -1509,7 +1527,7 @@ implements LinkListener, SegmentTransmitCallback {
 	 * @param segment The CancelSegment sent to cancel a Block
 	 * @param block The Block being cancelled
 	 */
-	private void processCancelTimerExpired(CancelSegment segment, InboundBlock block) {
+	private void processCancelTimerExpired(java.sql.Connection con, CancelSegment segment, InboundBlock block) {
 		LtpManagement.getInstance()._ltpStats.nCancelExpirations++;
 		if (block.getLtpReceiverState() == LtpReceiverState.CR_SENT) {
 			// 6.16.  Retransmit Cancellation Segment
@@ -1527,7 +1545,7 @@ implements LinkListener, SegmentTransmitCallback {
 				// Too many retransmits of CancelSegment.  Give up
 				_logger.warning("Cancel Segment exceeded resend limit");
 				_logger.warning(segment.dump("  ", true));
-				removeInboundBlock(block);
+				removeInboundBlock(con, block);
 				byte reason = CancelSegment.REASON_CODE_SYSTEM_CANCELED;
 				if (block.getOutstandingCancelSegment() != null) {
 					reason = block.getOutstandingCancelSegment().getReasonCode();

@@ -30,6 +30,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 package com.cisco.qte.jdtn.apps;
 
 import java.io.File;
+import java.sql.SQLException;
 import java.util.Date;
 import java.util.logging.Logger;
 
@@ -42,6 +43,7 @@ import com.cisco.qte.jdtn.bp.EndPointId;
 import com.cisco.qte.jdtn.bp.Payload;
 import com.cisco.qte.jdtn.general.GeneralManagement;
 import com.cisco.qte.jdtn.general.JDtnException;
+import org.kritikal.fabric.contrib.jdtn.BlobAndBundleDatabase;
 
 /**
  *
@@ -86,26 +88,36 @@ public class BPSendFileApp extends AbstractApp {
 			EndPointId dest,
 			BundleOptions bundleOptions) 
 	throws JDtnException, InterruptedException {
-		// Determine dest and source Eids
-		EndPointId source = BPManagement.getInstance().getEndPointIdStem().append(
-				"/" + APP_NAME);
+		java.sql.Connection con = BlobAndBundleDatabase.getInstance().getInterface().createConnection();
+		try {
+			// Determine dest and source Eids
+			EndPointId source = BPManagement.getInstance().getEndPointIdStem().append(
+					"/" + APP_NAME);
+
+			if (!filePath.exists(con)) {
+				throw new JDtnException(
+						"File " + filePath.getAbsolutePath() +
+						" does not exist");
+			}
+
+			// Set up bundle payload - in-file Payload
+			Payload payload = new Payload(filePath, 0L, filePath.length(con));
+
+			try { con.commit(); } catch (SQLException e) {
+				_logger.warning(e.getMessage());
+			}
 		
-		if (!filePath.exists()) {
-			throw new JDtnException(
-					"File " + filePath.getAbsolutePath() + 
-					" does not exist");
+			// Send a Bundle containing the Payload.
+			BpApi.getInstance().sendBundle(
+					getAppRegistration(),
+					source,
+					dest,
+					payload,
+					bundleOptions);
 		}
-		
-		// Set up bundle payload - in-file Payload
-		Payload payload = new Payload(filePath, 0L, filePath.length());
-		
-		// Send a Bundle containing the Payload.
-		BpApi.getInstance().sendBundle(
-				getAppRegistration(), 
-				source, 
-				dest, 
-				payload, 
-				bundleOptions);
+		finally {
+			try { con.close(); } catch (SQLException e) { _logger.warning(e.getMessage()); }
+		}
 	}
 	
 	/**

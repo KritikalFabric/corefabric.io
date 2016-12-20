@@ -31,6 +31,7 @@ package com.cisco.qte.jdtn.general;
 
 import java.io.*;
 import java.net.InetAddress;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -922,32 +923,38 @@ public class Utils {
 	 */
 	public static void copyFileToOutputStream(MediaRepository.File file, MediaRepository.File fileOutput)
 	throws IOException {
-		InputStream fis = file.inputStream();
-		byte[] buffer = new byte[BUFFER_LEN];
-		
-		int len = (int)file.length();
+		java.sql.Connection con = BlobAndBundleDatabase.getInstance().getInterface().createConnection();
 		try {
-			while (len > 0) {
-				int readLen = BUFFER_LEN;
-				if (len < BUFFER_LEN) {
-					readLen = len;
+			InputStream fis = file.inputStream(con);
+			byte[] buffer = new byte[BUFFER_LEN];
+
+			int len = (int) file.length(con);
+			try {
+				while (len > 0) {
+					int readLen = BUFFER_LEN;
+					if (len < BUFFER_LEN) {
+						readLen = len;
+					}
+					int nRead = fis.read(buffer, 0, readLen);
+					if (nRead == -1) {
+						// EOF
+						break;
+					}
+					BlobAndBundleDatabase.getInstance().appendByteArrayToFile(con, buffer, 0, nRead, fileOutput);
+					len -= nRead;
 				}
-				int nRead = fis.read(buffer, 0, readLen);
-				if (nRead == -1) {
-					// EOF
-					break;
-				}
-				BlobAndBundleDatabase.getInstance().appendByteArrayToFile(buffer,0,nRead,fileOutput);
-				len -= nRead;
+				con.commit();
+			} catch (Exception e) {
+				_logger.severe(
+						"Copying file " + file.getAbsolutePath() + ": " +
+								e.getMessage());
+				throw new Error("", e);
+			} finally {
+				fis.close();
 			}
-			fileOutput.getConnection().commit();
-		} catch (Exception e) {
-			_logger.severe(
-					"Copying file " + file.getAbsolutePath() + ": " + 
-					e.getMessage());
-			throw new Error("", e);
-		} finally {
-			fis.close();
+		}
+		finally {
+			try { con.close(); } catch (SQLException ignore) { }
 		}
 	}
 	

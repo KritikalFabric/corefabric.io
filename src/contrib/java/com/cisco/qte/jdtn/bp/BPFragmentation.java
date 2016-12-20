@@ -145,7 +145,7 @@ public class BPFragmentation {
 	 * given Bundle payload length doesn't exceed maxPayloadLen.
 	 * @throws JDtnException on various errors
 	 */
-	public List<Bundle> fragmentBundle(Bundle origBundle, int maxPayloadLen) 
+	public List<Bundle> fragmentBundle(java.sql.Connection con, Bundle origBundle, int maxPayloadLen)
 	throws JDtnException {
 		PrimaryBundleBlock origPrimary = origBundle.getPrimaryBundleBlock();
 		if (origPrimary.isMustNotFragment()) {
@@ -160,7 +160,7 @@ public class BPFragmentation {
 		}
 		InputStream fis = null;
 		if (origPayload.isBodyDataInFile()) {
-			fis = origPayload.getBodyDataFile().inputStream();
+			fis = origPayload.getBodyDataFile().inputStream(con);
 		}
 		for (long offset = 0; offset < origPayloadLen; offset += maxPayloadLen) {
 			int fragPayloadLen = maxPayloadLen;
@@ -315,7 +315,16 @@ public class BPFragmentation {
 		}
 		addFragment(fragList, bundle);
 		if (isBundleFullyReassembled(fragList)) {
-			return reassembleBundle(bundleId, fragList);
+			Bundle b = null;
+			java.sql.Connection con = BlobAndBundleDatabase.getInstance().getInterface().createConnection();
+			try {
+				b = reassembleBundle(con, bundleId, fragList);
+				con.commit();
+			}
+			finally {
+				con.close();
+			}
+			return b;
 		}
 		return null;
 	}
@@ -421,7 +430,7 @@ public class BPFragmentation {
 	 * @throws JDtnException
 	 * @throws SQLException 
 	 */
-	private Bundle reassembleBundle(BundleId bundleId, List<Bundle> fragList)
+	private Bundle reassembleBundle(java.sql.Connection con, BundleId bundleId, List<Bundle> fragList)
 	throws JDtnException, SQLException {
 		Bundle bundle = fragList.get(0);
 		if (bundle == null) {
@@ -448,7 +457,7 @@ public class BPFragmentation {
 				if (body.isBodyDataInFile()) {
 					Utils.copyFileToOutputStream(body.getBodyDataFile(), file);
 				} else {
-					BlobAndBundleDatabase.getInstance().copyByteArrayToFile(body.getBodyDataBuffer(), 0, body.getBodyDataMemLength(), file);
+					BlobAndBundleDatabase.getInstance().copyByteArrayToFile(con, body.getBodyDataBuffer(), 0, body.getBodyDataMemLength(), file);
 				}
 			}
 			payload.setBodyDataFileLength(totLen);

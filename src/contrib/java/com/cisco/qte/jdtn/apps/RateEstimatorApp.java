@@ -30,6 +30,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 package com.cisco.qte.jdtn.apps;
 
 import java.io.File;
+import java.sql.SQLException;
 import java.util.Vector;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -48,6 +49,7 @@ import com.cisco.qte.jdtn.bp.Payload;
 import com.cisco.qte.jdtn.general.JDtnException;
 import com.cisco.qte.jdtn.ltp.LtpManagement;
 import com.cisco.qte.jdtn.ltp.LtpNeighbor;
+import org.kritikal.fabric.contrib.jdtn.BlobAndBundleDatabase;
 
 /**
  * This App attempts to estimate the optimum setting for the Segment Rate
@@ -408,9 +410,18 @@ public class RateEstimatorApp extends AbstractApp {
 			// Perform several tries
 			for (int retry = 0; retry < TRIES; retry++) {
 				_eventQueue.clear();
-				
+
 				// Send a Bundle
-				Payload payload = new Payload(_file, 0L, _file.length());
+				Payload payload = null;
+				java.sql.Connection con = BlobAndBundleDatabase.getInstance().getInterface().createConnection();
+				try {
+					payload = new Payload(_file, 0L, _file.length(con));
+					try { con.commit(); } catch (SQLException e) { _logger.warning(e.getMessage()); }
+				}
+				finally {
+					try { con.close(); } catch (SQLException e) { _logger.warning(e.getMessage()); }
+				}
+
 				EndPointId destEid = _neighbor.getEndPointIdStem().append(
 						"/" +
 						APP_NAME);

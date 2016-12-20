@@ -30,6 +30,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 package com.cisco.qte.jdtn.apps;
 
 import java.io.File;
+import java.sql.SQLException;
 import java.util.Date;
 import java.util.logging.Logger;
 
@@ -41,6 +42,7 @@ import com.cisco.qte.jdtn.bp.BundleOptions;
 import com.cisco.qte.jdtn.bp.EndPointId;
 import com.cisco.qte.jdtn.bp.Payload;
 import com.cisco.qte.jdtn.general.JDtnException;
+import org.kritikal.fabric.contrib.jdtn.BlobAndBundleDatabase;
 
 /**
  * JDTN implementation of the DTN2 dtncp and dtncpd apps, to test interop
@@ -98,22 +100,33 @@ public class Dtn2CpApp extends AbstractApp {
 			EndPointId destStem, 
 			BundleOptions options) 
 	throws InterruptedException, JDtnException {
-		// Source EID is of the form "dtn://blah/dtncp/send?source=path"
-		// Dest EID is of the form "dtn://blah/dtncp/recv?file=filename"
-		EndPointId sourceEid = 
-			BPManagement.getInstance().getEndPointIdStem().append(
-					"/" + APP_TAG + "/" + SOURCE_TAG + 
-					"?" + SOURCE_QUERY_KEYWORD + sourceFile.getAbsolutePath());
-		EndPointId destEid = destStem.append(
-				"/" + APP_TAG + "/" + DEST_TAG + 
-				"?" + DEST_QUERY_KEYWORD + sourceFile.getName());
-		Payload payload = new Payload(sourceFile, 0L, sourceFile.length());
-		BpApi.getInstance().sendBundle(
-				getAppRegistration(), 
-				sourceEid, 
-				destEid, 
-				payload, 
-				options);
+		java.sql.Connection con = BlobAndBundleDatabase.getInstance().getInterface().createConnection();
+		try {
+			// Source EID is of the form "dtn://blah/dtncp/send?source=path"
+			// Dest EID is of the form "dtn://blah/dtncp/recv?file=filename"
+			EndPointId sourceEid =
+				BPManagement.getInstance().getEndPointIdStem().append(
+						"/" + APP_TAG + "/" + SOURCE_TAG +
+						"?" + SOURCE_QUERY_KEYWORD + sourceFile.getAbsolutePath());
+			EndPointId destEid = destStem.append(
+					"/" + APP_TAG + "/" + DEST_TAG +
+					"?" + DEST_QUERY_KEYWORD + sourceFile.getName());
+			Payload payload = new Payload(sourceFile, 0L, sourceFile.length(con));
+
+			try { con.commit(); } catch (SQLException e) {
+				_logger.warning(e.getMessage());
+			}
+
+			BpApi.getInstance().sendBundle(
+					getAppRegistration(),
+					sourceEid,
+					destEid,
+					payload,
+					options);
+		}
+		finally {
+			try { con.close(); } catch (SQLException e) { _logger.warning(e.getMessage()); }
+		}
 	}
 	
 	/**

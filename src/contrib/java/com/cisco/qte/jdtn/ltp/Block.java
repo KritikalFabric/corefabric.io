@@ -243,7 +243,7 @@ public abstract class Block implements Iterable<DataSegment> {
 	 *   <li> Remove outstanding cancel segment and kill its Cancel timer.
 	 * </ul>
 	 */
-	public void closeBlock() {
+	public void closeBlock(java.sql.Connection con) {
 		_outstandingCancelSegment = null;
 		if (_cancelTimerTask != null) {
 			_cancelTimerTask.cancel();
@@ -254,13 +254,13 @@ public abstract class Block implements Iterable<DataSegment> {
 	/**
 	 * Discard this Block; remove all outstanding storage behind it
 	 */
-	public void discardBlockData() {
+	public void discardBlockData(java.sql.Connection con) {
 		if (_valid) {
 			for (DataSegment segment : this) {
-				segment.discardData();
+				segment.discardData(con);
 			}
 			if (isDataInFile()) {
-				if (getDataFile().exists() && !getDataFile().delete()) {
+				if (getDataFile().exists(con) && !getDataFile().delete(con)) {
 					_logger.warning("Cannot delete Block storage: " +
 							getDataFile().getAbsolutePath());
 				}

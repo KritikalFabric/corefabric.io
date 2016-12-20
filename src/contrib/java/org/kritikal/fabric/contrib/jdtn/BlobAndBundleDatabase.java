@@ -1,9 +1,6 @@
 package org.kritikal.fabric.contrib.jdtn;
 
 import com.cisco.qte.jdtn.apps.MediaRepository;
-import com.cisco.qte.jdtn.bp.Bundle;
-import com.cisco.qte.jdtn.general.GeneralManagement;
-import com.cisco.qte.jdtn.general.JDtnException;
 import com.cisco.qte.jdtn.persistance.BundleDatabase;
 import com.cisco.qte.jdtn.persistance.BundleDatabaseConstants;
 import io.vertx.core.buffer.Buffer;
@@ -57,11 +54,10 @@ public class BlobAndBundleDatabase extends BundleDatabase {
      * cleans the media repository and calls commit
      * @param storageType
      */
-    public void cleanMediaRepository(StorageType storageType) {
+    public void cleanMediaRepository(Connection con, StorageType storageType) {
         if (!isStarted()) {
             throw new Error("Not started or has been stopped");
         }
-        Connection con = _dbInterface.getConnection();
         try {
             Statement stmt = con.createStatement();
             try {
@@ -93,15 +89,15 @@ public class BlobAndBundleDatabase extends BundleDatabase {
 
     /**
      * cleans the media repository via the connection associated with dir
-     * only removes some files and calls commit
+     * only removes some files
      * @param storageType
      * @param dir
      */
-    public void cleanMediaRepository(StorageType storageType, MediaRepository.File dir) {
+    public void cleanMediaRepository(Connection con, StorageType storageType, MediaRepository.File dir) {
         try {
-            Statement stmt = dir.getConnection().createStatement();
+            Statement stmt = con.createStatement();
             try {
-                LargeObjectManager lom = dir.getConnection().unwrap(PGConnection.class).getLargeObjectAPI();
+                LargeObjectManager lom = con.unwrap(PGConnection.class).getLargeObjectAPI();
                 ArrayList<Long> list = new ArrayList<>();
                 ResultSet rs = stmt.executeQuery("SELECT " + BundleDatabaseConstants.DATA_BLOB_COL + " FROM " + BundleDatabaseConstants.FILE_TABLE_NAME + " WHERE " + BundleDatabaseConstants.STORAGETYPE_COL + " = " + BlobAndBundleDatabase.intOf(storageType) + " AND (" + BundleDatabaseConstants.PATH_COL + " LIKE '" + dir.getAbsolutePath() + "'||'/%' OR " + BundleDatabaseConstants.PATH_COL + " = '" + dir.getAbsolutePath() + "')");
                 try {
@@ -115,7 +111,6 @@ public class BlobAndBundleDatabase extends BundleDatabase {
                     lom.delete(l);
                     stmt.executeUpdate("DELETE FROM " + BundleDatabaseConstants.FILE_TABLE_NAME + " WHERE " + BundleDatabaseConstants.DATA_BLOB_COL + " = " + l);
                     stmt.executeUpdate("DELETE FROM " + BundleDatabaseConstants.TABLE_NAME + " WHERE " + BundleDatabaseConstants.DATA_BLOB_COL + " = " + l);
-                    dir.getConnection().commit();
                 }
             } finally {
                 stmt.close();
@@ -126,18 +121,17 @@ public class BlobAndBundleDatabase extends BundleDatabase {
     }
 
     /**
-     * renames from 2 to then calls commit
+     * renames from 2 to
      * @param fromFile
      * @param toFile
      * @return
      */
-    public boolean renameTo(MediaRepository.File fromFile, MediaRepository.File toFile) {
+    public boolean renameTo(Connection con, MediaRepository.File fromFile, MediaRepository.File toFile) {
         try {
-            Statement stmt = fromFile.getConnection().createStatement();
+            Statement stmt = con.createStatement();
             try {
                 int n = stmt.executeUpdate("UPDATE " + BundleDatabaseConstants.FILE_TABLE_NAME + " SET " + BundleDatabaseConstants.PATH_COL + "= '" + toFile.getAbsolutePath() +"', " + BundleDatabaseConstants.STORAGETYPE_COL + "=" + toFile.getStorageType() + " WHERE " + BundleDatabaseConstants.STORAGETYPE_COL + " = " + BlobAndBundleDatabase.intOf(fromFile.getStorageType()) + " AND " + BundleDatabaseConstants.PATH_COL + " = '" + fromFile.getAbsolutePath() +"'");
                 stmt.executeUpdate("UPDATE " + BundleDatabaseConstants.TABLE_NAME + " SET " + BundleDatabaseConstants.PATH_COL + "= '" + toFile.getAbsolutePath() +"', " + BundleDatabaseConstants.STORAGETYPE_COL + "=" + toFile.getStorageType() + " WHERE " + BundleDatabaseConstants.STORAGETYPE_COL + " = " + BlobAndBundleDatabase.intOf(fromFile.getStorageType()) + " AND " + BundleDatabaseConstants.PATH_COL + " = '" + fromFile.getAbsolutePath() +"'");
-                fromFile.getConnection().commit();
                 return n > 0;
             } finally {
                 stmt.close();
@@ -150,7 +144,7 @@ public class BlobAndBundleDatabase extends BundleDatabase {
     }
 
     /**
-     * writes an entire file, replacing old data if necessary.  calls commit
+     * writes an entire file, replacing old data if necessary.
      * @param appName
      * @param bytes
      * @param offset
@@ -158,14 +152,14 @@ public class BlobAndBundleDatabase extends BundleDatabase {
      * @param mediaFilename
      * @return
      */
-    public boolean spillByteArrayToFile(String appName,
+    public boolean spillByteArrayToFile(Connection con, String appName,
 			byte[] bytes,
 			int offset,
 			int length,
 			MediaRepository.File mediaFilename) {
         try {
-            LargeObjectManager lom = mediaFilename.getConnection().unwrap(PGConnection.class).getLargeObjectAPI();
-            Statement stmt = mediaFilename.getConnection().createStatement();
+            LargeObjectManager lom = con.unwrap(PGConnection.class).getLargeObjectAPI();
+            Statement stmt = con.createStatement();
             try {
                 long oldOid = mediaFilename.getOid();
                 if (oldOid != 0) {
@@ -187,7 +181,6 @@ public class BlobAndBundleDatabase extends BundleDatabase {
                 if (oldOid != 0) {
                     stmt.executeUpdate("UPDATE " + BundleDatabaseConstants.TABLE_NAME + " SET " + BundleDatabaseConstants.DATA_BLOB_COL + " = " + mediaFilename.getOid() + " WHERE " + BundleDatabaseConstants.DATA_BLOB_COL + " = " + oldOid);
                 }
-                mediaFilename.getConnection().commit();
                 return true;
             }
             finally {
@@ -203,16 +196,16 @@ public class BlobAndBundleDatabase extends BundleDatabase {
     /*
      * writes an entire file, replacing old data if necessary.  calls commit.
      */
-    public boolean copyByteBufferToFile(ByteBuffer buffer,
+    public boolean copyByteBufferToFile(Connection con, ByteBuffer buffer,
                                         MediaRepository.File mediaFilename) {
         final byte[] array = buffer.array();
-        return spillByteArrayToFile(null, array, 0, array.length, mediaFilename);
+        return spillByteArrayToFile(con, null, array, 0, array.length, mediaFilename);
     }
 
-    public boolean copyByteArrayToFile(byte[] buffer,
+    public boolean copyByteArrayToFile(Connection con, byte[] buffer,
                                          int offset, int length,
                                          MediaRepository.File mediaFilename) {
-        return spillByteArrayToFile(null, buffer, offset, length, mediaFilename);
+        return spillByteArrayToFile(con, null, buffer, offset, length, mediaFilename);
     }
 
     /**
@@ -224,33 +217,34 @@ public class BlobAndBundleDatabase extends BundleDatabase {
      * @param mediaFilename
      * @return
      */
-    public boolean appendByteArrayToFile(byte[] bytes,
+    public boolean appendByteArrayToFile(Connection con, byte[] bytes,
                                          int offset, int length,
                                         MediaRepository.File mediaFilename) {
         try {
-            LargeObjectManager lom = mediaFilename.getConnection().unwrap(PGConnection.class).getLargeObjectAPI();
-            Statement stmt = mediaFilename.getConnection().createStatement();
-            try {
-                long oldOid = mediaFilename.getOid();
-                if (oldOid == 0) {
-                    mediaFilename.setOid(lom.createLO());
+            LargeObjectManager lom = con.unwrap(PGConnection.class).getLargeObjectAPI();
+            long oldOid = mediaFilename.getOid();
+            if (oldOid == 0) {
+                mediaFilename.setOid(lom.createLO());
+                Statement stmt = con.createStatement();
+                try {
                     stmt.executeUpdate("INSERT INTO " + BundleDatabaseConstants.FILE_TABLE_NAME + " (" +
                             BundleDatabaseConstants.DATA_BLOB_COL + ", " +
                             BundleDatabaseConstants.PATH_COL + ", " +
                             BundleDatabaseConstants.STORAGETYPE_COL +
                             ") VALUES ("+mediaFilename.getOid()+",'"+mediaFilename.getAbsolutePath()+"',"+BlobAndBundleDatabase.intOf(mediaFilename.getStorageType())+")");
                 }
-                LargeObject lo = lom.open(mediaFilename.getOid(), LargeObjectManager.WRITE);
-                try {
-                    lo.write(bytes, offset, length);
-                } finally {
-                    lo.close();
+                finally {
+                    stmt.close();
                 }
-                return true;
             }
-            finally {
-                stmt.close();
+            LargeObject lo = lom.open(mediaFilename.getOid(), LargeObjectManager.WRITE);
+            lo.seek64(0, LargeObject.SEEK_END);
+            try {
+                lo.write(bytes, offset, length);
+            } finally {
+                lo.close();
             }
+            return true;
         }
         catch (SQLException e) {
             logger.fatal("", e);
@@ -258,11 +252,11 @@ public class BlobAndBundleDatabase extends BundleDatabase {
         }
     }
 
-    public MediaRepository.File[] listFiles(StorageType storageType, String path) {
+    public MediaRepository.File[] listFiles(Connection con, StorageType storageType, String path) {
         if (!isStarted()) {
             throw new Error("Not started or has been stopped");
         }
-        Connection con = _dbInterface.getConnection();
+        String p = path.endsWith("/")?path.substring(0, path.length()-1):path;
         ArrayList<MediaRepository.File> list = new ArrayList<>();
         try {
             Statement stmt = con.createStatement();
@@ -274,11 +268,12 @@ public class BlobAndBundleDatabase extends BundleDatabase {
                                 BundleDatabaseConstants.DATA_BLOB_COL + " FROM " +
                                 BundleDatabaseConstants.FILE_TABLE_NAME + " WHERE " +
                                 BundleDatabaseConstants.STORAGETYPE_COL + "=" + BlobAndBundleDatabase.intOf(storageType) + " AND " +
-                                BundleDatabaseConstants.PATH_COL + " LIKE '" + path + "'||'/%'" +
+                                "(" + BundleDatabaseConstants.PATH_COL + " LIKE '" + p + "'||'/%' OR " +
+                                      BundleDatabaseConstants.PATH_COL + " = '" + p + "'||'/')" +
                                 " ORDER BY " + BundleDatabaseConstants.PATH_COL + ";");
                 try {
                     while (rs.next()) {
-                        MediaRepository.File file = new MediaRepository.File(BlobAndBundleDatabase.storageTypeOf(rs.getInt(1)), rs.getString(2), con);
+                        MediaRepository.File file = new MediaRepository.File(BlobAndBundleDatabase.storageTypeOf(rs.getInt(1)), rs.getString(2));
                         file.setOid(rs.getLong(3));
                         list.add(file);
                     }
@@ -300,9 +295,9 @@ public class BlobAndBundleDatabase extends BundleDatabase {
         }
     }
 
-    public boolean mediaFileExists(MediaRepository.File file) {
+    public boolean mediaFileExists(Connection con, MediaRepository.File file) {
         try {
-            Statement stmt = file.getConnection().createStatement();
+            Statement stmt = con.createStatement();
             try {
                 ResultSet rs = stmt.executeQuery(
                         "SELECT 1 FROM " + BundleDatabaseConstants.FILE_TABLE_NAME +
@@ -328,10 +323,10 @@ public class BlobAndBundleDatabase extends BundleDatabase {
         }
     }
 
-    public long mediaFileLength(MediaRepository.File file) {
+    public long mediaFileLength(Connection con, MediaRepository.File file) {
         try {
             if (file.getOid() == 0) {
-                Statement stmt = file.getConnection().createStatement();
+                Statement stmt = con.createStatement();
                 try {
                     ResultSet rs = stmt.executeQuery(
                             "SELECT " + BundleDatabaseConstants.DATA_BLOB_COL + " FROM " + BundleDatabaseConstants.FILE_TABLE_NAME +
@@ -349,7 +344,7 @@ public class BlobAndBundleDatabase extends BundleDatabase {
                 }
             }
             if (file.getOid() == 0) return -1; // file not found
-            LargeObjectManager lom = file.getConnection().unwrap(PGConnection.class).getLargeObjectAPI();
+            LargeObjectManager lom = con.unwrap(PGConnection.class).getLargeObjectAPI();
             LargeObject lo = lom.open(file.getOid());
             try {
                 return lo.size64();
@@ -364,11 +359,11 @@ public class BlobAndBundleDatabase extends BundleDatabase {
         }
     }
 
-    public boolean mediaFileDelete(MediaRepository.File file) {
+    public boolean mediaFileDelete(Connection con, MediaRepository.File file) {
         try {
-            Statement stmt = file.getConnection().createStatement();
+            Statement stmt = con.createStatement();
             try {
-                LargeObjectManager lom = file.getConnection().unwrap(PGConnection.class).getLargeObjectAPI();
+                LargeObjectManager lom = con.unwrap(PGConnection.class).getLargeObjectAPI();
                 ArrayList<Long> list = new ArrayList<>();
                 ResultSet rs = stmt.executeQuery("SELECT " + BundleDatabaseConstants.DATA_BLOB_COL + " FROM " + BundleDatabaseConstants.FILE_TABLE_NAME + " WHERE " + BundleDatabaseConstants.STORAGETYPE_COL + " = " + BlobAndBundleDatabase.intOf(file.getStorageType()) + " AND " + BundleDatabaseConstants.PATH_COL + " = '" + file.getAbsolutePath() + "'");
                 try {
@@ -382,7 +377,6 @@ public class BlobAndBundleDatabase extends BundleDatabase {
                     lom.delete(l);
                     stmt.executeUpdate("DELETE FROM " + BundleDatabaseConstants.FILE_TABLE_NAME + " WHERE " + BundleDatabaseConstants.DATA_BLOB_COL + " = " + l);
                     stmt.executeUpdate("DELETE FROM " + BundleDatabaseConstants.TABLE_NAME + " WHERE " + BundleDatabaseConstants.DATA_BLOB_COL + " = " + l);
-                    file.getConnection().commit();
                 }
             } finally {
                 stmt.close();
@@ -395,9 +389,9 @@ public class BlobAndBundleDatabase extends BundleDatabase {
         }
     }
 
-    public byte[] mediaGetBodyData(MediaRepository.File file) {
+    public byte[] mediaGetBodyData(Connection con, MediaRepository.File file) {
         try {
-            LargeObjectManager lom = file.getConnection().unwrap(PGConnection.class).getLargeObjectAPI();
+            LargeObjectManager lom = con.unwrap(PGConnection.class).getLargeObjectAPI();
             if (file.getOid() == 0)
                 return null;
             Buffer buffer = Buffer.buffer();

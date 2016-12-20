@@ -37,6 +37,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.channels.ClosedByInterruptException;
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.logging.Logger;
 
@@ -67,6 +69,7 @@ public class EncodeState {
 	public GrowableArrayOfBytes memList = null;
 
 	BlobAndBundleDatabase blobAndBundleDatabase = null;
+	Connection con = null;
 
 
 	/**
@@ -82,14 +85,16 @@ public class EncodeState {
 	 * @param aFile File to encode to
 	 * @throws JDtnException If cannot open File
 	 */
-	public EncodeState(MediaRepository.File aFile) throws JDtnException {
+	public EncodeState(java.sql.Connection con, MediaRepository.File aFile) throws JDtnException {
 		isEncodingToFile = true;
 		this.file = aFile;
+		this.con = con;
 		blobAndBundleDatabase = BlobAndBundleDatabase.getInstance();
 		// We must delete the file if it exists, otherwise subsequent
 		// channel operations hang.  Go figure!
-		if (aFile.exists()) {
-			aFile.delete();
+		if (aFile.exists(con)) {
+			aFile.delete(con);
+			try { con.commit(); } catch (SQLException e) { throw new JDtnException(e.getMessage(), e); }
 		}
 	}
 	
@@ -99,15 +104,17 @@ public class EncodeState {
 	 * @param aFile File to encode to, if isEncodingToFile
 	 * @throws JDtnException If cannot open File
 	 */
-	public EncodeState(boolean aIsEncodingToFile, MediaRepository.File aFile) throws JDtnException {
+	public EncodeState(java.sql.Connection con, boolean aIsEncodingToFile, MediaRepository.File aFile) throws JDtnException {
 		this.isEncodingToFile = aIsEncodingToFile;
 		if (aIsEncodingToFile) {
 			this.file = aFile;
+			this.con = con;
 			blobAndBundleDatabase = BlobAndBundleDatabase.getInstance();
 			// We must delete the file if it exists, otherwise subsequent
 			// channel operations hang.  Go figure!
-			if (aFile.exists()) {
-				aFile.delete();
+			if (aFile.exists(con)) {
+				aFile.delete(con);
+				try { con.commit(); } catch (SQLException e) { throw new JDtnException(e.getMessage(), e); }
 			}
 		}
 		else {
@@ -124,7 +131,7 @@ public class EncodeState {
 		if (isEncodingToFile) {
 			byte[] bytes = new byte[1];
 			bytes[0] = bite;
-			blobAndBundleDatabase.appendByteArrayToFile(bytes, 0, bytes.length, file);
+			blobAndBundleDatabase.appendByteArrayToFile(con, bytes, 0, bytes.length, file);
 			fileLength++;
 		} else {
 			memList.add(bite);
@@ -140,7 +147,7 @@ public class EncodeState {
 		if (isEncodingToFile) {
 			byte[] bytes = new byte[1];
 			bytes[0] = (byte)intBite;
-			blobAndBundleDatabase.appendByteArrayToFile(bytes, 0, bytes.length, file);
+			blobAndBundleDatabase.appendByteArrayToFile(con, bytes, 0, bytes.length, file);
 			fileLength++;
 		} else {
 			memList.add(Utils.intToByteUnsigned(intBite));
@@ -153,7 +160,7 @@ public class EncodeState {
 	 */
 	public long getLength() {
 		if (isEncodingToFile) {
-			return file.length();
+			return file.length(con);
 		} else {
 			return memList.length();
 		}
@@ -166,7 +173,7 @@ public class EncodeState {
 	 */
 	public byte[] getByteBuffer() throws JDtnException {
 		if (isEncodingToFile) {
-			return blobAndBundleDatabase.mediaGetBodyData(file);
+			return blobAndBundleDatabase.mediaGetBodyData(con, file);
 		}
 		return memList.gather();
 	}
@@ -180,7 +187,7 @@ public class EncodeState {
 		if (isEncodingToFile) {
 			byte[] biteArray = Utils.arrayListToByteArray(bites);
 			try {
-				blobAndBundleDatabase.appendByteArrayToFile(biteArray, 0, biteArray.length, file);
+				blobAndBundleDatabase.appendByteArrayToFile(con, biteArray, 0, biteArray.length, file);
 			} catch (Exception e) {
 				throw new JDtnException(e);
 			}
@@ -200,7 +207,7 @@ public class EncodeState {
 	public void append(EncodeState encodeState) throws JDtnException, InterruptedException {
 		if (encodeState.isEncodingToFile) {
 			// StorageType is a File
-			append(encodeState.file, 0, encodeState.getLength());
+			append(con, encodeState.file, 0, encodeState.getLength());
 		} else {
 			// StorageType is a buffer
 			if (isEncodingToFile) {
@@ -221,14 +228,14 @@ public class EncodeState {
 	 * @throws JDtnException on encoding errors
 	 * @throws InterruptedException 
 	 */
-	public void append(MediaRepository.File sourceFile, long offset, long length)
+	public void append(Connection con, MediaRepository.File sourceFile, long offset, long length)
 	throws JDtnException, InterruptedException {
 		if (isEncodingToFile) {
 			// append given File to this' File
 			InputStream raf2 = null;
 			try {
 				// Open the source file
-				raf2 = sourceFile.inputStream();
+				raf2 = sourceFile.inputStream(con);
 				
 				// Position the source file to the specified offset
 				if (offset != 0) {
@@ -245,7 +252,7 @@ public class EncodeState {
 				while (remainingBytes > 0) {
 					int nRead = raf2.read(buffer);
 					if (nRead > 0) {
-						blobAndBundleDatabase.appendByteArrayToFile(buffer, 0, nRead, file);
+						blobAndBundleDatabase.appendByteArrayToFile(con, buffer, 0, nRead, file);
 						remainingBytes -= nRead;
 						fileLength += nRead;
 					} else {
@@ -270,7 +277,7 @@ public class EncodeState {
 			InputStream raf2 = null;
 			try {
 				// Open source file
-				raf2 = sourceFile.inputStream();
+				raf2 = sourceFile.inputStream(con);
 				
 				// Position source file
 				if (offset != 0) {
@@ -316,7 +323,7 @@ public class EncodeState {
 	public void append(byte[] buffer, int offset, int length)
 	throws JDtnException {
 		if (isEncodingToFile) {
-			blobAndBundleDatabase.appendByteArrayToFile(buffer, 0, length, file);
+			blobAndBundleDatabase.appendByteArrayToFile(con, buffer, 0, length, file);
 			fileLength += length;
 		} else {
 			for (int ix = 0; ix < length; ix++) {
@@ -342,11 +349,7 @@ public class EncodeState {
 	 */
 	public void close() {
 		if (isEncodingToFile) {
-			try {
-				blobAndBundleDatabase.getInterface().commit();
-			} catch (Exception e) {
-				// Ignore
-			}
+			//try { con.commit(); } catch (SQLException e) { throw new Error(e.getMessage(), e); }
 		} else {
 			memList.close();
 		}
@@ -358,7 +361,8 @@ public class EncodeState {
 	public void delete() {
 		close();
 		if (isEncodingToFile) {
-			file.delete();
+			file.delete(con);
+			//try { con.commit(); } catch (SQLException e) { throw new Error(e.getMessage(), e); }
 		} else {
 			memList.discardData();
 		}

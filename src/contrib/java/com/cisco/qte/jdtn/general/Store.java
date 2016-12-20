@@ -29,6 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 package com.cisco.qte.jdtn.general;
 
+import java.sql.SQLException;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Logger;
@@ -87,11 +88,25 @@ public class Store extends AbstractStartableComponent {
 	 * delete all files in the configured Storage Directory
 	 */
 	public void clean() {
-		BlobAndBundleDatabase.getInstance().cleanMediaRepository(BlobAndBundleDatabase.StorageType.STORE);
+		java.sql.Connection con = BlobAndBundleDatabase.getInstance().getInterface().createConnection();
+		try {
+			BlobAndBundleDatabase.getInstance().cleanMediaRepository(con, BlobAndBundleDatabase.StorageType.STORE);
+			try { con.commit(); } catch (SQLException e) { _logger.warning(e.getMessage()); }
+		}
+		finally {
+			try { con.close(); } catch (SQLException e) { _logger.warning(e.getMessage()); }
+		}
 	}
 	
 	private void clean(MediaRepository.File dir) {
-		BlobAndBundleDatabase.getInstance().cleanMediaRepository(BlobAndBundleDatabase.StorageType.STORE, dir);
+		java.sql.Connection con = BlobAndBundleDatabase.getInstance().getInterface().createConnection();
+		try {
+			BlobAndBundleDatabase.getInstance().cleanMediaRepository(con, BlobAndBundleDatabase.StorageType.STORE, dir);
+			try { con.commit(); } catch (SQLException e) { _logger.warning(e.getMessage()); }
+		}
+		finally {
+			try { con.close(); } catch (SQLException e) { _logger.warning(e.getMessage()); }
+		}
 	}
 	
 	

@@ -30,9 +30,11 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 package com.cisco.qte.jdtn.general;
 
 import com.cisco.qte.jdtn.apps.MediaRepository;
+import org.kritikal.fabric.contrib.jdtn.BlobAndBundleDatabase;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.sql.SQLException;
 
 
 /**
@@ -170,7 +172,14 @@ public class DecodeState {
 	public void delete() {
 		close();
 		if (_isInFile) {
-			_filePath.delete();
+			java.sql.Connection con = BlobAndBundleDatabase.getInstance().getInterface().createConnection();
+			try {
+				_filePath.delete(con);
+				try { con.commit(); } catch (SQLException ignore) { }
+			}
+			finally {
+				try { con.close(); } catch (SQLException ignore) { }
+			}
 		}
 	}
 	

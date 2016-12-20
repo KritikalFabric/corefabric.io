@@ -165,8 +165,8 @@ public class BundleStatusReport extends AdministrativeRecord {
 	 * @throws JDtnException On encoding errors
 	 */
 	@Override
-	public void encode(EncodeState encodeState) throws JDtnException {
-		super.encode(encodeState);
+	public void encode(java.sql.Connection con, EncodeState encodeState) throws JDtnException {
+		super.encode(con, encodeState);
 		int flags = 0;
 		if (isReportBundleReceived()) {
 			flags |= STATUS_FLAG_BUNDLE_RECEIVED;

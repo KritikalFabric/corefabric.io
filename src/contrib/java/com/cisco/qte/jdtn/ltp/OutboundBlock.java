@@ -469,7 +469,7 @@ public class OutboundBlock extends Block {
 	 * to clean up.
 	 */
 	@Override
-	public void closeBlock() {
+	public void closeBlock(java.sql.Connection con) {
 		for (DataSegment dataSegment : this) {
 			if (dataSegment.getCheckpointTimerTask() != null) {
 				LtpManagement.getInstance().getLtpStats().nCkPtTimerStops++;
@@ -477,8 +477,8 @@ public class OutboundBlock extends Block {
 				dataSegment.setCheckpointTimerTask(null);
 			}
 		}
-		discardBlockData();
-		super.closeBlock();
+		discardBlockData(con);
+		super.closeBlock(con);
 	}
 	
 	/**

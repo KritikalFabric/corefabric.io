@@ -31,6 +31,7 @@ package com.cisco.qte.jdtn.ltp;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.sql.SQLException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -49,6 +50,7 @@ import com.cisco.qte.jdtn.general.Utils;
 import com.cisco.qte.jdtn.ltp.udp.LtpUDPLink;
 import com.cisco.qte.jdtn.general.XmlRDParser;
 import com.cisco.qte.jdtn.general.XmlRdParserException;
+import org.kritikal.fabric.contrib.jdtn.BlobAndBundleDatabase;
 
 /**
  * Superclass for all LTP Links.  A Link is a DataLink layer, or a network
@@ -144,7 +146,7 @@ public abstract class LtpLink extends Link {
 	 * @param parser XML Parser
 	 * @return The new Link parsed out of the Config file
 	 * @throws JDtnException on JDtn specific parse errors
-	 * @throws XMLStreamException On general parse errors
+	 * @throws XmlRdParserException On general parse errors
 	 * @throws IOException On I/O errors
 	 * @throws InterruptedException 
 	 */
@@ -393,6 +395,7 @@ public abstract class LtpLink extends Link {
 	 * @throws InterruptedException On Interruption
 	 */
 	protected void notifyReceived(
+			java.sql.Connection con,
 			LtpLink link, 
 			LtpNeighbor neighbor, 
 			byte[] buffer, 
@@ -410,7 +413,7 @@ public abstract class LtpLink extends Link {
 		// Decode datagram to a Segment and enqueue the Segment to LtpInbound
 		try {
 			long t1 = System.currentTimeMillis();
-			Segment segment = Segment.decode(buffer, offset, length);
+			Segment segment = Segment.decode(con, buffer, offset, length);
 			segment.setLink(link);
 			segment.setNeighbor(neighbor);
 			if (GeneralManagement.isDebugLogging()) {
@@ -587,68 +590,84 @@ public abstract class LtpLink extends Link {
 							_logger.finest(segment.dump("  ", true));
 						}
 					}
-					
-					// Encode the Segment to a byte[]
-					long t1 = System.currentTimeMillis();
-					EncodeState encodeState = new EncodeState();
-					byte[] byteBuf = null;
-					try {
-						segment.encode(encodeState);
-						encodeState.close();
-						byteBuf = encodeState.getByteBuffer();
-					} catch (JDtnException e) {
-						_logger.log(Level.SEVERE, "Encoding Segment for Transmission", e);
-						continue;
-					}
-					long t2 = System.currentTimeMillis();
-					if (segment instanceof DataSegment) {
-						LtpManagement.getInstance()._ltpStats.nEncodeMSecs += (t2 - t1);
-						LtpManagement.getInstance()._ltpStats.nPayloadEncodeMSecs +=
-							((DataSegment)segment).getmSecsEncodingPayload();
-					}
-					
-					if (GeneralManagement.isDebugLogging()) {
-						if (_logger.isLoggable(Level.FINEST)) {
-							_logger.finest("Encoded Length=" + byteBuf.length + " Buffer=");
-							_logger.finest(
-									Utils.dumpBytes(
-											"  ", 
-											byteBuf, 
-											0, 
-											byteBuf.length));
-						}
-					}
-					
-					_bitsSent += byteBuf.length * 8;
-					
-					// Callback for notification that transmit started.
-					SegmentTransmitCallback callback =
-						segment.getSegmentTransmitCallback();
-					if (callback != null) {
-						callback.onSegmentTransmitStarted(segment.getLink(), segment);
-					}
 
+					java.sql.Connection con = BlobAndBundleDatabase.getInstance().getInterface().createConnection();
 					try {
-						// Transmit the Segment; believe it or not, we want
-						// things in this order.  Reasoning: the transmit
-						// callback ensures that appropriate timers are
-						// started.  The check for NeighborOperational
-						// ensures that queues won't get backed up when
-						// Neighbor goes non-operational.
-						if (segment.getNeighbor().isNeighborOperational()) {
-							sendImpl(
-									segment.getNeighbor(), byteBuf, 
-									0, byteBuf.length);
+
+						// Encode the Segment to a byte[]
+						long t1 = System.currentTimeMillis();
+						EncodeState encodeState = new EncodeState();
+						byte[] byteBuf = null;
+						try {
+							segment.encode(con, encodeState);
+							encodeState.close();
+							byteBuf = encodeState.getByteBuffer();
+						} catch (JDtnException e) {
+							_logger.log(Level.SEVERE, "Encoding Segment for Transmission", e);
+							continue;
 						}
-					} catch (JDtnException e) {
-						_logger.severe(
-								"Link " + getName() + 
-								"; transmit to " + 
-								segment.getNeighbor().getName() +								
-								": " + e.getMessage());
-						continue;
+						long t2 = System.currentTimeMillis();
+						if (segment instanceof DataSegment) {
+							LtpManagement.getInstance()._ltpStats.nEncodeMSecs += (t2 - t1);
+							LtpManagement.getInstance()._ltpStats.nPayloadEncodeMSecs +=
+									((DataSegment) segment).getmSecsEncodingPayload();
+						}
+
+						if (GeneralManagement.isDebugLogging()) {
+							if (_logger.isLoggable(Level.FINEST)) {
+								_logger.finest("Encoded Length=" + byteBuf.length + " Buffer=");
+								_logger.finest(
+										Utils.dumpBytes(
+												"  ",
+												byteBuf,
+												0,
+												byteBuf.length));
+							}
+						}
+
+						_bitsSent += byteBuf.length * 8;
+
+						// Callback for notification that transmit started.
+						SegmentTransmitCallback callback =
+								segment.getSegmentTransmitCallback();
+						if (callback != null) {
+							callback.onSegmentTransmitStarted(segment.getLink(), segment);
+						}
+
+						try { con.commit(); } catch (SQLException e) {
+							_logger.warning(e.getMessage());
+						}
+
+						try {
+							// Transmit the Segment; believe it or not, we want
+							// things in this order.  Reasoning: the transmit
+							// callback ensures that appropriate timers are
+							// started.  The check for NeighborOperational
+							// ensures that queues won't get backed up when
+							// Neighbor goes non-operational.
+							if (segment.getNeighbor().isNeighborOperational()) {
+								sendImpl(
+										segment.getNeighbor(), byteBuf,
+										0, byteBuf.length);
+							}
+
+							try { con.commit(); } catch (SQLException e) {
+								_logger.warning(e.getMessage());
+							}
+
+						} catch (JDtnException e) {
+							try { con.rollback(); } catch (SQLException ignore) { }
+							_logger.severe(
+									"Link " + getName() +
+											"; transmit to " +
+											segment.getNeighbor().getName() +
+											": " + e.getMessage());
+							continue;
+						}
 					}
-					
+					finally {
+						try { con.close(); } catch (SQLException e) { _logger.warning(e.getMessage()); }
+					}
 				}
 			} catch (InterruptedException e) {
 				if (GeneralManagement.isDebugLogging()) {

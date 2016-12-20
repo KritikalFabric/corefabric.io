@@ -36,7 +36,7 @@ public class BasicDataSourceHelper {
         basicDataSource.setInitialSize(concurrency);
         basicDataSource.setMinIdle(2);
         //basicDataSource.setMaxTotal(concurrency);
-        //try { basicDataSource.getConnection().close(); } catch (Throwable t) { } // error will happen again for sure
+        //try { basicDataSource.createConnection().close(); } catch (Throwable t) { } // error will happen again for sure
         //try  { Thread.sleep(Constants.INITIAL_BASIC_DATA_SOURCE_SLEEP); } catch (InterruptedException ie) { }
         return basicDataSource;
     }

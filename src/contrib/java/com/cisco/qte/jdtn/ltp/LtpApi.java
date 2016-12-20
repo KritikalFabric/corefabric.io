@@ -373,7 +373,7 @@ public class LtpApi extends AbstractStartableComponent {
 	 * Listener on this Block.
 	 * @param block Block which was canceled.
 	 */
-	public void onBlockReceived(Block block) {
+	public void onBlockReceived(java.sql.Connection con, Block block) {
 		if (GeneralManagement.isDebugLogging()) {
 			_logger.finer("onBlockReceived()");
 			if (_logger.isLoggable(Level.FINEST)) {
@@ -388,7 +388,7 @@ public class LtpApi extends AbstractStartableComponent {
 			listener = _listenerMap.get(serviceId);
 		}
 		if (listener != null) {
-			listener.onBlockReceived(block);
+			listener.onBlockReceived(con, block);
 		}
 	}
 	

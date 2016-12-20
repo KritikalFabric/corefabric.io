@@ -37,6 +37,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.sql.SQLException;
 import java.util.Date;
 import java.util.logging.Logger;
 
@@ -48,6 +49,7 @@ import com.cisco.qte.jdtn.bp.BundleOptions;
 import com.cisco.qte.jdtn.bp.EndPointId;
 import com.cisco.qte.jdtn.bp.Payload;
 import com.cisco.qte.jdtn.general.JDtnException;
+import org.kritikal.fabric.contrib.jdtn.BlobAndBundleDatabase;
 
 /**
  * TextNote Application
@@ -97,43 +99,54 @@ public class TextApp extends AbstractApp {
 	 */
 	public void sendText(String toEid, String message, BundleOptions bundleOptions)
 	throws InterruptedException, JDtnException {
-		// Determine dest and source Eids
-		EndPointId dest = EndPointId.createEndPointId(toEid + "/" + APP_NAME.toLowerCase());
-		EndPointId source = BPManagement.getInstance().getEndPointIdStem().append("/" + APP_NAME.toLowerCase());
-		
-		// Set up the bundle payload; send in-memory
-		ByteArrayOutputStream bos = new ByteArrayOutputStream();
-		DataOutputStream dos = new DataOutputStream(bos);
+		java.sql.Connection con = BlobAndBundleDatabase.getInstance().getInterface().createConnection();
 		try {
-			dos.writeByte(0x30);						// CmdCode
-			dos.writeInt(_messageCounter++);			// message counter
-			dos.writeLong(System.currentTimeMillis());	// shell start time
-			dos.writeInt(message.length());
-			dos.writeChars(message);
-			
-		} catch (IOException e) {
-			throw new BPException(e);
-		} finally {
+			// Determine dest and source Eids
+			EndPointId dest = EndPointId.createEndPointId(toEid + "/" + APP_NAME.toLowerCase());
+			EndPointId source = BPManagement.getInstance().getEndPointIdStem().append("/" + APP_NAME.toLowerCase());
+
+			// Set up the bundle payload; send in-memory
+			ByteArrayOutputStream bos = new ByteArrayOutputStream();
+			DataOutputStream dos = new DataOutputStream(bos);
 			try {
-				dos.close();
+				dos.writeByte(0x30);						// CmdCode
+				dos.writeInt(_messageCounter++);			// message counter
+				dos.writeLong(System.currentTimeMillis());	// shell start time
+				dos.writeInt(message.length());
+				dos.writeChars(message);
+
 			} catch (IOException e) {
-				// Ignore
+				throw new BPException(e);
+			} finally {
+				try {
+					dos.close();
+				} catch (IOException e) {
+					// Ignore
+				}
+				try {
+					bos.close();
+				} catch (IOException e) {
+					// Ignore
+				}
 			}
-			try {
-				bos.close();
-			} catch (IOException e) {
-				// Ignore
+
+			// Send a Bundle containing the Payload.
+			Payload payload = new Payload(bos.toByteArray(), 0, bos.size());
+
+			try { con.commit(); } catch (SQLException e) {
+				_logger.warning(e.getMessage());
 			}
+
+			BpApi.getInstance().sendBundle(
+					getAppRegistration(),
+					source,
+					dest,
+					payload,
+					bundleOptions);
 		}
-		
-		// Send a Bundle containing the Payload.
-		Payload payload = new Payload(bos.toByteArray(), 0, bos.size());
-		BpApi.getInstance().sendBundle(
-				getAppRegistration(), 
-				source, 
-				dest, 
-				payload, 
-				bundleOptions);
+		finally {
+			try { con.close(); } catch (SQLException e) { _logger.warning(e.getMessage()); }
+		}
 	}
 	
 	/**
@@ -143,61 +156,71 @@ public class TextApp extends AbstractApp {
 	 */
 	@Override
 	public void threadImpl() throws Exception {
-		// Receive a Text Note Bundle
-		Bundle bundle = BpApi.getInstance().receiveBundle(getAppRegistration());
-		_logger.fine("Received TextNote Bundle");
-		
-		Payload payload = bundle.getPayloadBundleBlock().getPayload();
-		
-		// Extract the text note from the Bundle
-		InputStream is;
-		if (payload.isBodyDataInFile()) {
-			is = payload.getBodyDataFile().inputStream();
-		} else {
-			is = new ByteArrayInputStream(
-					payload.getBodyDataBuffer(), 
-					payload.getBodyDataMemOffset(), 
-					payload.getBodyDataMemLength());
-		}
-		DataInputStream dis = new DataInputStream(is);
-        dis.readByte(); // skip the command
-        dis.readInt();	// skip the message id
-        dis.readLong();	// skip the timestamp
-        int length = dis.readInt();
-        StringBuffer sb = new StringBuffer();
-        for (int j = 0; j < length; j++) {
-            sb.append(dis.readChar());
-        }
-        String rxMessage = sb.toString();
-        is.close();
-        dis.close();
-        
-        // Delete the payload if it's in a File
-		if (payload.isBodyDataInFile()) {
-			if (!payload.getBodyDataFile().delete()) {
-				_logger.severe("Cannot delete payload file " + payload.getBodyDataFile());
+		java.sql.Connection con = BlobAndBundleDatabase.getInstance().getInterface().createConnection();
+		try {
+			// Receive a Text Note Bundle
+			Bundle bundle = BpApi.getInstance().receiveBundle(getAppRegistration());
+			_logger.fine("Received TextNote Bundle");
+
+			Payload payload = bundle.getPayloadBundleBlock().getPayload();
+
+			// Extract the text note from the Bundle
+			InputStream is;
+			if (payload.isBodyDataInFile()) {
+				is = payload.getBodyDataFile().inputStream(con);
+			} else {
+				is = new ByteArrayInputStream(
+						payload.getBodyDataBuffer(),
+						payload.getBodyDataMemOffset(),
+						payload.getBodyDataMemLength());
 			}
+			DataInputStream dis = new DataInputStream(is);
+			dis.readByte(); // skip the command
+			dis.readInt();	// skip the message id
+			dis.readLong();	// skip the timestamp
+			int length = dis.readInt();
+			StringBuffer sb = new StringBuffer();
+			for (int j = 0; j < length; j++) {
+				sb.append(dis.readChar());
+			}
+			String rxMessage = sb.toString();
+			is.close();
+			dis.close();
+
+			// Delete the payload if it's in a File
+			if (payload.isBodyDataInFile()) {
+				if (!payload.getBodyDataFile().delete(con)) {
+					_logger.severe("Cannot delete payload file " + payload.getBodyDataFile());
+				}
+			}
+
+			try { con.commit(); } catch (SQLException e) {
+				_logger.warning(e.getMessage());
+			}
+
+			// Save message to media repository
+			MediaRepository.File file =
+				MediaRepository.getInstance().formMediaFilename(
+						APP_NAME,
+						new Date(),
+						bundle.getPrimaryBundleBlock().getSourceEndpointId().getHostNodeName(),
+						".txt");
+			MediaRepository.getInstance().spillByteArrayToFile(
+					APP_NAME,
+					rxMessage.getBytes(),
+					0,
+					length,
+					file);
+			_logger.info("Text Message from: " +
+					bundle.getPrimaryBundleBlock().getSourceEndpointId().getEndPointIdString() +
+					" " + file.getAbsolutePath() +
+					" " + length +
+					" bytes");
+			_logger.info(rxMessage);
 		}
-		
-		// Save message to media repository
-		MediaRepository.File file =
-			MediaRepository.getInstance().formMediaFilename(
-					APP_NAME, 
-					new Date(), 
-					bundle.getPrimaryBundleBlock().getSourceEndpointId().getHostNodeName(), 
-					".txt");
-		MediaRepository.getInstance().spillByteArrayToFile(
-				APP_NAME,
-				rxMessage.getBytes(), 
-				0, 
-				length, 
-				file);
-		_logger.info("Text Message from: " +
-				bundle.getPrimaryBundleBlock().getSourceEndpointId().getEndPointIdString() +
-				" " + file.getAbsolutePath() +
-				" " + length +
-				" bytes");
-		_logger.info(rxMessage);
+		finally {
+			try { con.close(); } catch (SQLException e) { _logger.warning(e.getMessage()); }
+		}
 	}
 
 }

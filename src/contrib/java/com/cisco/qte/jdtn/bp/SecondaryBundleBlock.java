@@ -179,7 +179,7 @@ public class SecondaryBundleBlock extends BundleBlock {
 	 * @throws InterruptedException 
 	 */
 	@Override
-	public void encode(EncodeState encodeState, EidScheme eidScheme) 
+	public void encode(java.sql.Connection con, EncodeState encodeState, EidScheme eidScheme)
 	throws JDtnException, InterruptedException {
 		encodeState.put(getBlockType());
 		Utils.sdnvEncodeInt(getBlockProcessingControlFlags(), encodeState);
@@ -202,11 +202,11 @@ public class SecondaryBundleBlock extends BundleBlock {
 		EncodeState encodeState2 = null;
 		if (encodeState.isEncodingToFile) {
 			encodeState2 = 
-				new EncodeState(Store.getInstance().createNewTemporaryFile());						
+				new EncodeState(con, Store.getInstance().createNewTemporaryFile());
 		} else {
 			encodeState2 = new EncodeState();
 		}
-		_body.encode(encodeState2);
+		_body.encode(con, encodeState2);
 		encodeState2.close();
 		Utils.sdnvEncodeLong(encodeState2.getLength(), encodeState);
 

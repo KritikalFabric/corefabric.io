@@ -56,6 +56,7 @@ import org.kritikal.fabric.contrib.jdtn.BlobAndBundleDatabase;
 
 import java.io.File;
 import java.net.UnknownHostException;
+import java.sql.SQLException;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -3654,29 +3655,38 @@ public class JDTNHTTPShell extends AbstractVerticle{
 			return;
 		}
 		LtpNeighbor ltpNeighbor = (LtpNeighbor)neighbor;
-		MediaRepository.File file = new MediaRepository.File(BlobAndBundleDatabase.StorageType.MEDIA, filename);
-		if (!file.exists()) {
-			process.write(" File " + filename + " does not exist\n");
-			return;
-		}
-
-		RateEstimatorApp estimator =
-			(RateEstimatorApp)AppManager.getInstance().getApp(
-					RateEstimatorApp.APP_NAME);
-		if (estimator == null) {
-			process.write("RateEstimatorApp is not installed\n");
-			return;
-		}
-
-		process.write(
-				"Starting RateEstimator for Link " + linkName +
-						" Neighbor " + neighborName+"\n");
+		java.sql.Connection con = BlobAndBundleDatabase.getInstance().getInterface().createConnection();
 		try {
-			estimator.estimateRateLimit(ltpNeighbor, file);
-		} catch (JDtnException e) {
-			process.write(e.getMessage()+"\n");
-			return;
+			MediaRepository.File file = new MediaRepository.File(BlobAndBundleDatabase.StorageType.MEDIA, filename);
+			if (!file.exists(con)) {
+				process.write(" File " + filename + " does not exist\n");
+				return;
+			}
+
+			RateEstimatorApp estimator =
+				(RateEstimatorApp)AppManager.getInstance().getApp(
+						RateEstimatorApp.APP_NAME);
+			if (estimator == null) {
+				process.write("RateEstimatorApp is not installed\n");
+				return;
+			}
+
+			process.write(
+					"Starting RateEstimator for Link " + linkName +
+							" Neighbor " + neighborName+"\n");
+			try {
+				estimator.estimateRateLimit(ltpNeighbor, file);
+			} catch (JDtnException e) {
+				process.write(e.getMessage()+"\n");
+				return;
+			}
+
+			try { con.commit(); } catch (SQLException e) { _logger.warning(e.getMessage()); }
 		}
+		finally {
+			try { con.close(); } catch (SQLException e) { _logger.warning(e.getMessage()); }
+		}
+
 	}
 
 	private void helpIon(CommandProcess process) {

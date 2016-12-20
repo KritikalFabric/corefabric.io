@@ -36,6 +36,7 @@ import java.io.DataOutputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.sql.SQLException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -61,6 +62,7 @@ import com.cisco.qte.jdtn.ltp.IPAddress;
 import com.cisco.qte.jdtn.tcpcl.TcpClLink;
 import com.cisco.qte.jdtn.tcpcl.TcpClManagement;
 import com.cisco.qte.jdtn.tcpcl.TcpClNeighbor;
+import org.kritikal.fabric.contrib.jdtn.BlobAndBundleDatabase;
 
 /**
  * Router Application; sources and responds to /Router/Hello messages.
@@ -133,149 +135,157 @@ public class RouterApp extends AbstractApp {
 		if (GeneralManagement.isDebugLogging()) {
 			_logger.finer("threadImpl()");
 		}
-		// Receive a /Router/Hello Bundle
-		Bundle bundle =
-			BpApi.getInstance().receiveBundle(getAppRegistration());
-		EndPointId source = bundle.getPrimaryBundleBlock().getSourceEndpointId();
-		if (GeneralManagement.isDebugLogging()) {
-			_logger.fine("Received Hello from " + source.getEndPointIdString());
-		}
 
-		// Extract the Hello message from the Bundle
-		Payload payload = bundle.getPayloadBundleBlock().getPayload();
-		InputStream is = null;
-		DataInputStream dis = null;
+		java.sql.Connection con = BlobAndBundleDatabase.getInstance().getInterface().createConnection();
 		try {
-			if (payload.isBodyDataInFile()) {
-				is = payload.getBodyDataFile().inputStream();
-			} else {
-				is = new ByteArrayInputStream(
-						payload.getBodyDataBuffer(), 
-						payload.getBodyDataMemOffset(), 
-						payload.getBodyDataMemLength());
-			}
-			dis = new DataInputStream(is);
-			// Timestamp
-			dis.readLong();	// skip the timestamp
-			// Version
-			byte version = dis.readByte();
-			if (version < ROUTER_VERSION) {
-				_logger.severe("Invalid version in Router Hello; ignoring : " + version);
-				return;
-			}
-			// Segment Rate Limit
-			@SuppressWarnings("unused")
-			double segRateLimit = dis.readDouble();
-			// Burst Size
-			@SuppressWarnings("unused")
-			long burstSize = dis.readLong();
-			// Length of IP Address
-			int length = dis.readInt();
-			// IP Address
-			StringBuffer sb = new StringBuffer();
-			for (int j = 0; j < length; j++) {
-			    sb.append(dis.readChar());
-			}
-			String rxMessage = sb.toString();
-			IPAddress ipAddress = new IPAddress(rxMessage);
-			payload.delete();
+			// Receive a /Router/Hello Bundle
+			Bundle bundle =
+				BpApi.getInstance().receiveBundle(getAppRegistration());
+			EndPointId source = bundle.getPrimaryBundleBlock().getSourceEndpointId();
 			if (GeneralManagement.isDebugLogging()) {
-				_logger.fine("Neighbor IPAddress=" + ipAddress.toParseableString());
+				_logger.fine("Received Hello from " + source.getEndPointIdString());
 			}
-			// See if we already know about the Neighbor originating this Hello
-			Neighbor existingNeighbor =
-				NeighborsList.getInstance().findNeighborByAddress(ipAddress);
-			Link link = bundle.getLink();
-			Route existingRoute = RouteTable.getInstance().findMatchingRoute(source);
-			if (existingNeighbor != null &&
-				existingNeighbor.getEndPointIdStem().isPrefixOf(source)) {
-				// We know about this neighbor already
-				if (existingRoute != null &&
-					!(existingRoute instanceof DefaultRoute)) {
-					// We have a (non-default) route to this neighbor
-					if (existingRoute.getLink() == link) {
-						// XXX Check for Address change
-						// Route points to same link as that which Hello arrived on
-						// We don't need to delete and re-add Neighbor nor Route
-						// Update SegRateLimit and burstSize
-						return;
-					}
+
+			// Extract the Hello message from the Bundle
+			Payload payload = bundle.getPayloadBundleBlock().getPayload();
+			InputStream is = null;
+			DataInputStream dis = null;
+			try {
+				if (payload.isBodyDataInFile()) {
+					is = payload.getBodyDataFile().inputStream(con);
+				} else {
+					is = new ByteArrayInputStream(
+							payload.getBodyDataBuffer(),
+							payload.getBodyDataMemOffset(),
+							payload.getBodyDataMemLength());
 				}
-			}
-					
-			// We will be installing a Neighbor and a Route for the node
-			// sourcing the Hello bundle.  First, we need to remove any
-			// existing Neighbor and Route for it.
-			// First, remove the existing Route
-			if (existingRoute != null && !(existingRoute instanceof DefaultRoute)) {
+				dis = new DataInputStream(is);
+				// Timestamp
+				dis.readLong();	// skip the timestamp
+				// Version
+				byte version = dis.readByte();
+				if (version < ROUTER_VERSION) {
+					_logger.severe("Invalid version in Router Hello; ignoring : " + version);
+					return;
+				}
+				// Segment Rate Limit
+				@SuppressWarnings("unused")
+				double segRateLimit = dis.readDouble();
+				// Burst Size
+				@SuppressWarnings("unused")
+				long burstSize = dis.readLong();
+				// Length of IP Address
+				int length = dis.readInt();
+				// IP Address
+				StringBuffer sb = new StringBuffer();
+				for (int j = 0; j < length; j++) {
+					sb.append(dis.readChar());
+				}
+				String rxMessage = sb.toString();
+				IPAddress ipAddress = new IPAddress(rxMessage);
+				payload.delete();
 				if (GeneralManagement.isDebugLogging()) {
-					_logger.fine("Removing Old Route to " + source.getEndPointIdString());
-					if (_logger.isLoggable(Level.FINER)) {
-						_logger.finer(existingRoute.dump("", true));
+					_logger.fine("Neighbor IPAddress=" + ipAddress.toParseableString());
+				}
+				// See if we already know about the Neighbor originating this Hello
+				Neighbor existingNeighbor =
+					NeighborsList.getInstance().findNeighborByAddress(ipAddress);
+				Link link = bundle.getLink();
+				Route existingRoute = RouteTable.getInstance().findMatchingRoute(source);
+				if (existingNeighbor != null &&
+					existingNeighbor.getEndPointIdStem().isPrefixOf(source)) {
+					// We know about this neighbor already
+					if (existingRoute != null &&
+						!(existingRoute instanceof DefaultRoute)) {
+						// We have a (non-default) route to this neighbor
+						if (existingRoute.getLink() == link) {
+							// XXX Check for Address change
+							// Route points to same link as that which Hello arrived on
+							// We don't need to delete and re-add Neighbor nor Route
+							// Update SegRateLimit and burstSize
+							return;
+						}
 					}
 				}
-				RouteTable.getInstance().removeRoute(existingRoute);
-			}
-			
-			// Remove the existing Neighbor entry, if any
-			if (existingNeighbor != null) {
+
+				// We will be installing a Neighbor and a Route for the node
+				// sourcing the Hello bundle.  First, we need to remove any
+				// existing Neighbor and Route for it.
+				// First, remove the existing Route
+				if (existingRoute != null && !(existingRoute instanceof DefaultRoute)) {
+					if (GeneralManagement.isDebugLogging()) {
+						_logger.fine("Removing Old Route to " + source.getEndPointIdString());
+						if (_logger.isLoggable(Level.FINER)) {
+							_logger.finer(existingRoute.dump("", true));
+						}
+					}
+					RouteTable.getInstance().removeRoute(existingRoute);
+				}
+
+				// Remove the existing Neighbor entry, if any
+				if (existingNeighbor != null) {
+					if (GeneralManagement.isDebugLogging()) {
+						_logger.fine("Removing Neighbor entry for " + source.getEndPointIdString());
+						if (_logger.isLoggable(Level.FINER)) {
+							_logger.finer(existingNeighbor.dump("", true));
+						}
+					}
+					NeighborsList.getInstance().removeNeighbor(existingNeighbor);
+				}
+
+				// Add a TcpClNeighbor describing the source of the Hello
+				String neighborName = source.getHostNodeName();
 				if (GeneralManagement.isDebugLogging()) {
-					_logger.fine("Removing Neighbor entry for " + source.getEndPointIdString());
+					_logger.fine("Adding Neighbor entry for " + neighborName);
+				}
+				TcpClNeighbor neighbor = TcpClManagement.getInstance().addNeighbor(
+						neighborName,
+						EndPointId.createEndPointId(EndPointId.DEFAULT_SCHEME, "//" + neighborName));
+				LinkAddress linkAddress = new LinkAddress(link, ipAddress);
+				neighbor.addLinkAddress(linkAddress);
+				neighbor.setEndPointIdStem(
+						EndPointId.createEndPointId(source.getHostNodeName()));
+				neighbor.setTemporary(true);
+				neighbor.start();
+
+				if (GeneralManagement.isDebugLogging()) {
 					if (_logger.isLoggable(Level.FINER)) {
-						_logger.finer(existingNeighbor.dump("", true));
+						_logger.finer(neighbor.dump("", true));
 					}
 				}
-				NeighborsList.getInstance().removeNeighbor(existingNeighbor);
-			}
-			
-			// Add a TcpClNeighbor describing the source of the Hello
-			String neighborName = source.getHostNodeName();
-			if (GeneralManagement.isDebugLogging()) {
-				_logger.fine("Adding Neighbor entry for " + neighborName);
-			}
-			TcpClNeighbor neighbor = TcpClManagement.getInstance().addNeighbor(
-					neighborName,
-					EndPointId.createEndPointId(EndPointId.DEFAULT_SCHEME, "//" + neighborName));
-			LinkAddress linkAddress = new LinkAddress(link, ipAddress);
-			neighbor.addLinkAddress(linkAddress);
-			neighbor.setEndPointIdStem(
-					EndPointId.createEndPointId(source.getHostNodeName()));
-			neighbor.setTemporary(true);
-			neighbor.start();
-			
-			if (GeneralManagement.isDebugLogging()) {
-				if (_logger.isLoggable(Level.FINER)) {
-					_logger.finer(neighbor.dump("", true));
+
+				// Add a Route to get to the node sourcing the Hello
+				if (GeneralManagement.isDebugLogging()) {
+					_logger.fine("Adding Route for " + neighborName);
+				}
+				String routePattern = source.getEndPointIdString();
+				routePattern += BPManagement.ALL_SUBCOMPONENTS_EID_PATTERN;
+				Route route = BPManagement.getInstance().addRoute(
+						neighborName,
+						routePattern,
+						link.getName(),
+						neighborName);
+				route.setTemporary(true);
+
+				if (GeneralManagement.isDebugLogging()) {
+					if (_logger.isLoggable(Level.FINER)) {
+						_logger.finer(route.dump("", true));
+					}
+				}
+
+			} finally {
+				try { con.commit(); } catch (SQLException e) { _logger.warning(e.getMessage()); }
+				if (is != null) {
+					is.close();
+				}
+				if (dis != null) {
+					dis.close();
 				}
 			}
-			
-			// Add a Route to get to the node sourcing the Hello
-			if (GeneralManagement.isDebugLogging()) {
-				_logger.fine("Adding Route for " + neighborName);
-			}
-			String routePattern = source.getEndPointIdString();
-			routePattern += BPManagement.ALL_SUBCOMPONENTS_EID_PATTERN;
-			Route route = BPManagement.getInstance().addRoute(
-					neighborName, 
-					routePattern, 
-					link.getName(), 
-					neighborName);
-			route.setTemporary(true);
-			
-			if (GeneralManagement.isDebugLogging()) {
-				if (_logger.isLoggable(Level.FINER)) {
-					_logger.finer(route.dump("", true));
-				}
-			}
-			
-		} finally {
-			if (is != null) {
-				is.close();
-			}
-			if (dis != null) {
-				dis.close();
-			}
-		}       
+		}
+		finally {
+			try { con.close(); } catch (SQLException e) { _logger.warning(e.getMessage()); }
+		}
 	}
 
 	/**

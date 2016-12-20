@@ -99,7 +99,7 @@ public abstract class AdministrativeRecord extends Payload {
 	 * @throws JDtnException On encoding errors
 	 */
 	@Override
-	public void encode(EncodeState encodeState) throws JDtnException {
+	public void encode(java.sql.Connection con, EncodeState encodeState) throws JDtnException {
 		int typeFlags = getRecordType() & ADMIN_RECORD_TYPE_MASK;
 		if (isForFragment()) {
 			typeFlags |= ADMIN_RECORD_FLAGS_FRAGMENT;

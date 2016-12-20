@@ -127,7 +127,7 @@ public interface LtpListener {
 	 * Notification that the given Block was received.
 	 * @param block Received Block
 	 */
-	public void onBlockReceived(Block block);
+	public void onBlockReceived(java.sql.Connection con, Block block);
 	
 	/**
 	 * 7.3.  Red-Part Reception

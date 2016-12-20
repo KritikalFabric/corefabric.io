@@ -77,11 +77,12 @@ public class Payload extends Body {
 	}
 	
 	@Override
-	public void encode(EncodeState encodeState) throws JDtnException, InterruptedException {
+	public void encode(java.sql.Connection con, EncodeState encodeState) throws JDtnException, InterruptedException {
 		if (isBodyDataInFile()) {
 			encodeState.append(
-					getBodyDataFile(), 
-					getBodyDataFileOffset(), 
+					con,
+					getBodyDataFile(),
+					getBodyDataFileOffset(),
 					getBodyDataFileLength());
 		} else {
 			encodeState.append(

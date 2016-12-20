@@ -49,12 +49,12 @@ public class CancelAckSegment extends Segment {
 	}
 	
 	@Override
-	protected void decodeContents(DecodeState decodeState) throws JDtnException {
+	protected void decodeContents(java.sql.Connection con, DecodeState decodeState) throws JDtnException {
 		// Nothing
 	}
 
 	@Override
-	protected void encodeContents(EncodeState encodeState) {
+	protected void encodeContents(java.sql.Connection con, EncodeState encodeState) {
 		// Nothing
 	}
 	

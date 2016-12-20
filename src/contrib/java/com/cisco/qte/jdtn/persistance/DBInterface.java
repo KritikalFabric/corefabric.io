@@ -32,7 +32,7 @@ package com.cisco.qte.jdtn.persistance;
 import java.sql.Connection;
 
 /**
- * Interface to Bundles database.
+ * Interface to Bundles database. // TODO: FIXME: refactor away, nothing is gonna plug here that's not JDBC
  */
 public interface DBInterface {
 
@@ -50,33 +50,33 @@ public interface DBInterface {
 	public void closeDB() throws DBInterfaceException;
 
 	/**
-	 * commit the transaction
-	 * @throws DBInterfaceException
+	 * retrieve a connection from our connection pool, be sure to call .close() on this
+	 * connection to auto-rollback and return it to the pool when you're finished with
+	 * it.
+	 * @return a brand new initialised connection
 	 */
-	void commit() throws DBInterfaceException;
-
-	Connection getConnection();
+	public Connection createConnection();
 	
 	/**
 	 * Execute an Insert SQL statement w/in a single transaction
 	 * @param stmt The Insert SQL statement.
 	 * @throws DBInterfaceException on errors
 	 */
-	public void executeInsert(String stmt) throws DBInterfaceException;
+	public void executeInsert(Connection connection, String stmt) throws DBInterfaceException;
 	
 	/**
 	 * Execute a Delete SQL statement w/in a single transaction
 	 * @param stmt The Delete SQL statement.
 	 * @throws DBInterfaceException on errors
 	 */
-	public void executeDelete(String stmt) throws DBInterfaceException;
+	public void executeDelete(Connection connection, String stmt) throws DBInterfaceException;
 	
 	/**
 	 * Execute an Update SQL statement w/in a single transaction
 	 * @param stmt The Update SQL statement
 	 * @throws DBInterfaceException on errors
 	 */
-	public void executeUpdate(String stmt) throws DBInterfaceException;
+	public void executeUpdate(Connection connection, String stmt) throws DBInterfaceException;
 	
 	/**
 	 * Execute a Query SQL statement.
@@ -84,12 +84,12 @@ public interface DBInterface {
 	 * @return An object describing the query results
 	 * @throws DBInterfaceException on errors
 	 */
-	public QueryResults executeQuery(String stmt) throws DBInterfaceException;
+	public QueryResults executeQuery(Connection connection, String stmt) throws DBInterfaceException;
 	
 	/**
 	 * Clear the database of all records
 	 * @throws DBInterfaceException
 	 */
-	public void clear() throws DBInterfaceException;
+	public void clear(Connection connection) throws DBInterfaceException;
 	
 }

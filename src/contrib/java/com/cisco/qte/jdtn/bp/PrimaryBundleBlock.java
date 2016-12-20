@@ -356,7 +356,7 @@ public class PrimaryBundleBlock extends BundleBlock {
 	 * @throws InterruptedException 
 	 */
 	@Override
-	public void encode(EncodeState encodeState, EidScheme eidScheme) 
+	public void encode(java.sql.Connection con, EncodeState encodeState, EidScheme eidScheme)
 	throws JDtnException, InterruptedException {
 		// We cannot fully encode the Block until we know a couple things:
 		// BlockLength - This is the length of the Encoded Block from the offsets
