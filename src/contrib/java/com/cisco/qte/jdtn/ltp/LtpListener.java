@@ -156,7 +156,7 @@ public interface LtpListener {
      * Length of the data segment's content.
      * Indication as to whether or not the last byte of this data
      * segment's content is also the end of the block.
-     * StorageType LTP engine ID.
+     * Source LTP engine ID.
 	 * Called when a Green DataSegment is received
 	 * @param dataSegment Received Green DataSegment
 	 */
