@@ -111,6 +111,33 @@ CPP="/usr/bin/cpp"; export CPP # some filenames are sacred mr shuttleworth
 # linux ubuntu yakkity 64-bit                                                 #
 ###############################################################################
     ;;
+    Xexperimental-linux)
+###############################################################################
+# linux ubuntu yakkity 64-bit                                                 #
+###############################################################################
+COREFABRIC_SPEED=' -j '
+COREFABRIC_BUILD='x86_64-linux-gnu'; export COREFABRIC_BUILD
+COREFABRIC_HOST='x86_64-linux-gnu'; export COREFABRIC_HOST
+COREFABRIC_TARGET='x86_64-linux-gnu'; export COREFABRIC_TARGET
+COREFABRIC_PFX='x86_64-linux-gnu'; export COREFABRIC_PFX
+PATH="$COREFABRIC_DEST/bin:$PATH"; export PATH
+LD_LIBRARY_PATH="$JAVA_HOME/lib:$COREFABRIC_DEST/lib"; export LD_LIBRARY_PATH
+LIBTOOL="libtool"; export LIBTOOL
+LIBTOOLIZE="libtoolize"; export LIBTOOLIZE
+BUILDPYTHON="/usr/bin/python2.7"; export BUILDPYTHON
+PYTHON_FOR_BUILD="/usr/bin/python2.7 -E"; export PYTHON_FOR_BUILD
+CONFIG_SITE="$COREFABRIC_DEST/share/config.site"; export CONFIG_SITE
+
+CPPFLAGS="$CPPFLAGS -w -fPIC -L$COREFABRIC_DEST/lib/ -Wl,-rpath=$COREFABRIC_DEST/lib -Wl,-rpath=$JAVA_HOME/lib"; export CPPFLAGS
+LDFLAGS="-L$COREFABRIC_DEST/lib/ -Wl,-rpath=$COREFABRIC_DEST/lib";export LDFLAGS
+CFLAGS="$CPPFLAGS"; export CFLAGS
+CXX="/usr/bin/g++"; export CXX
+CC="/usr/bin/gcc"; export CC
+CPP="/usr/bin/cpp"; export CPP # some filenames are sacred mr shuttleworth
+###############################################################################
+# linux ubuntu yakkity 64-bit                                                 #
+###############################################################################
+    ;;
     Xjoyent)
 ###############################################################################
 # joyent-base 16.3.x 64-bit only (not multiarch, not 32-bit)                  #
