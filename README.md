@@ -28,7 +28,7 @@ nb. system and cluster can be combined using this 2nd technique.
 ```
 Development environment 
 ```
-start-up through org.kritikal.fabric.CoreFabric.main():
+node-js is needed for our angular2 web-development environment
 
 awfulhak:corefabric.io ben$ git submodule init
 awfulhak:corefabric.io ben$ git submodule update
@@ -36,7 +36,7 @@ awfulhak:corefabric.io ben$ ./tools/dependencies/clean.sh
 awfulhak:corefabric.io ben$ ./tools/dependencies/install.sh
 awfulhak:corefabric.io ben$ (cd a2/ && ./clean.sh && ./run.sh)
 
-& in a second terminal
+& in a second terminal start-up through org.kritikal.fabric.CoreFabric.main():
 
 awfulhak:corefabric.io ben$ ./gradlew runShadow
 ```
