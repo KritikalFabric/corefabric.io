@@ -78,7 +78,7 @@ echo 'INSTALLED  openssl ';
 fi; # end openssl (Xinsane)
 
 if test "X$COREFABRIC_JEP" == "Xjep"; then
-if test "X$COREFABRIC_ENV" == "Xlinux"; then # python/jep only reliably builds on linunx at the moment
+if test "X$COREFABRIC_ENV" == "Xexperimental-linux"; then # python/jep only reliably builds on linunx at the moment
 
 cd $COREFABRIC/tools/dependencies/Python-3.4.5 && (
 echo 'INSTALLING python';

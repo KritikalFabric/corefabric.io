@@ -111,7 +111,7 @@ CPP="/usr/bin/cpp"; export CPP # some filenames are sacred mr shuttleworth
 # linux ubuntu yakkity 64-bit                                                 #
 ###############################################################################
     ;;
-    Xubuntu-latest)
+    Xexperimental-linux)
 ###############################################################################
 # linux ubuntu yakkity 64-bit                                                 #
 ###############################################################################
