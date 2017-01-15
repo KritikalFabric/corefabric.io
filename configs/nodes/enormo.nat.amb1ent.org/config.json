@@ -15,6 +15,9 @@
     },
     "app_config_uri": "http://127.0.0.1:8082/"
   },
+  "cluster": {
+    "multicast": false
+  },
   "dtn": {
     "isRouter": false,
     "routerHostname": "router-amb1ent-pi.test.wanfabric.io",
