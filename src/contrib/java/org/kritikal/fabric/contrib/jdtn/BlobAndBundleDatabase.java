@@ -367,9 +367,11 @@ public class BlobAndBundleDatabase extends BundleDatabase {
                 ArrayList<Long> list = new ArrayList<>();
                 ResultSet rs = stmt.executeQuery("SELECT " + BundleDatabaseConstants.DATA_BLOB_COL + " FROM " + BundleDatabaseConstants.FILE_TABLE_NAME + " WHERE " + BundleDatabaseConstants.STORAGETYPE_COL + " = " + BlobAndBundleDatabase.intOf(file.getStorageType()) + " AND " + BundleDatabaseConstants.PATH_COL + " = '" + file.getAbsolutePath() + "'");
                 try {
-                    long l = rs.getLong(1);
-                    if (!rs.wasNull())
-                        list.add(l);
+                    if (rs.next()) {
+                        long l = rs.getLong(1);
+                        if (!rs.wasNull())
+                            list.add(l);
+                    }
                 } finally {
                     rs.close();
                 }
