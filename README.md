@@ -4,9 +4,9 @@ corefabric.io							0.1.0-preview
 Project for Raspberry Pi 3 model B and Mac OS X, SmartOS & Linux.
 
 (c) 2014-2016	Ben Gould
-(c) 2014-2016   krital+dev@amb1ent.org
+(c) 2014-2016   Xela Sokitirk
 
-org.kritikal.fabric.core:
+org.kritikal.fabric:
 	Licensed under the Apache Public License version 2.0
 
 Portions are in the public domain.
@@ -14,8 +14,9 @@ Portions are in the public domain.
 Quick-start!
 
 ```
-awfulhak:corefabric.io ben$ (cd a2/ && ./clean.sh && ./build.sh) && ./gradlew clean runShadow
-
+awfulhak:corefabric.io ben$ (cd a2/ && ./clean.sh && ./build.sh) &&\
+(cd docker/ && ./create.sh) &&\
+./gradlew clean runShadow
 ```
 Features
 ```

@@ -30,6 +30,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 package com.cisco.qte.jdtn.apps;
 
 import java.io.File;
+import java.sql.SQLException;
 import java.util.Vector;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -48,6 +49,7 @@ import com.cisco.qte.jdtn.bp.Payload;
 import com.cisco.qte.jdtn.general.JDtnException;
 import com.cisco.qte.jdtn.ltp.LtpManagement;
 import com.cisco.qte.jdtn.ltp.LtpNeighbor;
+import org.kritikal.fabric.contrib.jdtn.BlobAndBundleDatabase;
 
 /**
  * This App attempts to estimate the optimum setting for the Segment Rate
@@ -90,7 +92,7 @@ public class RateEstimatorApp extends AbstractApp {
 	 * @param neighbor Given Neighbor
 	 * @param file A File to transfer
 	 */
-	public void estimateRateLimit(LtpNeighbor neighbor, File file)
+	public void estimateRateLimit(LtpNeighbor neighbor, MediaRepository.File file)
 	throws JDtnException {
 		synchronized (_sync) {
 			if (_xmitThread != null) {
@@ -165,7 +167,7 @@ public class RateEstimatorApp extends AbstractApp {
 		public static final long EVENT_WAIT_MSECS = 2 * 60 * 1000L;
 		
 		private final LtpNeighbor _neighbor;
-		private final File _file;
+		private final MediaRepository.File _file;
 		private double _currentRateLimit = INITIAL_RAMP_UP_RATE_LIMIT;
 		private double _initialRateLimit = -1.0d;
 		private double _optimumRateLimit = INITIAL_RAMP_UP_RATE_LIMIT;
@@ -187,7 +189,7 @@ public class RateEstimatorApp extends AbstractApp {
 		 * @param file A File to send in the test Bundles.  This should be a
 		 * large File, such as a 1.3 - 1.6 MB image file.
 		 */
-		public RateEstimatorXmitThread(LtpNeighbor neighbor, File file) {
+		public RateEstimatorXmitThread(LtpNeighbor neighbor, MediaRepository.File file) {
 			_neighbor = neighbor;
 			_file = file;
 			_state = EstimatorState.RAMPING_UP;
@@ -408,9 +410,18 @@ public class RateEstimatorApp extends AbstractApp {
 			// Perform several tries
 			for (int retry = 0; retry < TRIES; retry++) {
 				_eventQueue.clear();
-				
+
 				// Send a Bundle
-				Payload payload = new Payload(_file, 0L, _file.length());
+				Payload payload = null;
+				java.sql.Connection con = BlobAndBundleDatabase.getInstance().getInterface().createConnection();
+				try {
+					payload = new Payload(_file, 0L, _file.length(con));
+					try { con.commit(); } catch (SQLException e) { _logger.warning(e.getMessage()); }
+				}
+				finally {
+					try { con.close(); } catch (SQLException e) { _logger.warning(e.getMessage()); }
+				}
+
 				EndPointId destEid = _neighbor.getEndPointIdStem().append(
 						"/" +
 						APP_NAME);

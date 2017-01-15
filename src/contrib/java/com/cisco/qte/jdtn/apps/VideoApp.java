@@ -30,6 +30,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 package com.cisco.qte.jdtn.apps;
 
 import java.io.File;
+import java.sql.SQLException;
 import java.util.Date;
 import java.util.logging.Logger;
 
@@ -41,6 +42,7 @@ import com.cisco.qte.jdtn.bp.BundleOptions;
 import com.cisco.qte.jdtn.bp.EndPointId;
 import com.cisco.qte.jdtn.bp.Payload;
 import com.cisco.qte.jdtn.general.JDtnException;
+import org.kritikal.fabric.contrib.jdtn.BlobAndBundleDatabase;
 
 /**
  * Video Note Application
@@ -89,27 +91,36 @@ public class VideoApp extends AbstractApp {
 	 */
 	public void sendVideo(
 			String toEid, 
-			File filePath, 
+			MediaRepository.File filePath,
 			BundleOptions bundleOptions) 
 	throws InterruptedException, JDtnException {
-		// Determine dest and source Eids
-		EndPointId dest = EndPointId.createEndPointId(toEid + "/" + APP_NAME.toLowerCase());
-		EndPointId source = BPManagement.getInstance().getEndPointIdStem().append("/" + APP_NAME.toLowerCase());
+		java.sql.Connection con = BlobAndBundleDatabase.getInstance().getInterface().createConnection();
+		try {
+			// Determine dest and source Eids
+			EndPointId dest = EndPointId.createEndPointId(toEid + "/" + APP_NAME.toLowerCase());
+			EndPointId source = BPManagement.getInstance().getEndPointIdStem().append("/" + APP_NAME.toLowerCase());
+
+			if (!filePath.exists(con)) {
+				throw new JDtnException("File " + filePath.getAbsolutePath() + " does not exist");
+			}
+
+			// Set up bundle payload - in-file Payload
+			Payload payload = new Payload(filePath, 0L, filePath.length(con));
+
+			try { con.commit(); } catch (SQLException e) { _logger.warning(e.getMessage()); }
 		
-		if (!filePath.exists()) {
-			throw new JDtnException("File " + filePath.getAbsolutePath() + " does not exist");
+			// Send a Bundle containing the Payload.
+			BpApi.getInstance().sendBundle(
+					getAppRegistration(),
+					source,
+					dest,
+					payload,
+					bundleOptions);
+
 		}
-		
-		// Set up bundle payload - in-file Payload
-		Payload payload = new Payload(filePath, 0L, filePath.length());
-		
-		// Send a Bundle containing the Payload.
-		BpApi.getInstance().sendBundle(
-				getAppRegistration(), 
-				source, 
-				dest, 
-				payload, 
-				bundleOptions);
+		finally {
+			try { con.close(); } catch (SQLException e) { _logger.warning(e.getMessage()); }
+		}
 	}
 	
 	/**
@@ -123,7 +134,7 @@ public class VideoApp extends AbstractApp {
 		Bundle bundle = BpApi.getInstance().receiveBundle(getAppRegistration());
 		Payload payload = bundle.getPayloadBundleBlock().getPayload();
 		
-		File mediaFilename = MediaRepository.getInstance().formMediaFilename(
+		MediaRepository.File mediaFilename = MediaRepository.getInstance().formMediaFilename(
 				APP_NAME, 
 				new Date(), 
 				bundle.getPrimaryBundleBlock().getSourceEndpointId().getHostNodeName(), 

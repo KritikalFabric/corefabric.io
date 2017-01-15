@@ -179,7 +179,7 @@ public class CoreFabric {
             if (ar.failed()) { exit = true; return; }
             final Vertx vertx = ar.result();
             vertx.deployVerticle("io.corefabric.pi.MainVerticle", f -> {
-                if (f.failed()) { exit = false; return; }
+                if (f.failed()) { exit = true; return; }
                 logger.info("ONLINE, press ^C to exit.");
             });
         });
@@ -200,23 +200,25 @@ public class CoreFabric {
         if (gVertx == null) {
             synchronized (CoreFabric.class) {
                 if (gVertx == null) {
+                    Future<Void> future = Future.future();
                     Future<Vertx> ourFutureVertx = clusterVertxInTheFuture();
                     ourFutureVertx.setHandler(ar -> {
-                        if (ar.failed()) { exit = true; return; }
+                        if (ar.failed()) { exit = true; future.fail(""); return; }
                         final Vertx vertx = ar.result();
                         vertx.deployVerticle("io.corefabric.pi.MainVerticle", f -> {
-                            if (f.failed()) { exit = false; return; }
+                            if (f.failed()) { exit = true; future.fail(""); return; }
                             logger.info("ONLINE, press ^C to exit.");
+                            future.complete();
                         });
                     });
-                    while (gVertx == null && !ourFutureVertx.isComplete()) {
+                    while (!exit && !future.isComplete()) {
                         try {
                             Thread.sleep(97);
-                        }
-                        catch (InterruptedException ex) {
+                        } catch (InterruptedException ex) {
                             // ignore
                         }
                     }
+                    if (gVertx == null || !future.succeeded()) throw new FabricError("Startup problem");
                 }
             }
         }

@@ -8,6 +8,7 @@
     "zone": "localzone",
     "node_db": {
       "host": "localhost",
+      "port": 54321,
       "db": "corefabric__node_db",
       "user": "postgres",
       "password": "password"
@@ -28,6 +29,7 @@
 	"listenPort": 8082,
         "config_db": {
           "host": "localhost",
+          "port": 54321,
           "db": "corefabric__config_db",
           "user": "postgres",
           "password": "password"

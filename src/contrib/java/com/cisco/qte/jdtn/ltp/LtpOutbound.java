@@ -29,6 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 package com.cisco.qte.jdtn.ltp;
 
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Timer;
@@ -60,6 +61,7 @@ import com.cisco.qte.jdtn.general.LinksList;
 import com.cisco.qte.jdtn.general.Neighbor;
 import com.cisco.qte.jdtn.ltp.OutboundBlock.LtpSenderState;
 import com.cisco.qte.jdtn.ltp.Segment.SegmentType;
+import org.kritikal.fabric.contrib.jdtn.BlobAndBundleDatabase;
 
 /**
  * Outbound processing portion of LTP Engine.  Maintains a List of outbound
@@ -154,11 +156,17 @@ implements LinkListener, SegmentTransmitCallback {
 				link.removeLinkListener(this);
 			}
 		}
-		
-		// Clear Outbound Block list
-		while (!_outboundBlockList.isEmpty()) {
-			OutboundBlock block = _outboundBlockList.get(0);
-			removeOutboundBlock(block);
+
+		java.sql.Connection con = BlobAndBundleDatabase.getInstance().getInterface().createConnection();
+		try {
+			// Clear Outbound Block list
+			while (!_outboundBlockList.isEmpty()) {
+				OutboundBlock block = _outboundBlockList.get(0);
+				removeOutboundBlock(con, block);
+			}
+		}
+		finally {
+			try { con.close(); } catch (SQLException e) { _logger.warning(e.getMessage()); }
 		}
 	}
 	
@@ -301,77 +309,86 @@ implements LinkListener, SegmentTransmitCallback {
 				throw new IllegalArgumentException("Event not instanceof JDTNEvent");
 			}
 			JDTNEvent event = (JDTNEvent)iEvent;
-			switch (event.getEventType()) {
-			case LINKS_EVENT:
-				LinksEvent lEvent = (LinksEvent)event;
-				switch (lEvent.getLinksEventSubtype()) {
-				case LINK_ADDED_EVENT:
-					onLinkAdded(lEvent.getLink());
-					break;
-				case LINK_REMOVED_EVENT:
-					onLinkRemoved(lEvent.getLink());
-					break;
-				default:
-					_logger.severe("Unknown LINKS_EVENT: " +
-							lEvent.getLinksEventSubtype());
-					break;
+			java.sql.Connection con = BlobAndBundleDatabase.getInstance().getInterface().createConnection();
+			try {
+				switch (event.getEventType()) {
+					case LINKS_EVENT:
+						LinksEvent lEvent = (LinksEvent) event;
+						switch (lEvent.getLinksEventSubtype()) {
+							case LINK_ADDED_EVENT:
+								onLinkAdded(lEvent.getLink());
+								break;
+							case LINK_REMOVED_EVENT:
+								onLinkRemoved(lEvent.getLink());
+								break;
+							default:
+								_logger.severe("Unknown LINKS_EVENT: " +
+										lEvent.getLinksEventSubtype());
+								break;
+						}
+						break;
+
+					case OUTBOUND_BLOCK:
+						BlockEvent blockEvent = (BlockEvent) event;
+						processOutboundBlock((OutboundBlock) blockEvent.getBlock());
+						break;
+
+					case BLOCK_CANCEL:
+						BlockCancelEvent bce = (BlockCancelEvent) event;
+						processCancelBlock((OutboundBlock) bce.getBlock(), bce.getReason());
+						break;
+
+					case REPORT_SEGMENT:
+						SegmentEvent segEvent = (SegmentEvent) event;
+						processReportSegment(con, (ReportSegment) segEvent.getSegment());
+						break;
+
+					case CANCEL_SEGMENT:
+						segEvent = (SegmentEvent) event;
+						processCancelSegment(con, (CancelSegment) segEvent.getSegment());
+						break;
+
+					case CANCEL_ACK_SEGMENT:
+						segEvent = (SegmentEvent) event;
+						processCancelAckSegment(con, (CancelAckSegment) segEvent.getSegment());
+						break;
+
+					case NEIGHBOR_SCHEDULED_STATE_CHANGE:
+						NeighborScheduledStateChangeEvent nssce =
+								(NeighborScheduledStateChangeEvent) event;
+						processNeighborScheduledStateChange(nssce.getNeighbor(), nssce.isUp());
+						break;
+
+					case SEGMENT_TRANSMIT_STARTED:
+						SegmentTransmitStartedEvent stse =
+								(SegmentTransmitStartedEvent) event;
+						processSegmentTransmitStarted(con, stse.getLink(), stse.getSegment());
+						break;
+
+					case CHECKPOINT_TIMER_EXPIRED:
+						CheckpointTimerExpiredEvent ctee =
+								(CheckpointTimerExpiredEvent) event;
+						onCheckpointTimerExpired((DataSegment) ctee.getSegment());
+						break;
+
+					case CANCEL_TIMER_EXPIRED:
+						CancelTimerExpiredEvent catee =
+								(CancelTimerExpiredEvent) event;
+						onCancelTimerExpired(
+								con,
+								(CancelSegment) catee.getSegment(),
+								(OutboundBlock) catee.getBlock());
+						break;
+
+					default:
+						_logger.severe("Unknown event type: " + event.getEventType());
+						break;
 				}
-				break;
-				
-			case OUTBOUND_BLOCK:
-				BlockEvent blockEvent = (BlockEvent)event;
-				processOutboundBlock((OutboundBlock)blockEvent.getBlock());
-				break;
-				
-			case BLOCK_CANCEL:
-				BlockCancelEvent bce = (BlockCancelEvent)event;
-				processCancelBlock((OutboundBlock)bce.getBlock(), bce.getReason());
-				break;
-				
-			case REPORT_SEGMENT:
-				SegmentEvent segEvent = (SegmentEvent)event;
-				processReportSegment((ReportSegment)segEvent.getSegment());
-				break;
-				
-			case CANCEL_SEGMENT:
-				segEvent = (SegmentEvent)event;
-				processCancelSegment((CancelSegment)segEvent.getSegment());
-				break;
-				
-			case CANCEL_ACK_SEGMENT:
-				segEvent = (SegmentEvent)event;
-				processCancelAckSegment((CancelAckSegment)segEvent.getSegment());
-				break;
-				
-			case NEIGHBOR_SCHEDULED_STATE_CHANGE:
-				NeighborScheduledStateChangeEvent nssce =
-					(NeighborScheduledStateChangeEvent)event;
-				processNeighborScheduledStateChange(nssce.getNeighbor(), nssce.isUp());
-				break;
-				
-			case SEGMENT_TRANSMIT_STARTED:
-				SegmentTransmitStartedEvent stse =
-					(SegmentTransmitStartedEvent)event;
-				processSegmentTransmitStarted(stse.getLink(), stse.getSegment());
-				break;
-				
-			case CHECKPOINT_TIMER_EXPIRED:
-				CheckpointTimerExpiredEvent ctee =
-					(CheckpointTimerExpiredEvent)event;
-				onCheckpointTimerExpired((DataSegment)ctee.getSegment());
-				break;
-				
-			case CANCEL_TIMER_EXPIRED:
-				CancelTimerExpiredEvent catee =
-					(CancelTimerExpiredEvent)event;
-				onCancelTimerExpired(
-						(CancelSegment)catee.getSegment(), 
-						(OutboundBlock)catee.getBlock());
-				break;
-				
-			default:
-				_logger.severe("Unknown event type: " + event.getEventType());
-				break;
+
+				try { con.commit(); } catch (SQLException e) { _logger.warning(e.getMessage()); }
+			}
+			finally {
+				try { con.close(); } catch (SQLException e) { _logger.warning(e.getMessage()); }
 			}
 			
 		} catch (LtpException e) {
@@ -463,7 +480,7 @@ implements LinkListener, SegmentTransmitCallback {
 	 * Remove given Block from outbound List; close it out; mark it CLOSED
 	 * @param block Given Block
 	 */
-	private void removeOutboundBlock(OutboundBlock block) {
+	private void removeOutboundBlock(java.sql.Connection con, OutboundBlock block) {
 		if (GeneralManagement.isDebugLogging()) {
 			_logger.fine("removeOutboundBlock()");
 			if (_logger.isLoggable(Level.FINER)) {
@@ -479,8 +496,9 @@ implements LinkListener, SegmentTransmitCallback {
 		}
 		_mapSessionIdToBlock.remove(block.getSessionId());
 		_outboundBlockList.remove(block);
-		block.closeBlock();
+		block.closeBlock(con);
 		_outboundBytes -= block.getDataLength();
+		try { con.commit(); } catch (SQLException e) { _logger.warning(e.getMessage()); }
 	}
 	
 	/**
@@ -562,7 +580,7 @@ implements LinkListener, SegmentTransmitCallback {
 	 * @param reportSegment The newly arrived ReportSegment
 	 * @throws InterruptedException if interrupted while blocked.
 	 */
-	private void processReportSegment(ReportSegment reportSegment) 
+	private void processReportSegment(java.sql.Connection con, ReportSegment reportSegment)
 	throws InterruptedException {
 		if (GeneralManagement.isDebugLogging()) {
 			_logger.fine("processReportSegment()");
@@ -750,7 +768,7 @@ implements LinkListener, SegmentTransmitCallback {
 				//   invoked.
 				// Block fully received; it is done; deliver it
 				// Remove Block from Outbound Block list
-				removeOutboundBlock(block);
+				removeOutboundBlock(con, block);
 				// Notify LtpApi that Block was sent
 				LtpApi.getInstance().onBlockSent(block);
 			}
@@ -774,7 +792,7 @@ implements LinkListener, SegmentTransmitCallback {
 	 * @param cancelSegment Cancel Segment
 	 * @throws InterruptedException if interrupted
 	 */
-	private void processCancelSegment(CancelSegment cancelSegment) 
+	private void processCancelSegment(java.sql.Connection con, CancelSegment cancelSegment)
 	throws InterruptedException {
 		if (GeneralManagement.isDebugLogging()) {
 			_logger.fine("processCancelSegment()");
@@ -814,7 +832,7 @@ implements LinkListener, SegmentTransmitCallback {
 		block.getLink().onBlockCancelled(block);
 
 		// Close out the block and notify LtpApi that it was cancelled
-		removeOutboundBlock(block);
+		removeOutboundBlock(con, block);
 		LtpApi.getInstance().onBlockTransmitCancelled(block, cancelSegment.getReasonCode());
 
 		// Send Cancel Ack to originator no matter what state we're in.
@@ -843,7 +861,7 @@ implements LinkListener, SegmentTransmitCallback {
 	 * @param cancelAckSegment Given CancelAckSegment
 	 * @throws InterruptedException if interrupted
 	 */
-	private void processCancelAckSegment(CancelAckSegment cancelAckSegment)
+	private void processCancelAckSegment(java.sql.Connection con, CancelAckSegment cancelAckSegment)
 	throws InterruptedException {
 		if (GeneralManagement.isDebugLogging()) {
 			_logger.fine("processCancelAckSegment()");
@@ -894,7 +912,7 @@ implements LinkListener, SegmentTransmitCallback {
 		// Remove any outbound segments for this Block from the Link
 		block.getLink().onBlockCancelled(block);
 		// Remove the outbound Block
-		removeOutboundBlock(block);
+		removeOutboundBlock(con, block);
 		byte reason = CancelSegment.REASON_CODE_SYSTEM_CANCELED;
 		if (block.getOutstandingCancelSegment() != null) {
 			reason = block.getOutstandingCancelSegment().getReasonCode();
@@ -1055,7 +1073,7 @@ implements LinkListener, SegmentTransmitCallback {
 	 * @param segment Segment transmitted
 	 * @throws InterruptedException if interrupted while waiting for queue space
 	 */
-	private void processSegmentTransmitStarted(LtpLink link, Segment segment) 
+	private void processSegmentTransmitStarted(java.sql.Connection con, LtpLink link, Segment segment)
 	throws InterruptedException {
 		if (GeneralManagement.isDebugLogging()) {
 			_logger.fine("processSegmentTransmitStarted(SegmentType=" + 
@@ -1086,7 +1104,7 @@ implements LinkListener, SegmentTransmitCallback {
 							_logger.finer(block.getSessionId().dump("", true));
 						}
 					}
-					removeOutboundBlock(block);
+					removeOutboundBlock(con, block);
 					LtpApi.getInstance().onSegmentsTransmitted(block);
 					// 6.12.  Signify Transmission Completion
 					//   This procedure is triggered at the earliest time at which (a) all
@@ -1181,7 +1199,7 @@ implements LinkListener, SegmentTransmitCallback {
 						if (GeneralManagement.isDebugLogging()) {
 							_logger.fine("Outbound SessionComplete");
 						}
-						removeOutboundBlock(block);
+						removeOutboundBlock(con, block);
 						// 6.12.  Signify Transmission Completion
 						//   This procedure is triggered at the earliest time at which (a) all
 						//   data in the block are known to have been transmitted *and* (b) the
@@ -1301,7 +1319,7 @@ implements LinkListener, SegmentTransmitCallback {
 	 * Called when Checkpoint Timer expires on given DataSegment;
 	 * i.e., a Timeout occurs waiting for a RS (Report Segment) in
 	 * response to a prior DataSegment transmission.
-	 * @param segment DataSegment whose RS expired
+	 * @param dataSegment DataSegment whose RS expired
 	 */
 	private void onCheckpointTimerExpired(DataSegment dataSegment) {
 		if (GeneralManagement.isDebugLogging()) {
@@ -1454,7 +1472,7 @@ implements LinkListener, SegmentTransmitCallback {
 	 * @param block The Block being cancelled
 	 * @throws InterruptedException if interrupted
 	 */
-	private void onCancelTimerExpired(CancelSegment segment, OutboundBlock block)
+	private void onCancelTimerExpired(java.sql.Connection con, CancelSegment segment, OutboundBlock block)
 	throws InterruptedException {
 		LtpManagement.getInstance()._ltpStats.nCancelExpirations++;
 		if (block.getLtpSenderState() == LtpSenderState.CS_SENT) {
@@ -1487,7 +1505,7 @@ implements LinkListener, SegmentTransmitCallback {
 						_logger.finest(segment.dump("  ", true));
 					}
 				}
-				removeOutboundBlock(block);
+				removeOutboundBlock(con, block);
 				LtpApi.getInstance().onBlockTransmitCancelled(
 						block, 
 						CancelSegment.REASON_CODE_RETRANS_LIMIT_EXCEEDED);

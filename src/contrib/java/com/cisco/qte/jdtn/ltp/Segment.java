@@ -217,7 +217,7 @@ public abstract class Segment implements LeakyBucketQueueElement {
 	 * @return The Decoded Segment
 	 * @throws JDtnException on decoding errors
 	 */
-	public static Segment decode(byte[] buffer, int offset, int buflen) 
+	public static Segment decode(java.sql.Connection con, byte[] buffer, int offset, int buflen)
 	throws JDtnException {
 		DecodeState decodeState = new DecodeState(buffer, offset, buflen);
 		
@@ -286,7 +286,7 @@ public abstract class Segment implements LeakyBucketQueueElement {
 		}
 		
 		// Segment Content; callout to subclass
-		segment.decodeContents(decodeState);
+		segment.decodeContents(con, decodeState);
 		
 		// Trailer Extensions
 		extensions = new SegmentExtension[segment.getNTrailerExtensions()];
@@ -303,7 +303,7 @@ public abstract class Segment implements LeakyBucketQueueElement {
 	 * @param decodeState State of Decode
 	 * @throws JDtnException on decoding errors
 	 */
-	protected abstract void decodeContents(DecodeState decodeState)
+	protected abstract void decodeContents(java.sql.Connection con, DecodeState decodeState)
 	throws JDtnException;
 	
 	/**
@@ -312,8 +312,8 @@ public abstract class Segment implements LeakyBucketQueueElement {
 	 * @throws InterruptedException 
 	 * @throws LtpException on errors
 	 */
-	public void encode(EncodeState encodeState) throws JDtnException, InterruptedException {
-		encode(encodeState, false);
+	public void encode(java.sql.Connection con, EncodeState encodeState) throws JDtnException, InterruptedException {
+		encode(con, encodeState, false);
 	}
 	
 	/**
@@ -324,7 +324,7 @@ public abstract class Segment implements LeakyBucketQueueElement {
 	 * DataSegment.
 	 * @throws InterruptedException 
 	 */
-	public void encode(EncodeState encodeState, boolean envelopeOnly) throws JDtnException, InterruptedException {
+	public void encode(java.sql.Connection con, EncodeState encodeState, boolean envelopeOnly) throws JDtnException, InterruptedException {
 		// Encode version segment type
 		int segTypeFlags = 0;
 		switch (getSegmentType()) {
@@ -382,7 +382,7 @@ public abstract class Segment implements LeakyBucketQueueElement {
 		
 		// Segment Contents
 		if (!envelopeOnly) {
-			encodeContents(encodeState);
+			encodeContents(con, encodeState);
 		}
 		
 		// Trailer Extensions
@@ -452,7 +452,7 @@ public abstract class Segment implements LeakyBucketQueueElement {
 	 * Subclass provided method to encode type-specific contents
 	 * @param encodeState Buffer to encode into
 	 */
-	protected abstract void encodeContents(EncodeState encodeState) throws JDtnException, InterruptedException;
+	protected abstract void encodeContents(java.sql.Connection con, EncodeState encodeState) throws JDtnException, InterruptedException;
 	
 	@Override
 	public String toString() {

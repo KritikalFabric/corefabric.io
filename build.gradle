@@ -70,6 +70,8 @@ protobuf {
 
 dependencies {
 
+    contribCompile "io.vertx:vertx-core:$vertxVersion"
+    contribCompile group: 'org.postgresql', name: 'postgresql', version: '9.4.1211.jre7'
     contribCompile group: 'org.apache.commons', name: 'commons-dbcp2', version: '2.0.1'
     contribCompile fileTree(include: ['*.jar'], dir: 'lib')
     compile fileTree(include: ['*.jar'], dir: 'lib')
@@ -128,8 +130,7 @@ test {
 
     jvmArgs = ['-d64','-Xmx512M']
 
-    scanForTestClasses = false;
-	exclude 'org/kritikal/fabric/core/**'
+    scanForTestClasses = true;
 
     // listen to events in the test execution lifecycle
     beforeTest { descriptor ->

@@ -113,8 +113,8 @@ public class CustodySignal extends AdministrativeRecord {
 	 * @throws JDtnException on Encoding errors
 	 */
 	@Override
-	public void encode(EncodeState encodeState) throws JDtnException {
-		super.encode(encodeState);
+	public void encode(java.sql.Connection con, EncodeState encodeState) throws JDtnException {
+		super.encode(con, encodeState);
 		int status = 0;
 		if (isCustodyXferSucceeded()) {
 			status |= CUSTODY_TRANSFER_SUCCEEDED;

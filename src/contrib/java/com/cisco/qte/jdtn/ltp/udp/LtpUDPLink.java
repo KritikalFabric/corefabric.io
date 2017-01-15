@@ -38,6 +38,7 @@ import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
+import java.sql.SQLException;
 import java.util.Enumeration;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -57,6 +58,7 @@ import com.cisco.qte.jdtn.ltp.LtpManagement;
 import com.cisco.qte.jdtn.ltp.LtpNeighbor;
 import com.cisco.qte.jdtn.general.XmlRDParser;
 import com.cisco.qte.jdtn.general.XmlRdParserException;
+import org.kritikal.fabric.contrib.jdtn.BlobAndBundleDatabase;
 
 /**
  * UDP implementation of LTP Link.  Uses DatagramSocket to send/ receive.
@@ -100,7 +102,7 @@ public class LtpUDPLink extends LtpLink {
 	 * @param linkName The name of the link, arbitrary id for the Link
 	 * @return The UDPLink created
 	 * @throws JDtnException On XML structure errors
-	 * @throws XMLStreamException On XML parse errors
+	 * @throws XmlRdParserException On XML parse errors
 	 * @throws IOException On I/O Errors
 	 */
 	public static LtpUDPLink parseUdpLink(XmlRDParser parser, String linkName)
@@ -437,7 +439,14 @@ public class LtpUDPLink extends LtpLink {
 					_logger.finest("Received Data=" + Utils.dumpBytes("  ", buf, 0, packet.getLength()));
 				}
 			}
-			notifyReceived(this, (LtpNeighbor)neighbor, buf, 0, packet.getLength());
+			java.sql.Connection con = BlobAndBundleDatabase.getInstance().getInterface().createConnection();
+			try {
+				notifyReceived(con, this, (LtpNeighbor) neighbor, buf, 0, packet.getLength());
+				try { con.commit(); } catch (SQLException e) { _logger.warning(e.getMessage()); }
+			}
+			finally {
+				try { con.close(); } catch (SQLException e) { _logger.warning(e.getMessage()); }
+			}
 			
 		} catch (IOException e) {
 			notifyLinkDatalinkDown();

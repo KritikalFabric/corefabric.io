@@ -29,17 +29,17 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 package com.cisco.qte.jdtn.apps;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import com.cisco.qte.jdtn.component.AbstractStartableComponent;
-import com.cisco.qte.jdtn.general.GeneralManagement;
+import org.kritikal.fabric.contrib.jdtn.BlobAndBundleDatabase;
 
 /**
  * The media respository.  When other DTN nodes send media to this DTN
@@ -64,6 +64,52 @@ import com.cisco.qte.jdtn.general.GeneralManagement;
  * </ul>
  */
 public class MediaRepository extends AbstractStartableComponent {
+
+	/**
+	 * A class allowing us to do file-like operations on database objects.
+	 */
+	public final static class File {
+		public File(final BlobAndBundleDatabase.StorageType storageType, final String fileName) {
+			if (fileName.contains("'")) throw new Error("Invalid filename");
+			this.storageType = storageType;
+			this.fileName = fileName;
+		}
+		final BlobAndBundleDatabase.StorageType storageType;
+		final String fileName;
+		public final String getAbsolutePath() { return fileName; }
+		public final String getName() {
+			int x = fileName.lastIndexOf('/');
+			if (x >= 0) return fileName.substring(x+1);
+			return fileName;
+		}
+		public final BlobAndBundleDatabase.StorageType getStorageType() { return storageType; }
+		public final boolean exists(Connection con) {
+			return BlobAndBundleDatabase.getInstance().mediaFileExists(con, this);
+		}
+		public final long length(Connection con) {
+			return BlobAndBundleDatabase.getInstance().mediaFileLength(con, this);
+		}
+		public final boolean delete(Connection con) {
+			return BlobAndBundleDatabase.getInstance().mediaFileDelete(con, this);
+		}
+		public final InputStream inputStream(Connection con) {
+			byte[] data = BlobAndBundleDatabase.getInstance().mediaGetBodyData(con, this);
+			if (data == null) return null;
+			return new ByteArrayInputStream(data, 0, data.length);
+		}
+		public final boolean equals(Object other) {
+			File o = (File)other;
+			return this.storageType == o.storageType && this.fileName.equals(o.fileName);
+		}
+		long oid = 0l;
+		public long getOid() { return oid; }
+		public void setOid(long oid) { this.oid = oid; }
+
+		@Override
+		public int hashCode() {
+			return this.fileName.hashCode();
+		}
+	}
 
 	private static final Logger _logger =
 		Logger.getLogger(MediaRepository.class.getCanonicalName());
@@ -104,35 +150,15 @@ public class MediaRepository extends AbstractStartableComponent {
 	 * Clean the Media Repository of all files
 	 */
 	public void clean() {
-		File dir = new File(GeneralManagement.getInstance().getMediaRepositoryPath());
-		if (dir.isDirectory()) {
-			clean(dir);
-		}
-		if (!dir.mkdirs()) {
-			_logger.severe(
-					"Could not create the media Repository at path " +
-					GeneralManagement.getInstance().getMediaRepositoryPath());
-		}
-	}
-	
-	/**
-	 * Internal method to clean given directory by removing all files,
-	 * recursively clean all subdirectories, and remove given directory.
-	 * @param dir Given directory
-	 */
-	private void clean(File dir) {
-		File[] files = dir.listFiles();
-		for (File file : files) {
-			if (file.isDirectory()) {
-				clean(file);
-			} else {
-				if (!file.delete()) {
-					_logger.severe("Could not remove file " + file);
-				}
+		Connection con = BlobAndBundleDatabase.getInstance().getInterface().createConnection();
+		try {
+			BlobAndBundleDatabase.getInstance().cleanMediaRepository(con, BlobAndBundleDatabase.StorageType.MEDIA);
+			try { con.commit(); } catch (SQLException e) {
+				_logger.warning(e.getMessage());
 			}
 		}
-		if (!dir.delete()) {
-			_logger.severe("Could not remove directory " + dir);
+		finally {
+			try { con.close(); } catch (SQLException ignore) {}
 		}
 	}
 	
@@ -146,31 +172,22 @@ public class MediaRepository extends AbstractStartableComponent {
 	 * @param extension Filename extension (like .jpg, .3gp. txt)
 	 * @return Full pathname in the media repository
 	 */
-	public File formMediaFilename(
+	public MediaRepository.File formMediaFilename(
 			String appName, 
 			Date dateReceived, 
 			String from, 
 			String extension) {
 		
-        String fileName = GeneralManagement.getInstance().getMediaRepositoryPath() +
-        	File.separator +
+        String fileName =
+        	"/" +
         	appName +
-        	File.separator +
+        	"/" +
         	_formatter.format(dateReceived) +
         	"-" +
         	from +
         	extension;
-        File result = new File(fileName);
-        
-        // Make sure directories exist
-        File parent = result.getParentFile();
-        if (!parent.exists()) {
-	        if (!result.getParentFile().mkdirs()) {
-	        	_logger.severe(
-	        			"MediaRepository: Failed to make parent directories for " +
-	        			result.getAbsolutePath());
-	        }
-        }
+
+        MediaRepository.File result = new MediaRepository.File(BlobAndBundleDatabase.StorageType.MEDIA, fileName);
         return result;
 	}
 	
@@ -179,12 +196,24 @@ public class MediaRepository extends AbstractStartableComponent {
 	 * bundle directory to the media repository.  Called from DTN Apps to
 	 * move a received media file into the repository.
 	 * @param appName The Name of the app requesting this action
-	 * @param fromFilename Source filename - file in bundle directory
+	 * @param fromFilename StorageType filename - file in bundle directory
 	 * @param mediaFilename - Media filename - file in media directory
 	 */
 	public void moveFile(String appName, String fromFilename, File mediaFilename) {
-		File f = new File(fromFilename);
-		if (!f.renameTo(mediaFilename)) {
+		MediaRepository.File fromFile = new File(BlobAndBundleDatabase.StorageType.MEDIA, fromFilename);
+		boolean success = false;
+		Connection con = BlobAndBundleDatabase.getInstance().getInterface().createConnection();
+		try {
+			success = BlobAndBundleDatabase.getInstance().renameTo(con, fromFile, mediaFilename);
+			try { con.commit(); } catch (SQLException e) {
+				_logger.warning(e.getMessage());
+				success = false;
+			}
+		}
+		finally {
+			try { con.close(); } catch (SQLException ignore) {}
+		}
+		if (!success) {
         	_logger.severe(
         			"MediaRepository: Failed to rename " +
         			fromFilename + " to " +
@@ -213,24 +242,17 @@ public class MediaRepository extends AbstractStartableComponent {
 			int offset, 
 			int length, 
 			File mediaFilename) {
-		FileOutputStream fos = null;
 		boolean success = false;
-		
+		Connection con = BlobAndBundleDatabase.getInstance().getInterface().createConnection();
 		try {
-			fos = new FileOutputStream(mediaFilename);
-			fos.write(bytes, offset, length);
-			success = true;
-			
-		} catch (IOException e) {
-			_logger.log(Level.SEVERE, "spillByteArrayToFile", e);
-		} finally {
-			if (fos != null) {
-				try {
-					fos.close();
-				} catch (IOException e) {
-					// Ignore
-				}
+			success = BlobAndBundleDatabase.getInstance().spillByteArrayToFile(con, appName, bytes, offset, length, mediaFilename);
+			try { con.commit(); } catch (SQLException e) {
+				_logger.warning(e.getMessage());
+				success = false;
 			}
+		}
+		finally {
+			try { con.close(); } catch (SQLException ignore) {}
 		}
 		if (success) {
 			notifyMediaEvent(
@@ -310,17 +332,25 @@ public class MediaRepository extends AbstractStartableComponent {
 	 */
 	public MediaDescription[] getMediaFiles(String appName) {
 		ArrayList<MediaDescription> fileList = new ArrayList<MediaDescription>();
-		File dir = new File(GeneralManagement.getInstance().getMediaRepositoryPath(), appName);
-		File[] files = dir.listFiles();
+		File[] files = null;
+		Connection con = BlobAndBundleDatabase.getInstance().getInterface().createConnection();
+		try {
+			files = BlobAndBundleDatabase.getInstance().listFiles(con, BlobAndBundleDatabase.StorageType.MEDIA, "/" + appName + "/");
+			try { con.commit(); } catch (SQLException e) {
+				_logger.warning(e.getMessage());
+				files = null;
+			}
+		}
+		finally {
+			try { con.close(); } catch (SQLException ignore) {}
+		}
 		if (files == null) {
 			return new MediaDescription[0];
 		}
-		for (File file : dir.listFiles()) {
-			if (!file.isDirectory()) {
-				MediaDescription mediaDescription =
-					new MediaDescription(appName, file.getAbsolutePath());
-				fileList.add(mediaDescription);
-			}
+		for (File file : files) {
+			MediaDescription mediaDescription =
+				new MediaDescription(appName, file.getAbsolutePath());
+			fileList.add(mediaDescription);
 		}
 		MediaDescription[] result = new MediaDescription[fileList.size()];
 		result = fileList.toArray(result);
@@ -334,11 +364,18 @@ public class MediaRepository extends AbstractStartableComponent {
 	 * @return True if deletion successful, false otherwise
 	 */
 	public boolean removeMedia(MediaDescription mediaDescription) {
-		File file = new File(mediaDescription.mediaFilePath);
-		if (file.exists()) {
-			return file.delete();
-		} else {
-			return false;
+		File file = new File(BlobAndBundleDatabase.StorageType.MEDIA, mediaDescription.mediaFilePath);
+		Connection con = BlobAndBundleDatabase.getInstance().getInterface().createConnection();
+		try {
+			BlobAndBundleDatabase.getInstance().cleanMediaRepository(con, BlobAndBundleDatabase.StorageType.MEDIA, file);
+			try { con.commit(); } catch (SQLException e) {
+				_logger.warning(e.getMessage());
+				return false;
+			}
+			return true;
+		}
+		finally {
+			try { con.close(); } catch (SQLException ignore) {}
 		}
 	}
 	

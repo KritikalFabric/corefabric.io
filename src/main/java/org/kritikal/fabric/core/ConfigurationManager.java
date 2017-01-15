@@ -32,29 +32,31 @@ public class ConfigurationManager {
             appConfigUri = node.getString("app_config", "http://127.0.0.1:8082/");
             JsonObject node_db = node.getJsonObject("node_db", new JsonObject());
             host = node_db.getString("host", "localhost");
+            port = node_db.getInteger("port", 5432);
             db = node_db.getString("db", "corefabric__node_db");
             user = node_db.getString("user", "postgres");
             password = node_db.getString("password", "password");
         }
         public static String appConfigUri;
         public static String host;
+        public static int port;
         public static String db;
         public static String user;
         public static String password;
         public static String getMiniConnectionString() {
-            return "jdbc:postgresql://" + host + ":5432/" + db + "?charSet=UTF8";
+            return "jdbc:postgresql://" + host + ":" + port + "/" + db + "?charSet=UTF8";
         }
 
         public static String getAdminConnectionString() {
-            return "jdbc:postgresql://" + host + ":5432/postgres?charSet=UTF8";
+            return "jdbc:postgresql://" + host + ":" + port + "/postgres?charSet=UTF8";
         }
 
         public static String getConnectionString() {
-            return "jdbc:postgresql://" + host + ":5432/" + db + "?charSet=UTF8";
+            return "jdbc:postgresql://" + host + ":" + port + "/" + db + "?charSet=UTF8";
         }
 
         public static String getConnectionStringWithUsername() {
-            return "jdbc:postgresql://" + host + ":5432/" + db + "?charSet=UTF8&user=" + user + "&password=" + password;
+            return "jdbc:postgresql://" + host + ":" + port + "/" + db + "?charSet=UTF8&user=" + user + "&password=" + password;
         }
 
         public static String getDbUser() { return user; }

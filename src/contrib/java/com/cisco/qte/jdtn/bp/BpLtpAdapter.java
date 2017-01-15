@@ -29,6 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 package com.cisco.qte.jdtn.bp;
 
+import java.sql.SQLException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -51,6 +52,7 @@ import com.cisco.qte.jdtn.ltp.LtpLink;
 import com.cisco.qte.jdtn.ltp.LtpListener;
 import com.cisco.qte.jdtn.ltp.LtpNeighbor;
 import com.cisco.qte.jdtn.ltp.ServiceId;
+import org.kritikal.fabric.contrib.jdtn.BlobAndBundleDatabase;
 
 /**
  * Adapter between BP layer and LTP layers
@@ -145,73 +147,84 @@ implements LtpListener {
 			throw new BPException("Route contains non LtpNeighbor");
 		}
 		LtpNeighbor ltpNeighbor = (LtpNeighbor)neighbor;
-		
-		// Determine whether to encode to File or to memory
-		EncodeState encodeState = null;
-		PayloadBundleBlock payloadBlock = bundle.getPayloadBundleBlock();
-		if (payloadBlock != null) {
-			Payload payload = payloadBlock.getPayload();
-			if (payload.isBodyDataInFile()) {
-				encodeState = 
-					new EncodeState(
-							Store.getInstance().createBundleFile());
-				
-			} else if (payload.getBodyDataMemLength() > 
-				BPManagement.getInstance().getBundleBlockFileThreshold()) {
-				encodeState = 
-					new EncodeState(
-							Store.getInstance().createBundleFile());
-				
+
+		java.sql.Connection con = BlobAndBundleDatabase.getInstance().getInterface().createConnection();
+		try {
+
+			// Determine whether to encode to File or to memory
+			EncodeState encodeState = null;
+			PayloadBundleBlock payloadBlock = bundle.getPayloadBundleBlock();
+			if (payloadBlock != null) {
+				Payload payload = payloadBlock.getPayload();
+				if (payload.isBodyDataInFile()) {
+					encodeState =
+							new EncodeState(con,
+									Store.getInstance().createBundleFile());
+
+				} else if (payload.getBodyDataMemLength() >
+						BPManagement.getInstance().getBundleBlockFileThreshold()) {
+					encodeState =
+							new EncodeState(con,
+									Store.getInstance().createBundleFile());
+
+				} else {
+					encodeState = new EncodeState();
+				}
 			} else {
 				encodeState = new EncodeState();
 			}
-		} else {
-			encodeState = new EncodeState();
-		}
-		
-		// Encode the Bundle
-		long t1 = System.currentTimeMillis();
-		bundle.encode(encodeState, ltpNeighbor.getEidScheme());
-		encodeState.close();
-		long t2 = System.currentTimeMillis();
-		BPManagement.getInstance()._bpStats.nEncodingMSecs += (t2 - t1);
-		
-		if (GeneralManagement.isDebugLogging()) {
-			if (_logger.isLoggable(Level.FINEST)) {
-				_logger.finest(encodeState.dump("", true));
-			}
-		}
-		
-		// Determine LTP Block Options from Bundle Options
-		BlockOptions blockOptions;
-		if (blockColor == BundleColor.RED) {
-			blockOptions = new BlockOptions(encodeState.getLength());
-			blockOptions.checkpointOption = BlockOptions.CheckpointOption.CHECKPOINT_LAST_ONLY;
-			
-		} else {
-			blockOptions = new BlockOptions();
-		}
-		blockOptions.serviceId = _serviceId;
-		
-		// Send the Encoded Bundle
-		if (encodeState.isEncodingToFile) {
-			bundle.setAdaptationLayerData(
-					LtpApi.getInstance().send(
-						bundle,
-						ltpNeighbor.getEngineId(), 
-						encodeState.file, 
-						encodeState.fileLength, 
-						blockOptions));
-			
-		} else {
 
-			bundle.setAdaptationLayerData(
-					LtpApi.getInstance().send(
-						bundle,
-						ltpNeighbor.getEngineId(), 
-						encodeState.getByteBuffer(), 
-						encodeState.getLength(), 
-						blockOptions));	
+			// Encode the Bundle
+			long t1 = System.currentTimeMillis();
+			bundle.encode(con, encodeState, ltpNeighbor.getEidScheme());
+			encodeState.close();
+			long t2 = System.currentTimeMillis();
+			BPManagement.getInstance()._bpStats.nEncodingMSecs += (t2 - t1);
+
+			if (GeneralManagement.isDebugLogging()) {
+				if (_logger.isLoggable(Level.FINEST)) {
+					_logger.finest(encodeState.dump("", true));
+				}
+			}
+
+			// Determine LTP Block Options from Bundle Options
+			BlockOptions blockOptions;
+			if (blockColor == BundleColor.RED) {
+				blockOptions = new BlockOptions(encodeState.getLength());
+				blockOptions.checkpointOption = BlockOptions.CheckpointOption.CHECKPOINT_LAST_ONLY;
+
+			} else {
+				blockOptions = new BlockOptions();
+			}
+			blockOptions.serviceId = _serviceId;
+
+			try { con.commit(); } catch (SQLException e) { _logger.warning(e.getMessage()); }
+
+			// Send the Encoded Bundle
+			if (encodeState.isEncodingToFile) {
+				bundle.setAdaptationLayerData(
+						LtpApi.getInstance().send(
+								bundle,
+								ltpNeighbor.getEngineId(),
+								encodeState.file,
+								encodeState.fileLength,
+								blockOptions));
+
+			} else {
+
+				bundle.setAdaptationLayerData(
+						LtpApi.getInstance().send(
+								bundle,
+								ltpNeighbor.getEngineId(),
+								encodeState.getByteBuffer(),
+								encodeState.getLength(),
+								blockOptions));
+			}
+
+			try { con.commit(); } catch (SQLException e) { _logger.warning(e.getMessage()); }
+		}
+		finally {
+			try { con.close(); } catch (SQLException e) { _logger.warning(e.getMessage()); }
 		}
 	}
 
@@ -248,7 +261,7 @@ implements LtpListener {
 	 * @param block Received block
 	 */
 	@Override
-	public void onBlockReceived(Block block) {
+	public void onBlockReceived(java.sql.Connection con, Block block) {
 		if (GeneralManagement.isDebugLogging()) {
 			_logger.fine("onBlockReceived()");
 			if (_logger.isLoggable(Level.FINEST)) {
@@ -268,7 +281,7 @@ implements LtpListener {
 			Bundle bundle = new Bundle(decodeState, block.getNeighbor().getEidScheme());
 			bundle.setLink(block.getLink());
 			decodeState.close();
-			block.discardBlockData();
+			block.discardBlockData(con);
 			long t2 = System.currentTimeMillis();
 			BPManagement.getInstance()._bpStats.nDecodingMSecs += (t2 - t1);
 			

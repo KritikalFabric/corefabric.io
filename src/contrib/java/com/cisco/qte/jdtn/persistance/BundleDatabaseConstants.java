@@ -34,7 +34,9 @@ package com.cisco.qte.jdtn.persistance;
  */
 public interface BundleDatabaseConstants {
 	// The bundles database table name
-	public static final String TABLE_NAME = "cisco_dtn_BUNDLES";
+	public static final String TABLE_NAME = "cisco_jdtn__bundles";
+	public static final String TABLE_NAME_OLD = "cisco_dtn_BUNDLES";
+	public static final String FILE_TABLE_NAME = "cisco_jdtn__files";
 	
 	// DB Column names.  The DB columns SOURCE_EID_COL, TIME_SECS_COL,
 	// SEQUENCE_NO_COL, and FRAG_OFF_COL together constitute a unique key for
@@ -44,6 +46,7 @@ public interface BundleDatabaseConstants {
 	public static final String SEQUENCE_NO_COL = "sequenceNo";
 	public static final String FRAG_OFFSET_COL = "fragOffset";
 	public static final String PATH_COL = "path";
+	public static final String STORAGETYPE_COL = "storageType";
 	public static final String LENGTH_COL = "length";
 	public static final String SOURCE_COL = "source";
 	public static final String STATE_COL = "state";
@@ -51,4 +54,5 @@ public interface BundleDatabaseConstants {
 	public static final String LINK_NAME_COL = "linkName";
 	public static final String IS_INBOUND_COL = "isInbound";
 	public static final String RETENTION_CONSTRAINT_COL = "retentionConstraint";
+	public static final String DATA_BLOB_COL = "dataBytes";
 }

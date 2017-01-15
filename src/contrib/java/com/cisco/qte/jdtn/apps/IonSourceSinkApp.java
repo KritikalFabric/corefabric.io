@@ -124,7 +124,7 @@ public class IonSourceSinkApp extends AbstractApp {
 		_logger.info("Received BPSource Bundle from " + source);
 		_logger.info("BPSource Dest = " + dest);
 		String sourceStr = source.getHostNodeName();
-		File mediaFilename = MediaRepository.getInstance().formMediaFilename(
+		MediaRepository.File mediaFilename = MediaRepository.getInstance().formMediaFilename(
 				APP_NAME, new Date(), sourceStr, EXTENSION);
 		_logger.info("Media filename=" + mediaFilename);
 		if (!payload.isBodyDataInFile()) {

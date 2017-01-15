@@ -35,6 +35,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.FileInputStream;
 import java.io.InputStream;
+import java.sql.SQLException;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
@@ -49,6 +50,7 @@ import com.cisco.qte.jdtn.bp.EndPointId;
 import com.cisco.qte.jdtn.bp.Payload;
 import com.cisco.qte.jdtn.general.GeneralManagement;
 import com.cisco.qte.jdtn.general.JDtnException;
+import org.kritikal.fabric.contrib.jdtn.BlobAndBundleDatabase;
 
 /**
  * Ping Application for JDTN.  This Ping functionality is something invented
@@ -138,85 +140,96 @@ public class PingApp extends AbstractApp {
 			int errorCount = 0;
 			int transmitCount = 0;
 			for (; transmitCount < count; transmitCount++) {
-				ByteArrayOutputStream baos = new ByteArrayOutputStream();
-				DataOutputStream dos = new DataOutputStream(baos);
-                dos.writeByte(0x30); // echo request
-                dos.writeInt(transmitCount); // ping packet number
-                dos.writeLong(System.currentTimeMillis()); // ping start time
-                String txMessage = "Ping Test " + transmitCount;
-                dos.writeInt(txMessage.length());
-                dos.writeChars(txMessage);
-                dos.flush();
-                baos.close();
+				java.sql.Connection con = BlobAndBundleDatabase.getInstance().getInterface().createConnection();
+				try {
 
-                callbacks.onPingRequest(destEid, transmitCount, count);
-                
-                // Send Ping Request
-                Payload payload = new Payload(baos.toByteArray(), 0, baos.size());
-                BundleOptions bundleOptions = new BundleOptions();
-                bundleOptions.lifetime = PING_LIFETIME_SECS;
-				BpApi.getInstance().sendBundle(
-						getAppRegistration(), 
-						sourceEid, 
-						destEid, 
-						payload, 
-						null);
-				
-				// Receive Ping Reply
-				Bundle recvBundle = _pingReplyQueue.poll(
-						PING_REPLY_WAIT_MSECS, 
-						TimeUnit.MILLISECONDS);
-				if (recvBundle != null) {
-					if (GeneralManagement.isDebugLogging()) {
-						_logger.fine("Ping Reply");
-					}
-	                long endTime = System.currentTimeMillis();
-					payload = recvBundle.getPayloadBundleBlock().getPayload();
-					InputStream is = null;
-					if (payload.isBodyDataInFile()) {
-						is = new FileInputStream(payload.getBodyDataFile());
-					
+					ByteArrayOutputStream baos = new ByteArrayOutputStream();
+					DataOutputStream dos = new DataOutputStream(baos);
+					dos.writeByte(0x30); // echo request
+					dos.writeInt(transmitCount); // ping packet number
+					dos.writeLong(System.currentTimeMillis()); // ping start time
+					String txMessage = "Ping Test " + transmitCount;
+					dos.writeInt(txMessage.length());
+					dos.writeChars(txMessage);
+					dos.flush();
+					baos.close();
+
+					callbacks.onPingRequest(destEid, transmitCount, count);
+
+					// Send Ping Request
+					Payload payload = new Payload(baos.toByteArray(), 0, baos.size());
+					BundleOptions bundleOptions = new BundleOptions();
+					bundleOptions.lifetime = PING_LIFETIME_SECS;
+					BpApi.getInstance().sendBundle(
+							getAppRegistration(),
+							sourceEid,
+							destEid,
+							payload,
+							null);
+
+					// Receive Ping Reply
+					Bundle recvBundle = _pingReplyQueue.poll(
+							PING_REPLY_WAIT_MSECS,
+							TimeUnit.MILLISECONDS);
+					if (recvBundle != null) {
+						if (GeneralManagement.isDebugLogging()) {
+							_logger.fine("Ping Reply");
+						}
+						long endTime = System.currentTimeMillis();
+						payload = recvBundle.getPayloadBundleBlock().getPayload();
+						InputStream is = null;
+						if (payload.isBodyDataInFile()) {
+							is = payload.getBodyDataFile().inputStream(con);
+
+						} else {
+							is = new ByteArrayInputStream(
+									payload.getBodyDataBuffer(),
+									payload.getBodyDataMemOffset(),
+									payload.getBodyDataMemLength());
+						}
+						DataInputStream dis = new DataInputStream(is);
+						@SuppressWarnings("unused")
+						byte cmd = (byte) (dis.readByte() >>> 4); // skip the command
+						@SuppressWarnings("unused")
+						int pingID = dis.readInt();
+						long startTime = dis.readLong();
+						int length = dis.readInt();
+						StringBuffer sb = new StringBuffer();
+						for (int j = 0; j < length; j++) {
+							sb.append(dis.readChar());
+						}
+						@SuppressWarnings("unused")
+						String rxMessage = sb.toString();
+						dis.close();
+						is.close();
+
+						try { con.commit(); } catch (SQLException e) { _logger.warning(e.getMessage()); }
+
+						long rtt = endTime - startTime;
+						callbacks.onPingReply(rtt, ++receiveCount);
+
+						if (rtt > maxTime) {
+							maxTime = rtt;
+						}
+						if (rtt < minTime) {
+							minTime = rtt;
+						}
+
+						averageTime += rtt;
+
+						// finally, remove the file
+						payload.delete();
+
 					} else {
-						is = new ByteArrayInputStream(
-								payload.getBodyDataBuffer(), 
-								payload.getBodyDataMemOffset(), 
-								payload.getBodyDataMemLength());					
+						callbacks.onPingReplyTimeout(++errorCount);
+						if (errorCount > 2) {
+							break;
+						}
 					}
-					DataInputStream dis = new DataInputStream(is);
-	                @SuppressWarnings("unused")
-					byte cmd = (byte) (dis.readByte() >>> 4); // skip the command
-	                @SuppressWarnings("unused")
-					int pingID = dis.readInt();
-	                long startTime = dis.readLong();
-	                int length = dis.readInt();
-	                StringBuffer sb = new StringBuffer();
-	                for (int j = 0; j < length; j++) {
-	                    sb.append(dis.readChar());
-	                }
-	                @SuppressWarnings("unused")
-					String rxMessage = sb.toString();
-	                dis.close();
-	
-	                long rtt = endTime - startTime;
-	                callbacks.onPingReply(rtt, ++receiveCount);
-	
-	                if (rtt > maxTime) {
-	                    maxTime = rtt;
-	                }
-	                if (rtt < minTime) {
-	                    minTime = rtt;
-	                }
-	
-	                averageTime += rtt;
-					
-	                // finally, remove the file
-	                payload.delete();
 
-				} else {
-					callbacks.onPingReplyTimeout(++errorCount);
-                    if (errorCount > 2) {
-                        break;
-                    }
+				}
+				finally {
+					con.close();
 				}
 			}
             if (receiveCount > 0) {

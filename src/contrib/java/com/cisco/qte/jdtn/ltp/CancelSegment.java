@@ -78,7 +78,7 @@ public class CancelSegment extends Segment {
 	 * @throws JDtnException on decode errors
 	 */
 	@Override
-	protected void decodeContents(DecodeState decodeState) throws JDtnException {
+	protected void decodeContents(java.sql.Connection con, DecodeState decodeState) throws JDtnException {
 		setReasonCode(Utils.decodeByte(decodeState));
 	}
 	
@@ -88,7 +88,7 @@ public class CancelSegment extends Segment {
 	 * @throws JDtnException on encoding errors
 	 */
 	@Override
-	protected void encodeContents(EncodeState encodeState) throws JDtnException {
+	protected void encodeContents(java.sql.Connection con, EncodeState encodeState) throws JDtnException {
 		encodeState.put(_reasonCode);
 	}
 

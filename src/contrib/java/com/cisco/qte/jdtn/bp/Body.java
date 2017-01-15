@@ -29,13 +29,15 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 package com.cisco.qte.jdtn.bp;
 
-import java.io.File;
+import java.sql.SQLException;
 import java.util.logging.Logger;
 
+import com.cisco.qte.jdtn.apps.MediaRepository;
 import com.cisco.qte.jdtn.general.DecodeState;
 import com.cisco.qte.jdtn.general.EncodeState;
 import com.cisco.qte.jdtn.general.JDtnException;
 import com.cisco.qte.jdtn.general.Utils;
+import org.kritikal.fabric.contrib.jdtn.BlobAndBundleDatabase;
 
 /**
  * The Body of a SecondaryBundleBlock.
@@ -64,7 +66,7 @@ public abstract class Body {
 	protected boolean _bodyDataInFile = false;
 	
 	/** If block body data is in file, this is the file it's in */
-	protected File _bodyDataFile = null;
+	protected MediaRepository.File _bodyDataFile = null;
 	
 	/** If block body data is in file, this is the starting offset w/in File */
 	protected long _bodyDataFileOffset = 0L;
@@ -110,7 +112,7 @@ public abstract class Body {
 	
 	public Body(
 			boolean inFile,
-			File file,
+			MediaRepository.File file,
 			long fileOffset,
 			long fileLength,
 			byte[] memBuffer,
@@ -136,7 +138,7 @@ public abstract class Body {
 		setBodyDataMemLength(decodeState._memLength);
 	}
 	
-	public abstract void encode(EncodeState encodeState) throws JDtnException, InterruptedException;
+	public abstract void encode(java.sql.Connection con, EncodeState encodeState) throws JDtnException, InterruptedException;
 	
 	public String dump(String indent, boolean detailed) {
 		StringBuffer sb = new StringBuffer(indent + "Body\n");
@@ -158,9 +160,19 @@ public abstract class Body {
 	 */
 	public void delete() {
 		if (_bodyDataInFile) {
-			if (!_bodyDataFile.delete()) {
-				_logger.warning(("Cannot delete Payload backing store: " +
-						_bodyDataFile.getAbsolutePath()));
+			java.sql.Connection con = BlobAndBundleDatabase.getInstance().getInterface().createConnection();
+			boolean success = false;
+			try {
+				success = _bodyDataFile.delete(con);
+				if (success) { try { con.commit(); } catch (SQLException ignore) { } }
+				else { try { con.rollback(); } catch (SQLException ignore) { } }
+				if (!success) {
+					_logger.warning(("Cannot delete Payload backing store: " +
+							_bodyDataFile.getAbsolutePath()));
+				}
+			}
+			finally {
+				try { con.close(); } catch (SQLException ignore) { }
 			}
 			_bodyDataFileLength = 0;
 			_bodyDataFileOffset = 0;
@@ -209,12 +221,12 @@ public abstract class Body {
 	}
 
 	/** If block body data is in file, this is the file it's in */
-	public File getBodyDataFile() {
+	public MediaRepository.File getBodyDataFile() {
 		return _bodyDataFile;
 	}
 
 	/** If block body data is in file, this is the file it's in */
-	public void setBodyDataFile(File bodyDataFile) {
+	public void setBodyDataFile(MediaRepository.File bodyDataFile) {
 		this._bodyDataFile = bodyDataFile;
 	}
 

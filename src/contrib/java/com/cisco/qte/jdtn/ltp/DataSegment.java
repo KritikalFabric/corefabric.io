@@ -29,18 +29,19 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 package com.cisco.qte.jdtn.ltp;
 
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.sql.SQLException;
 import java.util.TimerTask;
 import java.util.logging.Logger;
 
+import com.cisco.qte.jdtn.apps.MediaRepository;
 import com.cisco.qte.jdtn.general.DecodeState;
 import com.cisco.qte.jdtn.general.EncodeState;
 import com.cisco.qte.jdtn.general.JDtnException;
 import com.cisco.qte.jdtn.general.Store;
 import com.cisco.qte.jdtn.general.Utils;
+import org.kritikal.fabric.contrib.jdtn.BlobAndBundleDatabase;
 
 /**
  * DataSegment - A Segment which transports user data.
@@ -74,7 +75,7 @@ public class DataSegment extends Segment {
 	protected boolean _clientDataInFile;
 
 	/** If clientDataInFile is true, then this is the file it is stored in */
-	protected File _clientDataFile;
+	protected MediaRepository.File _clientDataFile;
 
 	/** If clientDataInFile is false, then this is the data buffer */
 	protected byte[] _clientData;
@@ -117,7 +118,7 @@ public class DataSegment extends Segment {
 	 * decoding the client service payload.
 	 */
 	@Override
-	protected void decodeContents(DecodeState decodeState) throws JDtnException {
+	protected void decodeContents(java.sql.Connection con, DecodeState decodeState) throws JDtnException {
 		// Decode payload descriptive fields
 		setClientServiceId(new ServiceId(decodeState));
 		setClientDataOffset(Utils.sdnvDecodeLong(decodeState));
@@ -160,28 +161,11 @@ public class DataSegment extends Segment {
 			// Store payload to a file
 			_clientDataInFile = true;
 			_clientDataFile = Store.getInstance().createNewSegmentFile();
-			FileOutputStream os = null;
-			try {
-				os = new FileOutputStream(_clientDataFile);
-				
-				ByteBuffer buffer = ByteBuffer.wrap(
-						decodeState._memBuffer, 
-						decodeState._memOffset, 
-						_clientDataLength);
-				os.getChannel().write(buffer);
-				decodeState.incrementOffsetBy(_clientDataLength);
-				
-			} catch (IOException e) {
-				throw new JDtnException(e);
-			} finally {
-				if (os != null) {
-					try {
-						os.close();
-					} catch (IOException e) {
-						// Nothing
-					}
-				}
-			}
+			ByteBuffer buffer = ByteBuffer.wrap(
+					decodeState._memBuffer,
+					decodeState._memOffset,
+					_clientDataLength);
+			BlobAndBundleDatabase.getInstance().copyByteBufferToFile(con, buffer, _clientDataFile);
 			
 		} else {
 			// Save payload to a buffer
@@ -198,7 +182,7 @@ public class DataSegment extends Segment {
 	 * @throws LtpException on errors
 	 */
 	@Override
-	protected void encodeContents(EncodeState encodeState) 
+	protected void encodeContents(java.sql.Connection con, EncodeState encodeState)
 	throws JDtnException, InterruptedException {
 		// Encode payload descriptive information
 		_clientServiceId.encode(encodeState);
@@ -213,7 +197,7 @@ public class DataSegment extends Segment {
 		long t1 = System.currentTimeMillis();
 		if (_clientDataInFile) {
 			// Payload in file; read from file and append to buffer
-			encodeState.append(_clientDataFile, _clientDataOffset, _clientDataLength);
+			encodeState.append(con, _clientDataFile, _clientDataOffset, _clientDataLength);
 			
 		} else {
 			// Payload in buffer; append to output buffer
@@ -234,36 +218,44 @@ public class DataSegment extends Segment {
 	 * @throws LtpException If Segment Type is incorrect or other logical errors
 	 */
 	public int estimateHeaderLength() throws JDtnException, InterruptedException {
-		EncodeState encodeState = new EncodeState();
-		// Encode Segment envelope
-		super.encode(encodeState, true);
-		// Encode payload descriptive information
-		_clientServiceId.encode(encodeState);
-		Utils.sdnvEncodeLong(_clientDataOffset, encodeState);
-		// Encode maximum Client Data Length; which results in max sized SDNV
-		// So we get safe estimate of header length
-		Utils.sdnvEncodeInt(Integer.MAX_VALUE, encodeState);
-		
-		// For safe estimate, assume the Segment is a Checkpoint.  In our
-		// implementation, we use Longs as CheckpointSerialNumbers and
-		// ReportSerialNumbers.  So, use Long.MAX_VALUE for each.
-		CheckpointSerialNumber sn1 = new CheckpointSerialNumber(Integer.MAX_VALUE);
-		sn1.encode(encodeState);
-		ReportSerialNumber sn2 = new ReportSerialNumber(Integer.MAX_VALUE);
-		sn2.encode(encodeState);
-		encodeState.close();
-		
-		return (int)encodeState.getLength();
+		java.sql.Connection con = BlobAndBundleDatabase.getInstance().getInterface().createConnection();
+		try {
+			EncodeState encodeState = new EncodeState();
+			// Encode Segment envelope
+			super.encode(con, encodeState, true);
+			// Encode payload descriptive information
+			_clientServiceId.encode(encodeState);
+			Utils.sdnvEncodeLong(_clientDataOffset, encodeState);
+			// Encode maximum Client Data Length; which results in max sized SDNV
+			// So we get safe estimate of header length
+			Utils.sdnvEncodeInt(Integer.MAX_VALUE, encodeState);
+
+			// For safe estimate, assume the Segment is a Checkpoint.  In our
+			// implementation, we use Longs as CheckpointSerialNumbers and
+			// ReportSerialNumbers.  So, use Long.MAX_VALUE for each.
+			CheckpointSerialNumber sn1 = new CheckpointSerialNumber(Integer.MAX_VALUE);
+			sn1.encode(encodeState);
+			ReportSerialNumber sn2 = new ReportSerialNumber(Integer.MAX_VALUE);
+			sn2.encode(encodeState);
+			encodeState.close();
+
+			try { con.rollback(); } catch (SQLException ignore) { }
+
+			return (int)encodeState.getLength();
+		}
+		finally {
+			try { con.close(); } catch (SQLException e) { _logger.warning(e.getMessage()); }
+		}
 	}
 	
 	/**
 	 * Discard the data behind this DataSegment
 	 */
-	public void discardData() {
+	public void discardData(java.sql.Connection con) {
 		if (isValid()) {
 			setValid(false);
 			if (isClientDataInFile()) {
-				if (getClientDataFile().exists() && !getClientDataFile().delete()) {
+				if (getClientDataFile().exists(con) && !getClientDataFile().delete(con)) {
 					_logger.warning("Cannot delete Segment Storage: " +
 							getClientDataFile());
 				}
@@ -366,11 +358,11 @@ public class DataSegment extends Segment {
 		this._clientDataInFile = clientDataInFile;
 	}
 	/** If clientDataInFile is true, then this is the file it is stored in */
-	public File getClientDataFile() {
+	public MediaRepository.File getClientDataFile() {
 		return _clientDataFile;
 	}
 	/** If clientDataInFile is true, then this is the file it is stored in */
-	public void setClientDataFile(File clientDataFile) {
+	public void setClientDataFile(MediaRepository.File clientDataFile) {
 		this._clientDataFile = clientDataFile;
 	}
 	public long getClientDataOffset() {

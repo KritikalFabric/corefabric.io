@@ -341,10 +341,10 @@ implements Iterable<BundleBlock> {
 	 * @throws JDtnException On Encoding errors
 	 * @throws InterruptedException 
 	 */
-	public void encode(EncodeState encodeState, EidScheme eidScheme)
+	public void encode(java.sql.Connection con, EncodeState encodeState, EidScheme eidScheme)
 	throws JDtnException, InterruptedException {
 		for (BundleBlock bundleBlock : this) {
-			bundleBlock.encode(encodeState, eidScheme);
+			bundleBlock.encode(con, encodeState, eidScheme);
 		}
 	}
 	

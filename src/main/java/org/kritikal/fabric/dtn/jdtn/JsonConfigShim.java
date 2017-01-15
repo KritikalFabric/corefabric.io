@@ -28,6 +28,7 @@ public class JsonConfigShim {
         JsonObject node_db = node.getJsonObject("node_db", new JsonObject());
 
         DBInterfaceJDBC.host = node_db.getString("host", "localhost");
+        DBInterfaceJDBC.port = node_db.getInteger("port", 5432);
         DBInterfaceJDBC.db = node_db.getString("db", "corefabric__node_db");
         DBInterfaceJDBC.user = node_db.getString("user", "postgres");
         DBInterfaceJDBC.password = node_db.getString("password", "password");

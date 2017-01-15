@@ -29,10 +29,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 package com.cisco.qte.jdtn.bp;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.logging.Logger;
 
+import com.cisco.qte.jdtn.apps.MediaRepository;
 import com.cisco.qte.jdtn.bp.EidScheme;
 import com.cisco.qte.jdtn.general.DecodeState;
 import com.cisco.qte.jdtn.general.EncodeState;
@@ -149,7 +149,7 @@ public class SecondaryBundleBlock extends BundleBlock {
 		// Now deal with the body.  We save it to a File if it is large enough,
 		// else we keep it in a buffer.
 		if (blockLength > BPManagement.getInstance().getBundleBlockFileThreshold()) {
-			File file = Store.getInstance().createNewPayloadFile();
+			MediaRepository.File file = Store.getInstance().createNewPayloadFile();
 			decodeState.spillToFile(file, blockLength);
 			DecodeState decodeState2 =
 				new DecodeState(
@@ -179,7 +179,7 @@ public class SecondaryBundleBlock extends BundleBlock {
 	 * @throws InterruptedException 
 	 */
 	@Override
-	public void encode(EncodeState encodeState, EidScheme eidScheme) 
+	public void encode(java.sql.Connection con, EncodeState encodeState, EidScheme eidScheme)
 	throws JDtnException, InterruptedException {
 		encodeState.put(getBlockType());
 		Utils.sdnvEncodeInt(getBlockProcessingControlFlags(), encodeState);
@@ -202,11 +202,11 @@ public class SecondaryBundleBlock extends BundleBlock {
 		EncodeState encodeState2 = null;
 		if (encodeState.isEncodingToFile) {
 			encodeState2 = 
-				new EncodeState(Store.getInstance().createNewTemporaryFile());						
+				new EncodeState(con, Store.getInstance().createNewTemporaryFile());
 		} else {
 			encodeState2 = new EncodeState();
 		}
-		_body.encode(encodeState2);
+		_body.encode(con, encodeState2);
 		encodeState2.close();
 		Utils.sdnvEncodeLong(encodeState2.getLength(), encodeState);
 

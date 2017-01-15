@@ -29,8 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 package com.cisco.qte.jdtn.bp;
 
-import java.io.File;
-
+import com.cisco.qte.jdtn.apps.MediaRepository;
 import com.cisco.qte.jdtn.general.DecodeState;
 import com.cisco.qte.jdtn.general.EncodeState;
 import com.cisco.qte.jdtn.general.JDtnException;
@@ -69,7 +68,7 @@ public class Payload extends Body {
 		super(decodeState);
 	}
 	
-	public Payload(File file, long fileOffset, long fileLength) {
+	public Payload(MediaRepository.File file, long fileOffset, long fileLength) {
 		super(true, file, fileOffset, fileLength, null, 0, 0);
 	}
 	
@@ -78,11 +77,12 @@ public class Payload extends Body {
 	}
 	
 	@Override
-	public void encode(EncodeState encodeState) throws JDtnException, InterruptedException {
+	public void encode(java.sql.Connection con, EncodeState encodeState) throws JDtnException, InterruptedException {
 		if (isBodyDataInFile()) {
 			encodeState.append(
-					getBodyDataFile(), 
-					getBodyDataFileOffset(), 
+					con,
+					getBodyDataFile(),
+					getBodyDataFileOffset(),
 					getBodyDataFileLength());
 		} else {
 			encodeState.append(
