@@ -268,7 +268,7 @@ public class ReportSegment extends Segment {
 	 * specific body of the segment.
 	 */
 	@Override
-	protected void decodeContents(DecodeState decodeState) throws JDtnException {
+	protected void decodeContents(java.sql.Connection con, DecodeState decodeState) throws JDtnException {
 		setReportSerialNumber(new ReportSerialNumber(decodeState));
 		setCheckpointSerialNumber(new CheckpointSerialNumber(decodeState));
 		setUpperBound(Utils.sdnvDecodeLong(decodeState));
@@ -357,7 +357,7 @@ public class ReportSegment extends Segment {
 	 * @throws JDtnException on errors
 	 */
 	@Override
-	protected void encodeContents(EncodeState encodeState) throws JDtnException {
+	protected void encodeContents(java.sql.Connection con, EncodeState encodeState) throws JDtnException {
 		_reportSerialNumber.encode(encodeState);
 		_checkpointSerialNumber.encode(encodeState);
 		Utils.sdnvEncodeLong(_upperBound, encodeState);

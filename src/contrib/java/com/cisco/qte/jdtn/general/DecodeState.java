@@ -29,11 +29,12 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 package com.cisco.qte.jdtn.general;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
+import com.cisco.qte.jdtn.apps.MediaRepository;
+import org.kritikal.fabric.contrib.jdtn.BlobAndBundleDatabase;
+
 import java.io.IOException;
 import java.io.InputStream;
+import java.sql.SQLException;
 
 
 /**
@@ -52,7 +53,7 @@ public class DecodeState {
 	public int _memLength;
 	
 	/** isInFile==true; File path of file data */
-	public File _filePath;
+	public MediaRepository.File _filePath;
 	/** isInFile==true; Current offset to next item to decode */
 	public long _fileOffset;
 	/** isInFile==true; Length of the File */
@@ -81,11 +82,12 @@ public class DecodeState {
 	 * RandomAccessFile and there's no way to detect EOF.
 	 * @throws IOException if cannot open the file or seek to initial Offset.
 	 */
-	public DecodeState(File aFilePath, long aOffset, long aLength) 
+	public DecodeState(MediaRepository.File aFilePath, long aOffset, long aLength)
 	throws JDtnException {
 		storeInFileParameters(aFilePath, aOffset, aLength);
 		this._isInFile = true;
-		
+
+		throw new Error("Not implemented.");/*
 		try {
 			_fis = new FileInputStream(aFilePath);
 			if (_fileOffset != 0) {
@@ -93,7 +95,7 @@ public class DecodeState {
 			}
 		} catch (IOException e) {
 			throw new JDtnException(e);
-		}
+		}*/
 	}
 
 	/**
@@ -123,7 +125,7 @@ public class DecodeState {
 	 */
 	public DecodeState(
 			boolean aIsInFile, 
-			File aFilePath, 
+			MediaRepository.File aFilePath,
 			long aFileOffset, 
 			long aFileLength, 
 			byte[] aBuffer, 
@@ -132,13 +134,15 @@ public class DecodeState {
 		storeInMemoryParameters(aBuffer, aOffset, aLength);
 		storeInFileParameters(aFilePath, aFileOffset, aFileLength);
 		this._isInFile = aIsInFile;
-		
+		throw new Error("Not implemented.");
+		/*
 		if (aIsInFile) {
 			_fis = new FileInputStream(aFilePath);
 			if (aFileOffset != 0) {
 				_fis.skip(aFileOffset);
 			}
 		}
+		*/
 	}
 	
 	/**
@@ -168,7 +172,14 @@ public class DecodeState {
 	public void delete() {
 		close();
 		if (_isInFile) {
-			_filePath.delete();
+			java.sql.Connection con = BlobAndBundleDatabase.getInstance().getInterface().createConnection();
+			try {
+				_filePath.delete(con);
+				try { con.commit(); } catch (SQLException ignore) { }
+			}
+			finally {
+				try { con.close(); } catch (SQLException ignore) { }
+			}
 		}
 	}
 	
@@ -330,7 +341,9 @@ public class DecodeState {
 	 * @param length Number of raw bytes to spill
 	 * @throws JDtnException on various errors
 	 */
-	public void spillToFile(File file, long length) throws JDtnException {
+	public void spillToFile(MediaRepository.File file, long length) throws JDtnException {
+		throw new Error("Not implemented.");
+		/*
 		FileOutputStream fos = null;
 		byte[] buffer = new byte[4096];
 		try {
@@ -365,7 +378,7 @@ public class DecodeState {
 				}
 			}
 		}
-		
+		*/
 	}
 	
 	@Override
@@ -410,7 +423,7 @@ public class DecodeState {
 		this._memLength = length;
 	}
 	
-	private void storeInFileParameters(File aFilePath, long offset, long length) {
+	private void storeInFileParameters(MediaRepository.File aFilePath, long offset, long length) {
 		this._filePath = aFilePath;
 		this._fileOffset = offset;
 		this._fileLength = length;

@@ -6,38 +6,43 @@ Project for Raspberry Pi 3 model B and Mac OS X, SmartOS & Linux.
 (c) 2014-2016	Ben Gould
 (c) 2014-2016   Xela Sokitirk
 
-org.kritikal.fabric.core:
+org.kritikal.fabric:
 	Licensed under the Apache Public License version 2.0
 
 Portions are in the public domain.
 ```
-Documentation!
+Quick-start!
 
 ```
-awfulhak:corefabric.io ben$ (cd a2/ && ./clean.sh && ./build.sh) && ./gradlew clean runShadow
-
+awfulhak:corefabric.io ben$ (cd a2/ && ./clean.sh && ./build.sh) &&\
+(cd docker/ && ./create.sh) &&\
+./gradlew clean runShadow
 ```
+Features
 ```
----8<------8<------8<------8<------8<------8<------8<---
-
 wierd and wonderful message queues
 
 $foo/bar/baz -- is a "system" message queue and as such reserved.  we use this.
 |/# & |foo/# -- is a "cluster" message queue and as such shared across the cluster.  love it.
 #/| & #/|foo -- is a "cluster" message queue just the same as the previous.
 nb. system and cluster can be combined using this 2nd technique.
-
----8<------8<------8<------8<------8<------8<------8<---
 ```
+Development environment 
 ```
----8<------8<------8<------8<------8<------8<------8<---
+node-js is needed for our angular2 web-development environment
 
-Tips and tricks (work in progress):
-
+awfulhak:corefabric.io ben$ git submodule init
+awfulhak:corefabric.io ben$ git submodule update
 awfulhak:corefabric.io ben$ ./tools/dependencies/clean.sh
 awfulhak:corefabric.io ben$ ./tools/dependencies/install.sh
+awfulhak:corefabric.io ben$ (cd a2/ && ./clean.sh && ./run.sh)
 
----8<------8<------8<------8<------8<------8<------8<---
+& in a second terminal start-up through org.kritikal.fabric.CoreFabric.main():
+
+awfulhak:corefabric.io ben$ ./gradlew runShadow
+```
+```
+[tl;dr]
 
 HOW-TO get it all up and running on a Mac!
 

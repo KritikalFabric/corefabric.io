@@ -127,7 +127,7 @@ public interface LtpListener {
 	 * Notification that the given Block was received.
 	 * @param block Received Block
 	 */
-	public void onBlockReceived(Block block);
+	public void onBlockReceived(java.sql.Connection con, Block block);
 	
 	/**
 	 * 7.3.  Red-Part Reception
@@ -139,7 +139,7 @@ public interface LtpListener {
 	 *     Length of the red-part of the block.
 	 *     Indication as to whether or not the last byte of the red-part is
 	 *     also the end of the block.
-	 *     Source LTP engine ID.
+	 *     StorageType LTP engine ID.
 	 * Called when a checkpoint segment is received when it is known that
 	 * EORP has already or coincidentally received.  We notify listeners.
 	 * @param block Affected Block

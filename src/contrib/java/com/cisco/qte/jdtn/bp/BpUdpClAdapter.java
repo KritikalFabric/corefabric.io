@@ -29,6 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 package com.cisco.qte.jdtn.bp;
 
+import java.sql.SQLException;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -45,6 +46,7 @@ import com.cisco.qte.jdtn.udpcl.UdpClDataBlock;
 import com.cisco.qte.jdtn.udpcl.UdpClLink;
 import com.cisco.qte.jdtn.udpcl.UdpClListener;
 import com.cisco.qte.jdtn.udpcl.UdpClNeighbor;
+import org.kritikal.fabric.contrib.jdtn.BlobAndBundleDatabase;
 
 /**
  * BP Convergence Adapter for UDP Convergence Layer
@@ -128,51 +130,60 @@ implements UdpClListener {
 			throw new JDtnException("Route neighbor not instance of UdpClNeighbor");
 		}
 		UdpClNeighbor udpClNeighbor = (UdpClNeighbor)neighbor;
-		
-		// Encode the original Bundle
-		EncodeState encodeState = new EncodeState();
-		bundle.encode(encodeState, neighbor.getEidScheme());
-		encodeState.close();
-		
-		if (encodeState.getLength() >= FRAGMENTATION_LIMIT) {
-			// Fragmentation Required, fragment original Bundle
-			List<Bundle> fragments =
-				BPFragmentation.getInstance().fragmentBundle(
-						bundle, 
-						FRAGMENTATION_LIMIT);
-			for (Bundle fragmentBundle : fragments) {
-				encodeState = new EncodeState();
-				fragmentBundle.encode(encodeState, neighbor.getEidScheme());
+
+		java.sql.Connection con = BlobAndBundleDatabase.getInstance().getInterface().createConnection();
+		try {
+
+			// Encode the original Bundle
+			EncodeState encodeState = new EncodeState();
+			bundle.encode(con, encodeState, neighbor.getEidScheme());
+			encodeState.close();
+
+			if (encodeState.getLength() >= FRAGMENTATION_LIMIT) {
+				// Fragmentation Required, fragment original Bundle
+				List<Bundle> fragments =
+						BPFragmentation.getInstance().fragmentBundle(
+								con,
+								bundle,
+								FRAGMENTATION_LIMIT);
+				for (Bundle fragmentBundle : fragments) {
+					encodeState = new EncodeState();
+					fragmentBundle.encode(con, encodeState, neighbor.getEidScheme());
+					byte[] buffer = encodeState.getByteBuffer();
+
+					UdpClDataBlock block = new UdpClDataBlock(
+							buffer,
+							buffer.length,
+							udpClLink,
+							udpClNeighbor,
+							bundle);
+					block.isFragment = true;
+					if (fragmentBundle.getPrimaryBundleBlock().getFragmentOffset() +
+							fragmentBundle.getPayloadBundleBlock().getBody().getLength() >=
+							fragmentBundle.getPrimaryBundleBlock().getTotalAppDataUnitLength()) {
+						block.isLastFragment = true;
+					}
+
+					// Send Fragment
+					UdpClAPI.getInstance().sendBlock(
+							block,
+							udpClLink,
+							udpClNeighbor);
+				}
+			} else {
+				// Fragmentation not required; Send the entire Bundle
 				byte[] buffer = encodeState.getByteBuffer();
-				
-				UdpClDataBlock block = new UdpClDataBlock(
+				UdpClAPI.getInstance().sendBlock(
 						buffer,
 						buffer.length,
-						udpClLink,
-						udpClNeighbor,
+						(UdpClLink) route.getLink(),
+						(UdpClNeighbor) route.getNeighbor(),
 						bundle);
-				block.isFragment = true;
-				if (fragmentBundle.getPrimaryBundleBlock().getFragmentOffset() +
-					fragmentBundle.getPayloadBundleBlock().getBody().getLength() >=
-					fragmentBundle.getPrimaryBundleBlock().getTotalAppDataUnitLength()) {
-					block.isLastFragment = true;
-				}
-						
-				// Send Fragment
-				UdpClAPI.getInstance().sendBlock(
-						block,
-						udpClLink,
-						udpClNeighbor);
 			}
-		} else {
-			// Fragmentation not required; Send the entire Bundle
-			byte[] buffer = encodeState.getByteBuffer();
-			UdpClAPI.getInstance().sendBlock(
-					buffer, 
-					buffer.length, 
-					(UdpClLink)route.getLink(), 
-					(UdpClNeighbor)route.getNeighbor(), 
-					bundle);
+			try { con.commit(); } catch (SQLException e) { _logger.warning(e.getMessage()); }
+		}
+		finally {
+			try { con.close(); } catch (SQLException e) { _logger.warning(e.getMessage()); }
 		}
 	}
 	

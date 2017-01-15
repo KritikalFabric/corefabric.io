@@ -35,6 +35,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.FileInputStream;
 import java.io.InputStream;
+import java.sql.SQLException;
 import java.util.Random;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -51,6 +52,7 @@ import com.cisco.qte.jdtn.bp.Payload;
 import com.cisco.qte.jdtn.general.GeneralManagement;
 import com.cisco.qte.jdtn.general.JDtnException;
 import com.cisco.qte.jdtn.general.Utils;
+import org.kritikal.fabric.contrib.jdtn.BlobAndBundleDatabase;
 
 /**
  * DTN2 version of ping.  Not compatible with our custom version; they both
@@ -214,69 +216,81 @@ public class Dtn2PingApp extends AbstractApp {
 						lifetimeSecs * 1000L + 4, 
 						TimeUnit.MILLISECONDS);
 				if (recvBundle != null) {
-	                long endTime = System.currentTimeMillis();
-	                
-	                // Parse the Payload of the Ping Reply
+					long endTime = System.currentTimeMillis();
+
+					// Parse the Payload of the Ping Reply
 					payload = recvBundle.getPayloadBundleBlock().getPayload();
-					
+
 					if (GeneralManagement.isDebugLogging()) {
 						_logger.fine("Ping Reply");
-						_logger.finest("Ping Reply:  src=" + 
+						_logger.finest("Ping Reply:  src=" +
 								recvBundle.getPrimaryBundleBlock().
-									getSourceEndpointId().dump("", true));
-						_logger.finest("             dest=" + 
+										getSourceEndpointId().dump("", true));
+						_logger.finest("             dest=" +
 								recvBundle.getPrimaryBundleBlock().
-									getDestinationEndPointId().dump("", true));
+										getDestinationEndPointId().dump("", true));
 						_logger.finest("             Payload=");
 						if (!payload.isBodyDataInFile()) {
 							_logger.finest(
 									Utils.dumpBytes(
-											payload.getBodyDataBuffer(), 
-											0, 
-											payload.getBodyDataMemLength(), 
+											payload.getBodyDataBuffer(),
+											0,
+											payload.getBodyDataMemLength(),
 											true));
 						}
 					}
-					
-					InputStream is = null;
-					if (payload.isBodyDataInFile()) {
-						is = new FileInputStream(payload.getBodyDataFile());
-					
-					} else {
-						is = new ByteArrayInputStream(
-								payload.getBodyDataBuffer(), 
-								payload.getBodyDataMemOffset(), 
-								payload.getBodyDataMemLength());					
+
+					java.sql.Connection con = BlobAndBundleDatabase.getInstance().getInterface().createConnection();
+					try
+					{
+						InputStream is = null;
+						if (payload.isBodyDataInFile()) {
+							is = payload.getBodyDataFile().inputStream(con);
+
+						} else {
+							is = new ByteArrayInputStream(
+									payload.getBodyDataBuffer(),
+									payload.getBodyDataMemOffset(),
+									payload.getBodyDataMemLength());
+						}
+						DataInputStream dis = new DataInputStream(is);
+						byte[] pingTagBytes = new byte[PING_TAG_BYTES.length];
+						dis.read(pingTagBytes);
+						String pingTag = new String(pingTagBytes);
+						if (!pingTag.equals(PING_TAG)) {
+							throw new JDtnException(
+									"Ping reply tag: expected=" + PING_TAG +
+											"; actual=" + pingTag);
+						}
+						int rcvdSeqNo = dis.readInt();
+						if (rcvdSeqNo != _seqNo) {
+							throw new JDtnException(
+									"Ping reply segno: expected=" + _seqNo +
+											"; actual=" + rcvdSeqNo);
+						}
+						int nonce = dis.readInt();
+						if (nonce != _nonce) {
+							throw new JDtnException(
+									"Ping reply nonce: expected=" + _nonce +
+											"; actual=" + nonce);
+						}
+						int timeSecs = dis.readInt();
+						if (timeSecs != _timeStampSecs) {
+							_logger.warning(
+									"Ping reply Time field: expected=" + _timeStampSecs +
+											"; actual=" + timeSecs);
+						}
+
+						dis.close();
+						is.close();
+
+						try { con.commit(); } catch (SQLException e) {
+							_logger.warning(e.getMessage());
+						}
 					}
-					DataInputStream dis = new DataInputStream(is);
-					byte[] pingTagBytes = new byte[PING_TAG_BYTES.length];
-					dis.read(pingTagBytes);
-					String pingTag = new String(pingTagBytes);
-					if (!pingTag.equals(PING_TAG)) {
-						throw new JDtnException(
-								"Ping reply tag: expected=" + PING_TAG + 
-								"; actual=" + pingTag);
+					finally {
+						con.close();
 					}
-					int rcvdSeqNo = dis.readInt();
-					if (rcvdSeqNo != _seqNo) {
-						throw new JDtnException(
-								"Ping reply segno: expected=" + _seqNo +
-								"; actual=" + rcvdSeqNo);
-					}
-					int nonce = dis.readInt();
-					if (nonce != _nonce) {
-						throw new JDtnException(
-								"Ping reply nonce: expected=" + _nonce +
-								"; actual=" + nonce);
-					}
-					int timeSecs = dis.readInt();
-					if (timeSecs != _timeStampSecs) {
-						_logger.warning(
-								"Ping reply Time field: expected=" + _timeStampSecs +
-								"; actual=" + timeSecs);
-					}
-					
-	                dis.close();
 
 	                long rtt = endTime - transmitTime;
 	                callbacks.onPingReply(rtt, ++receiveCount);

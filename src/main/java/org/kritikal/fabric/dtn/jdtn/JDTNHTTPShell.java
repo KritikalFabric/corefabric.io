@@ -52,9 +52,11 @@ import io.vertx.ext.shell.command.CommandProcess;
 import io.vertx.ext.shell.command.CommandRegistry;
 import io.vertx.ext.shell.term.HttpTermOptions;
 import io.hawt.web.plugin.HawtioPlugin;
+import org.kritikal.fabric.contrib.jdtn.BlobAndBundleDatabase;
 
 import java.io.File;
 import java.net.UnknownHostException;
+import java.sql.SQLException;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -873,7 +875,7 @@ public class JDTNHTTPShell extends AbstractVerticle{
 			return;
 		}
 		String propName = getMatchAmongAlts(process,words.get(1), "storagePath mediaRepository debugLogging");
-		if (propName.equalsIgnoreCase("storagePath")) {
+		/*if (propName.equalsIgnoreCase("storagePath")) {
 			String path = words.get(2);
 			File file = new File(path);
 			if (!file.exists()) {
@@ -901,7 +903,7 @@ public class JDTNHTTPShell extends AbstractVerticle{
 			process.write("Setting mediaRepository=" + file.getAbsolutePath()+"\n");
 			GeneralManagement.getInstance().setMediaRepositoryPath(file.getAbsolutePath());
 			
-		} else if (propName.equalsIgnoreCase("debugLogging")) {
+		} else */if (propName.equalsIgnoreCase("debugLogging")) {
 			String boolValue = getMatchAmongAlts(process,words.get(2), "true false");
 			if (boolValue.equalsIgnoreCase("true")) {
 				GeneralManagement.setDebugLogging(true);
@@ -3267,7 +3269,7 @@ public class JDTNHTTPShell extends AbstractVerticle{
 			return;
 		}
 		try {
-			app.sendFile(new File(filePath), destEid, options);
+			app.sendFile(new MediaRepository.File(BlobAndBundleDatabase.StorageType.MEDIA, filePath), destEid, options);
 		} catch (JDtnException e) {
 			process.write(e.getMessage()+"\n");
 		}
@@ -3394,7 +3396,7 @@ public class JDTNHTTPShell extends AbstractVerticle{
 			return;
 		}
 		try {
-			photoApp.sendPhoto(destEid.getEndPointIdString(), new File(filePath), options);
+			photoApp.sendPhoto(destEid.getEndPointIdString(), new MediaRepository.File(BlobAndBundleDatabase.StorageType.MEDIA, filePath), options);
 		} catch (JDtnException e) {
 			process.write(e.getMessage()+"\n");
 		}
@@ -3467,7 +3469,7 @@ public class JDTNHTTPShell extends AbstractVerticle{
 			return;
 		}
 		try {
-			videoApp.sendVideo(destEid.getEndPointIdString(), new File(filePath), options);
+			videoApp.sendVideo(destEid.getEndPointIdString(), new MediaRepository.File(BlobAndBundleDatabase.StorageType.MEDIA, filePath), options);
 		} catch (JDtnException e) {
 			process.write(e.getMessage()+"\n");
 		}
@@ -3540,7 +3542,7 @@ public class JDTNHTTPShell extends AbstractVerticle{
 			return;
 		}
 		try {
-			voiceApp.sendVoiceNote(destEid.getEndPointIdString(), new File(filePath), options);
+			voiceApp.sendVoiceNote(destEid.getEndPointIdString(), new MediaRepository.File(BlobAndBundleDatabase.StorageType.MEDIA, filePath), options);
 		} catch (JDtnException e) {
 			process.write(e.getMessage()+"\n");
 		}
@@ -3653,29 +3655,38 @@ public class JDTNHTTPShell extends AbstractVerticle{
 			return;
 		}
 		LtpNeighbor ltpNeighbor = (LtpNeighbor)neighbor;
-		File file = new File(filename);
-		if (!file.exists()) {
-			process.write(" File " + filename + " does not exist\n");
-			return;
-		}
-
-		RateEstimatorApp estimator =
-			(RateEstimatorApp)AppManager.getInstance().getApp(
-					RateEstimatorApp.APP_NAME);
-		if (estimator == null) {
-			process.write("RateEstimatorApp is not installed\n");
-			return;
-		}
-
-		process.write(
-				"Starting RateEstimator for Link " + linkName +
-						" Neighbor " + neighborName+"\n");
+		java.sql.Connection con = BlobAndBundleDatabase.getInstance().getInterface().createConnection();
 		try {
-			estimator.estimateRateLimit(ltpNeighbor, file);
-		} catch (JDtnException e) {
-			process.write(e.getMessage()+"\n");
-			return;
+			MediaRepository.File file = new MediaRepository.File(BlobAndBundleDatabase.StorageType.MEDIA, filename);
+			if (!file.exists(con)) {
+				process.write(" File " + filename + " does not exist\n");
+				return;
+			}
+
+			RateEstimatorApp estimator =
+				(RateEstimatorApp)AppManager.getInstance().getApp(
+						RateEstimatorApp.APP_NAME);
+			if (estimator == null) {
+				process.write("RateEstimatorApp is not installed\n");
+				return;
+			}
+
+			process.write(
+					"Starting RateEstimator for Link " + linkName +
+							" Neighbor " + neighborName+"\n");
+			try {
+				estimator.estimateRateLimit(ltpNeighbor, file);
+			} catch (JDtnException e) {
+				process.write(e.getMessage()+"\n");
+				return;
+			}
+
+			try { con.commit(); } catch (SQLException e) { _logger.warning(e.getMessage()); }
 		}
+		finally {
+			try { con.close(); } catch (SQLException e) { _logger.warning(e.getMessage()); }
+		}
+
 	}
 
 	private void helpIon(CommandProcess process) {
@@ -3757,7 +3768,7 @@ public class JDTNHTTPShell extends AbstractVerticle{
 			return;
 		}
 
-		File file = new File(text.toString());
+		MediaRepository.File file = new MediaRepository.File(BlobAndBundleDatabase.StorageType.MEDIA, text.toString());
 		BPSendFileApp app = (BPSendFileApp)AppManager.getInstance().getApp(BPSendFileApp.APP_NAME);
 		if (app == null) {
 			process.write("BPSendFileApp is not installed\n");

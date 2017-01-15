@@ -30,9 +30,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 package com.cisco.qte.jdtn;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.InputStreamReader;
 import java.net.UnknownHostException;
+import java.sql.SQLException;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -86,6 +86,7 @@ import com.cisco.qte.jdtn.udpcl.UdpClLink;
 import com.cisco.qte.jdtn.udpcl.UdpClManagement;
 import com.cisco.qte.jdtn.udpcl.UdpClNeighbor;
 import com.cisco.saf.Service;
+import org.kritikal.fabric.contrib.jdtn.BlobAndBundleDatabase;
 
 /**
  * A command line interface to the JDTN Stack.  Mostly managment and config.
@@ -861,7 +862,7 @@ public class Shell {
 			return;
 		}
 		String propName = getMatchAmongAlts(words[2], "storagePath mediaRepository debugLogging");
-		if (propName.equalsIgnoreCase("storagePath")) {
+		/*if (propName.equalsIgnoreCase("storagePath")) {
 			String path = words[3];
 			File file = new File(path);
 			if (!file.exists()) {
@@ -889,7 +890,7 @@ public class Shell {
 			System.out.println("Setting mediaRepository=" + file.getAbsolutePath());
 			GeneralManagement.getInstance().setMediaRepositoryPath(file.getAbsolutePath());
 			
-		} else if (propName.equalsIgnoreCase("debugLogging")) {
+		} else */if (propName.equalsIgnoreCase("debugLogging")) {
 			String boolValue = getMatchAmongAlts(words[3], "true false");
 			if (boolValue.equalsIgnoreCase("true")) {
 				GeneralManagement.setDebugLogging(true);
@@ -3166,7 +3167,7 @@ public class Shell {
 			return;
 		}
 		try {
-			app.sendFile(new File(filePath), destEid, options);
+			app.sendFile(new MediaRepository.File(BlobAndBundleDatabase.StorageType.MEDIA, filePath), destEid, options);
 		} catch (JDtnException e) {
 			System.err.println(e.getMessage());
 		}
@@ -3289,7 +3290,7 @@ public class Shell {
 			return;
 		}
 		try {
-			photoApp.sendPhoto(destEid.getEndPointIdString(), new File(filePath), options);
+			photoApp.sendPhoto(destEid.getEndPointIdString(), new MediaRepository.File(BlobAndBundleDatabase.StorageType.MEDIA, filePath), options);
 		} catch (JDtnException e) {
 			System.err.println(e.getMessage());
 		}
@@ -3360,7 +3361,7 @@ public class Shell {
 			return;
 		}
 		try {
-			videoApp.sendVideo(destEid.getEndPointIdString(), new File(filePath), options);
+			videoApp.sendVideo(destEid.getEndPointIdString(), new MediaRepository.File(BlobAndBundleDatabase.StorageType.MEDIA, filePath), options);
 		} catch (JDtnException e) {
 			System.err.println(e.getMessage());
 		}
@@ -3431,7 +3432,7 @@ public class Shell {
 			return;
 		}
 		try {
-			voiceApp.sendVoiceNote(destEid.getEndPointIdString(), new File(filePath), options);
+			voiceApp.sendVoiceNote(destEid.getEndPointIdString(), new MediaRepository.File(BlobAndBundleDatabase.StorageType.MEDIA, filePath), options);
 		} catch (JDtnException e) {
 			System.err.println(e.getMessage());
 		}
@@ -3540,10 +3541,19 @@ public class Shell {
 			return;
 		}
 		LtpNeighbor ltpNeighbor = (LtpNeighbor)neighbor;
-		File file = new File(filename);
-		if (!file.exists()) {
-			System.err.println(" File " + filename + " does not exist");
-			return;
+		MediaRepository.File file = null;
+		{
+			java.sql.Connection con = BlobAndBundleDatabase.getInstance().getInterface().createConnection();
+			try {
+				file = new MediaRepository.File(BlobAndBundleDatabase.StorageType.MEDIA, filename);
+				if (!file.exists(con)) {
+					System.err.println(" File " + filename + " does not exist");
+					return;
+				}
+			}
+			finally {
+				try { con.close(); } catch (SQLException ignore) { }
+			}
 		}
 		
 		RateEstimatorApp estimator =
@@ -3638,7 +3648,7 @@ public class Shell {
 			return;
 		}
 		
-		File file = new File(text.toString());
+		MediaRepository.File file = new MediaRepository.File(BlobAndBundleDatabase.StorageType.MEDIA, text.toString());
 		BPSendFileApp app = (BPSendFileApp)AppManager.getInstance().getApp(BPSendFileApp.APP_NAME);
 		if (app == null) {
 			System.err.println("BPSendFileApp is not installed");

@@ -49,8 +49,8 @@ public class GeneralManagement extends AbstractStartableComponent {
 
 	private static final GeneralManagement _instance = new GeneralManagement();
 	
-	private static final String STORAGE_PATH_DEFAULT = "/tmp/JDTN";
-	private static final String MEDIA_PATH_DEFAULT = "/tmp/JDTN/media";
+	//private static final String STORAGE_PATH_DEFAULT = "/tmp/JDTN";
+	//private static final String MEDIA_PATH_DEFAULT = "/tmp/JDTN/media";
 	private static final boolean DEBUG_LOGGING_DEFAULT = false;
 	private static final double MY_SEG_RATE_LIMIT_DEFAULT = LtpNeighbor.DEFAULT_SEGMENT_XMIT_RATE_LIMIT;
 	private static final long MY_BURST_SIZE_DEFAULT = LtpNeighbor.DEFAULT_BURST_SIZE;
@@ -58,12 +58,12 @@ public class GeneralManagement extends AbstractStartableComponent {
 	/**
 	 * Path to storage for all Bundles and Segments
 	 */
-	private String storagePath = STORAGE_PATH_DEFAULT;
+	//private String storagePath = STORAGE_PATH_DEFAULT;
 	
 	/**
 	 * Path to storage for all Media Bundle Payloads
 	 */
-	private String mediaRepositoryPath = MEDIA_PATH_DEFAULT;
+	//private String mediaRepositoryPath = MEDIA_PATH_DEFAULT;
 	
 	/**
 	 * Whether debug logging is enabled; this property is static because it is
@@ -104,7 +104,7 @@ public class GeneralManagement extends AbstractStartableComponent {
 	 * @param parser Parser doing the parsing
 	 * @throws IOException On I/O errors during parse
 	 * @throws JDtnException On GeneralConfig specific parse errors
-	 * @throws XMLStreamException On General parse errors
+	 * @throws XmlRdParserException On General parse errors
 	 */
 	public void parse(XmlRDParser parser) 
 	throws IOException, JDtnException, XmlRdParserException {
@@ -115,15 +115,15 @@ public class GeneralManagement extends AbstractStartableComponent {
 		//    mySegmentRateLimit="double"
 		//    myBurstSize="long"
 		// </General
-		String value = parser.getAttributeValue("storagePath");
-		if (value != null && value.length() > 0) {
-			setStoragePath(value);
-		}
+		String value = null;//parser.getAttributeValue("storagePath");
+		//if (value != null && value.length() > 0) {
+		//	setStoragePath(value);
+		//}
 		
-		value = parser.getAttributeValue("mediaRepositoryPath");
-		if (value != null && value.length() > 0) {
-			setMediaRepositoryPath(value);
-		}
+		//value = parser.getAttributeValue("mediaRepositoryPath");
+		//if (value != null && value.length() > 0) {
+		//	setMediaRepositoryPath(value);
+		//}
 		
 		Boolean boole = Utils.getBooleanAttribute(parser, "debugLogging");
 		if (boole != null) {
@@ -154,12 +154,12 @@ public class GeneralManagement extends AbstractStartableComponent {
 	 */
 	public void writeConfig(PrintWriter pw) {
 		pw.println("  <General");
-		if (!getStoragePath().equals(STORAGE_PATH_DEFAULT)) {
-			pw.println("    storagePath='" + getStoragePath() + "'");
-		}
-		if (!getMediaRepositoryPath().equals(MEDIA_PATH_DEFAULT)) {
-			pw.println("    mediaRepositoryPath='" + getMediaRepositoryPath() + "'");
-		}
+		//if (!getStoragePath().equals(STORAGE_PATH_DEFAULT)) {
+		//	pw.println("    storagePath='" + getStoragePath() + "'");
+		//}
+		//if (!getMediaRepositoryPath().equals(MEDIA_PATH_DEFAULT)) {
+		//	pw.println("    mediaRepositoryPath='" + getMediaRepositoryPath() + "'");
+		//}
 		if (isDebugLogging() != DEBUG_LOGGING_DEFAULT) {
 			pw.println("    debugLogging='" + isDebugLogging() + "'");
 		}
@@ -203,8 +203,8 @@ public class GeneralManagement extends AbstractStartableComponent {
 	@Override
 	public String dump(String indent, boolean detailed) {
 		StringBuffer sb = new StringBuffer(indent + "GeneralManagement\n");
-		sb.append(indent + "  StoragePath=" + getStoragePath() + "\n");
-		sb.append(indent + "  MediaRepositoryPath=" + getMediaRepositoryPath() + "\n");
+		//sb.append(indent + "  StoragePath=" + getStoragePath() + "\n");
+		//sb.append(indent + "  MediaRepositoryPath=" + getMediaRepositoryPath() + "\n");
 		sb.append(indent + "  DebugLogging=" + isDebugLogging() + "\n");
 		sb.append(indent + "  MySegmentRateLimit=" + getMySegmentRateLimit() + "\n");
 		sb.append(indent + "  MyBurstSize=" + getMyBurstSize() + "\n");
@@ -213,8 +213,8 @@ public class GeneralManagement extends AbstractStartableComponent {
 	}
 	
 	public void setDefaults() {
-		setStoragePath(STORAGE_PATH_DEFAULT);
-		setMediaRepositoryPath(MEDIA_PATH_DEFAULT);
+		//setStoragePath(STORAGE_PATH_DEFAULT);
+		//setMediaRepositoryPath(MEDIA_PATH_DEFAULT);
 		setDebugLogging(DEBUG_LOGGING_DEFAULT);
 		setMySegmentRateLimit(MY_SEG_RATE_LIMIT_DEFAULT);
 		setMyBurstSize(MY_BURST_SIZE_DEFAULT);
@@ -257,30 +257,30 @@ public class GeneralManagement extends AbstractStartableComponent {
 	/**
 	 * Path to storage for all Bundles and Segments
 	 */
-	public String getStoragePath() {
-		return storagePath;
-	}
+	//public String getStoragePath() {
+	//	return storagePath;
+	//}
 
 	/**
 	 * Path to storage for all Bundles and Segments
 	 */
-	public void setStoragePath(String aStoragePath) {
-		storagePath = aStoragePath;
-	}
+	//public void setStoragePath(String aStoragePath) {
+	//	storagePath = aStoragePath;
+	//}
 
 	/**
 	 * Path to storage for all Media Bundle Payloads
 	 */
-	public String getMediaRepositoryPath() {
-		return mediaRepositoryPath;
-	}
+	//public String getMediaRepositoryPath() {
+	//	return mediaRepositoryPath;
+	//}
 
 	/**
 	 * Path to storage for all Media Bundle Payloads
 	 */
-	public void setMediaRepositoryPath(String aMediaRepositoryPath) {
-		mediaRepositoryPath = aMediaRepositoryPath;
-	}
+	//public void setMediaRepositoryPath(String aMediaRepositoryPath) {
+	//	mediaRepositoryPath = aMediaRepositoryPath;
+	//}
 
 	/**
 	 * Whether debug logging is enabled

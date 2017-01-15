@@ -29,6 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 package com.cisco.qte.jdtn.bp;
 
+import java.sql.SQLException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -44,6 +45,7 @@ import com.cisco.qte.jdtn.tcpcl.TcpClDataBlock;
 import com.cisco.qte.jdtn.tcpcl.TcpClLink;
 import com.cisco.qte.jdtn.tcpcl.TcpClListener;
 import com.cisco.qte.jdtn.tcpcl.TcpClNeighbor;
+import org.kritikal.fabric.contrib.jdtn.BlobAndBundleDatabase;
 
 /**
  * Convergence Layer adapter for BP - TCP Convergence Layer
@@ -115,16 +117,27 @@ implements TcpClListener {
 		if (!(neighbor instanceof TcpClNeighbor)) {
 			throw new JDtnException("Route neighbor not instance of TcpClNeighbor");
 		}
-		EncodeState encodeState = new EncodeState();
-		bundle.encode(encodeState, neighbor.getEidScheme());
-		byte[] buffer = encodeState.getByteBuffer();
-		TcpClAPI.getInstance().sendBlock(
-				buffer, 
-				buffer.length, 
-				(TcpClLink)route.getLink(), 
-				(TcpClNeighbor)route.getNeighbor(), 
-				bundle);
-		encodeState.close();
+		java.sql.Connection con = BlobAndBundleDatabase.getInstance().getInterface().createConnection();
+		try {
+			EncodeState encodeState = new EncodeState();
+			bundle.encode(con, encodeState, neighbor.getEidScheme());
+			byte[] buffer = encodeState.getByteBuffer();
+			TcpClAPI.getInstance().sendBlock(
+					buffer,
+					buffer.length,
+					(TcpClLink) route.getLink(),
+					(TcpClNeighbor) route.getNeighbor(),
+					bundle);
+			encodeState.close();
+			try {
+				con.commit();
+			} catch (SQLException e) {
+				_logger.warning(e.getMessage());
+			}
+		}
+		finally {
+			try { con.close(); } catch (SQLException e) { _logger.warning(e.getMessage()); }
+		}
 	}
 	
 	/**

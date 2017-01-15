@@ -29,10 +29,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 package com.cisco.qte.jdtn.ltp;
 
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
+import java.io.*;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.logging.Logger;
@@ -41,6 +39,7 @@ import com.cisco.qte.jdtn.general.GeneralManagement;
 import com.cisco.qte.jdtn.general.JDtnException;
 import com.cisco.qte.jdtn.general.Store;
 import com.cisco.qte.jdtn.general.Utils;
+import org.kritikal.fabric.contrib.jdtn.BlobAndBundleDatabase;
 
 /**
  * An Inbound LTP Block - A Block received or in the process of being Received
@@ -224,22 +223,22 @@ public class InboundBlock extends Block {
 	 * too large.
 	 * @throws JDtnException on errors
 	 */
-	public void inboundBlockComplete() throws JDtnException {
+	public void inboundBlockComplete(java.sql.Connection con) throws JDtnException {
 		// If the Block data length is past a Threshold, spill all Segment
 		//  data to a file.
 		if (_dataLength > LtpManagement.getInstance().getBlockLengthFileThreshold()) {
 			// Spill all DataSegments to this block's file
 			_dataInFile = true;
 			_dataFile = Store.getInstance().createNewBlockFile();
-			spillSegmentDataToBlockFile();
+			spillSegmentDataToBlockFile(con);
 			
 		} else {
 			// Else gather all Segment data to a buffer
 			_dataInFile = false;
 			_dataBuffer = new byte[(int)_dataLength];
 			for (DataSegment segment : this) {
-				gatherSegmentDataToBuffer(segment, _dataBuffer);
-				segment.discardData();
+				gatherSegmentDataToBuffer(con, segment, _dataBuffer);
+				segment.discardData(con);
 			}
 		}
 	}
@@ -252,13 +251,13 @@ public class InboundBlock extends Block {
 	 * @param buffer Buffer to gather into
 	 * @throws LtpException On I/O errors if involves file operations
 	 */
-	private void gatherSegmentDataToBuffer(DataSegment dataSegment, byte[] buffer) 
+	private void gatherSegmentDataToBuffer(java.sql.Connection con, DataSegment dataSegment, byte[] buffer)
 	throws JDtnException {
 		if (dataSegment.isClientDataInFile()) {
 			// Gather from segment file to buffer[]
-			FileInputStream fis = null;
+			InputStream fis = null;
 			try {
-				fis = new FileInputStream(dataSegment.getClientDataFile());
+				fis = dataSegment.getClientDataFile().inputStream(con);
 				int nRead = fis.read(buffer, (int)dataSegment.getClientDataOffset(), dataSegment.getClientDataLength());
 				if (nRead != dataSegment.getClientDataLength()) {
 					throw new JDtnException("nRead " + nRead + " != amount requested " + dataSegment.getClientDataLength());
@@ -274,7 +273,7 @@ public class InboundBlock extends Block {
 					// Nothing
 				}
 				fis = null;
-				dataSegment.discardData();
+				dataSegment.discardData(con);
 			}
 				
 			
@@ -293,10 +292,9 @@ public class InboundBlock extends Block {
 	 * Spill data from all DataSegments to this block's file.
 	 * @throws LtpException on errors
 	 */
-	private void spillSegmentDataToBlockFile()
+	private void spillSegmentDataToBlockFile(java.sql.Connection con)
 	throws LtpException {
-		FileInputStream fis = null;
-		FileOutputStream fos = null;
+		InputStream fis = null;
 		
 		if (_dataFile == null) {
 			try {
@@ -307,59 +305,54 @@ public class InboundBlock extends Block {
 		}
 
 		try {
-			fos = new FileOutputStream(_dataFile);
-		} catch (FileNotFoundException e) {
-			throw new LtpException(e);
-		}
-		
-		try {
-			byte[] buffer = new byte[4096];
-			for (DataSegment dataSegment : this) {
-				if (dataSegment.isClientDataInFile()) {
-					// Spill segment file to block file
-					// Make sure the file exists
-					if (!dataSegment.getClientDataFile().exists()) {
-						_logger.severe("InboundBlock contains Segment in file " +
-								dataSegment.getClientDataFile().getAbsolutePath() +
-								" but that file doesn't exist");
-						_logger.severe(dataSegment.dump("", true));
-						throw new IOException("File " +
-								dataSegment.getClientDataFile().getAbsolutePath() +
-								" does not exist");
-					}
-					fis = new FileInputStream(dataSegment.getClientDataFile());
-					long remaining = dataSegment.getClientDataLength();
-					while (remaining > 0) {
-						int nRead = fis.read(buffer);
-						if (nRead <= 0) {
-							throw new LtpException("Read count returned " + nRead);
-						}
-						remaining -= nRead;
-						fos.write(buffer, 0, nRead);
-						dataSegment.discardData();
-					}
-					fis.close();
-					fis = null;
-				} else {
-					// Spill segment buffer to block file
-					fos.write(dataSegment.getClientData(), 0, dataSegment.getClientDataLength());
-				}
-			}
-		} catch (IOException e) {
-			throw new LtpException("Spilling block data", e);
-		} finally {
 			try {
-				fos.close();
-			} catch (IOException e) {
-				// Nothing
-			}
-			if (fis != null) {
-				try {
-					fis.close();
-				} catch (IOException e) {
-					// Nothing
+				byte[] buffer = new byte[4096];
+				for (DataSegment dataSegment : this) {
+					if (dataSegment.isClientDataInFile()) {
+						// Spill segment file to block file
+						// Make sure the file exists
+						if (!dataSegment.getClientDataFile().exists(con)) {
+							_logger.severe("InboundBlock contains Segment in file " +
+									dataSegment.getClientDataFile().getAbsolutePath() +
+									" but that file doesn't exist");
+							_logger.severe(dataSegment.dump("", true));
+							throw new IOException("File " +
+									dataSegment.getClientDataFile().getAbsolutePath() +
+									" does not exist");
+						}
+						fis = dataSegment.getClientDataFile().inputStream(con);
+						long remaining = dataSegment.getClientDataLength();
+						while (remaining > 0) {
+							int nRead = fis.read(buffer);
+							if (nRead <= 0) {
+								throw new LtpException("Read count returned " + nRead);
+							}
+							remaining -= nRead;
+							BlobAndBundleDatabase.getInstance().appendByteArrayToFile(con, buffer, 0, nRead, _dataFile);
+							dataSegment.discardData(con);
+						}
+						fis.close();
+						fis = null;
+					} else {
+						// Spill segment buffer to block file
+						BlobAndBundleDatabase.getInstance().appendByteArrayToFile(con, dataSegment.getClientData(), 0, dataSegment.getClientDataLength(), _dataFile);
+					}
+				}
+			} catch (Exception e) {
+				try { con.rollback(); } catch (SQLException ignore) { }
+				throw new LtpException("Spilling block data", e);
+			} finally {
+				if (fis != null) {
+					try {
+						fis.close();
+					} catch (IOException e) {
+						// Nothing
+					}
 				}
 			}
+		}
+		finally {
+			try { con.close(); } catch (SQLException e) { throw new LtpException("Spilling block data too", e); }
 		}
 	}
 	
@@ -371,8 +364,8 @@ public class InboundBlock extends Block {
 	 * </ul>
 	 */
 	@Override
-	public void closeBlock() {
-		super.closeBlock();
+	public void closeBlock(java.sql.Connection con) {
+		super.closeBlock(con);
 		removeOutstandingReportSegments();
 	}
 
