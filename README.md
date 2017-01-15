@@ -14,8 +14,9 @@ Portions are in the public domain.
 Quick-start!
 
 ```
-awfulhak:corefabric.io ben$ (cd a2/ && ./clean.sh && ./build.sh) && ./gradlew clean runShadow
-
+awfulhak:corefabric.io ben$ (cd a2/ && ./clean.sh && ./build.sh) &&\
+(cd docker/ && ./create.sh) &&\
+./gradlew clean runShadow
 ```
 Features
 ```

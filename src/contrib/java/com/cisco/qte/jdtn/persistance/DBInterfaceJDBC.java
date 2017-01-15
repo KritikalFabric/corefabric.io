@@ -91,6 +91,7 @@ public class DBInterfaceJDBC implements DBInterface {
     private static BasicDataSource pool = null;
 
     public static String host;
+    public static int port = 5432;
     public static String db;
     public static String user;
     public static String password;
@@ -146,7 +147,7 @@ public class DBInterfaceJDBC implements DBInterface {
 
             if (pool == null) {
                 pool = BasicDataSourceHelper.pool(2, basicDataSource -> {
-                    basicDataSource.setUrl("jdbc:postgresql://" + host + ":5432/" + db + "?charSet=UTF8");
+                    basicDataSource.setUrl("jdbc:postgresql://" + host + ":" + port + "/" + db + "?charSet=UTF8");
                     basicDataSource.setUsername(user);
                     basicDataSource.setPassword(password);
                     basicDataSource.setDefaultAutoCommit(false);
@@ -162,17 +163,23 @@ public class DBInterfaceJDBC implements DBInterface {
                     // DROP old table anyway
                     try {
                         statement.executeUpdate("DROP TABLE " + BundleDatabaseConstants.TABLE_NAME_OLD);
+                        _connection.commit();
                     } catch (SQLException ignore) {
+                        _connection.rollback();
                     }
                     // Start clean - from unit tests only!
                     if (startClean) {
                         try {
                             statement.executeUpdate("DROP TABLE " + BundleDatabaseConstants.TABLE_NAME);
+                            _connection.commit();
                         } catch (SQLException ignore) {
+                            _connection.rollback();
                         }
                         try {
                             statement.executeUpdate("DROP TABLE " + BundleDatabaseConstants.FILE_TABLE_NAME);
+                            _connection.commit();
                         } catch (SQLException ignore) {
+                            _connection.rollback();
                         }
                     }
                     String statementText =
@@ -184,50 +191,48 @@ public class DBInterfaceJDBC implements DBInterface {
                                     BundleDatabaseConstants.FRAG_OFFSET_COL + " int8, " +
                                     BundleDatabaseConstants.PATH_COL + " varchar, " +
                                     BundleDatabaseConstants.STORAGETYPE_COL + " int4, " +
-                                    BundleDatabaseConstants.LENGTH_COL + " int8," +
+                                    BundleDatabaseConstants.LENGTH_COL + " int8, " +
                                     BundleDatabaseConstants.SOURCE_COL + " varchar, " +
-                                    BundleDatabaseConstants.STATE_COL + " varchar," +
+                                    BundleDatabaseConstants.STATE_COL + " varchar, " +
                                     BundleDatabaseConstants.EID_SCHEME_COL + " varchar, " +
                                     BundleDatabaseConstants.LINK_NAME_COL + " varchar, " +
                                     BundleDatabaseConstants.IS_INBOUND_COL + " varchar, " +
                                     BundleDatabaseConstants.RETENTION_CONSTRAINT_COL + " varchar, " +
-                                    BundleDatabaseConstants.DATA_BLOB_COL + " oid," +
-                                    "CONSTRAINT stsf primary key (" +
+                                    BundleDatabaseConstants.DATA_BLOB_COL + " oid, " +
+                                    "CONSTRAINT stsf PRIMARY KEY (" +
                                     BundleDatabaseConstants.SOURCE_EID_COL + ", " +
                                     BundleDatabaseConstants.TIME_SECS_COL + ", " +
                                     BundleDatabaseConstants.SEQUENCE_NO_COL + ", " +
                                     BundleDatabaseConstants.FRAG_OFFSET_COL +
-                                    ") " +
-                                    "CONSTRAINT stpath1 unique key (" +
-                                    BundleDatabaseConstants.PATH_COL + " varchar_pattern_ops, " +
+                                    "), " +
+                                    "CONSTRAINT stpath1 UNIQUE (" +
+                                    BundleDatabaseConstants.PATH_COL + ", " +
                                     BundleDatabaseConstants.STORAGETYPE_COL +
-                                    ")" +
-                                    "CONSTRAINT stblob1 KEY (" +
-                                    BundleDatabaseConstants.DATA_BLOB_COL +
                                     "));";
                     //") on conflict abort);";
-                    _logger.fine(statementText);
+                    _logger.warning(statementText);
                     statement.executeUpdate(statementText);
+                    _connection.commit();
                     statementText =
                             "CREATE TABLE IF NOT EXISTS " + BundleDatabaseConstants.FILE_TABLE_NAME +
                                     " (" +
                                     BundleDatabaseConstants.PATH_COL + " varchar NOT NULL, " +
                                     BundleDatabaseConstants.STORAGETYPE_COL + " int4 NOT NULL, " +
-                                    BundleDatabaseConstants.DATA_BLOB_COL + " oid NOT NULL," +
-                                    "CONSTRAINT stpath2 primary key (" +
-                                    BundleDatabaseConstants.PATH_COL + " varchar_pattern_ops, " +
+                                    BundleDatabaseConstants.DATA_BLOB_COL + " oid NOT NULL, " +
+                                    "CONSTRAINT stpath2 PRIMARY KEY (" +
+                                    BundleDatabaseConstants.PATH_COL + ", " +
                                     BundleDatabaseConstants.STORAGETYPE_COL +
-                                    ") " +
-                                    "CONSTRAINT stblob2 unique key(" +
+                                    "), " +
+                                    "CONSTRAINT stblob2 UNIQUE (" +
                                     BundleDatabaseConstants.DATA_BLOB_COL +
                                     "));";
                     //") on conflict abort);";
-                    _logger.fine(statementText);
+                    _logger.warning(statementText);
                     statement.executeUpdate(statementText);
+                    _connection.commit();
                 } finally {
                     statement.close();
                 }
-                _connection.commit();
             }
             catch (Throwable t) {
 			    try { _connection.rollback(); } catch (SQLException ignore) { }
