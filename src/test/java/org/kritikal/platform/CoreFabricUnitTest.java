@@ -1,5 +1,7 @@
 package org.kritikal.platform;
 
+import com.cisco.qte.jdtn.persistance.BundleDatabase;
+import com.cisco.qte.jdtn.persistance.DBInterfaceJDBC;
 import io.vertx.core.Vertx;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
@@ -18,7 +20,9 @@ import java.util.function.Supplier;
 @Ignore
 public abstract class CoreFabricUnitTest {
 
-    static boolean deployed = false;
+    static {
+        BundleDatabase.getInstance().setStartClean(true);
+    }
 
     @ClassRule
     public static RunTestOnContext rule = new RunTestOnContext(new Supplier<Vertx>() {
