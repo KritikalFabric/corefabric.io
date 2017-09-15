@@ -1,12 +1,3 @@
 [submodule "tools/dependencies/protobuf"]
 	path = tools/dependencies/protobuf
 	url = https://github.com/google/protobuf.git
-[submodule "tools/dependencies/openssl"]
-	path = tools/dependencies/openssl
-	url = https://github.com/openssl/openssl.git
-[submodule "tools/dependencies/jep"]
-	path = tools/dependencies/jep
-	url = https://github.com/mrj0/jep.git
-[submodule "sv"]
-	path = tools/dependencies/libtool
-	url = http://git.savannah.gnu.org/r/libtool.git
