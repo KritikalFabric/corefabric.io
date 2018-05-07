@@ -13,8 +13,12 @@ Portions are in the public domain.
 ```
 Quick-start!
 
+Build docker containers locally via ```./docker-start.sh``` 
+or download pre-built docker containers ```./docker-quick.sh```
+if you have access to our docker registry.
+
 ```
-awfulhak:corefabric.io ben$ ./docker-start.sh
+awfulhak:corefabric.io ben$ ./docker-quick.sh
 ```
 
 & in another terminal:
@@ -22,6 +26,8 @@ awfulhak:corefabric.io ben$ ./docker-start.sh
 ```
 awfulhak:corefabric.io ben$ ./gradlew clean runShadow
 ```
+
+nb. https://stackoverflow.com/questions/32808215/where-to-set-the-insecure-registry-flag-on-mac-os
 
 Features
 ```
