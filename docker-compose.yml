@@ -1,0 +1,20 @@
+version: '3'
+services:
+  postgres:
+    build: docker/cf_postgres
+    image: corefabric:cf_postgres
+    ports:
+     - "5432:5432"
+    volumes:
+     - ./nfs:/nfs
+     - /var/lib/postgresql
+  node:
+    build: docker/cf_base
+    image: corefabric:cf_base
+    links:
+     - postgres
+    ports:
+     - "1080:1080"
+    volumes:
+     - ./a2:/a2
+     - ./nfs:/nfs

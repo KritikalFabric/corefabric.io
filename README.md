@@ -14,10 +14,15 @@ Portions are in the public domain.
 Quick-start!
 
 ```
-awfulhak:corefabric.io ben$ (cd a2/ && ./clean.sh && ./build.sh) &&\
-(cd docker/ && ./create.sh) &&\
-./gradlew clean runShadow
+awfulhak:corefabric.io ben$ ./docker-start.sh
 ```
+
+& in another terminal:
+
+```
+awfulhak:corefabric.io ben$ ./gradlew clean runShadow
+```
+
 Features
 ```
 wierd and wonderful message queues
