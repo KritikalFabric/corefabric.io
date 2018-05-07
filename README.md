@@ -29,6 +29,16 @@ awfulhak:corefabric.io ben$ ./gradlew clean runShadow
 
 nb. https://stackoverflow.com/questions/32808215/where-to-set-the-insecure-registry-flag-on-mac-os
 
+this goes in your daemon.json:
+
+```
+{
+  "debug" : true,
+  "experimental" : true,
+  "insecure-registries": ["registry.dc1.amb1ent.org:443"]
+}
+```
+
 Features
 ```
 wierd and wonderful message queues
