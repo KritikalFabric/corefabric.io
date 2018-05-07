@@ -1,28 +1,46 @@
 {
   "node": {
-	"name": "enormo",
-	"zone": "dev",
-    "hostname": "enormo.nat.amb1ent.org",
-    "ip4": "172.16.73.50",
+    "hostname": "localhost.localdomain",
+    "ip4": "127.0.0.1",
     "localhostIf": "lo",
-    "wanIf": "br0"
+    "wanIf": "br0",
+    "name": "enormo",
+    "zone": "dev",
+    "node_db": {
+      "host": "localhost",
+      "port": 54321,
+      "db": "corefabric__node_db",
+      "user": "postgres",
+      "password": "password"
+    },
+    "app_config_uri": "http://127.0.0.1:8082/"
+  },
+  "cluster": {
+    "multicast": false
   },
   "dtn": {
     "isRouter": false,
     "routerHostname": "router-amb1ent-pi.test.wanfabric.io",
     "routerIp4": "172.16.237.128"
   },
-  "cluster": {
-    "tcpip": true
-  },
   "roles": {
+    "app-web": [{}],
     "dtn-node": [],
     "mqtt-broker":[],
-    "app-web": [{}],
     "dtn-mqtt-bridge":[{
       "subscribe":"nodes/dev/enormo/#",
       "to":"dtn://router-amb1ent-pi.test.wanfabric.io/MqttBridge"
+    }],
+    "app-config-server": [{
+	"listenIp4": "127.0.0.1",
+	"listenPort": 8082,
+        "config_db": {
+          "host": "localhost",
+          "port": 54321,
+          "db": "corefabric__config_db",
+          "user": "postgres",
+          "password": "password"
+        }
     }]
   }
-
 }

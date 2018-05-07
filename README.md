@@ -4,7 +4,7 @@ corefabric.io							0.1.0-preview
 Project for Raspberry Pi 3 model B and Mac OS X, SmartOS & Linux.
 
 (c) 2014-2016	Ben Gould
-(c) 2014-2016   Xela Sokitirk
+(c) 2014-2016   Alex Kritikos
 
 org.kritikal.fabric:
 	Licensed under the Apache Public License version 2.0
