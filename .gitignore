@@ -10,3 +10,4 @@ get-pip.py
 config.json
 jDtnConfig.xml
 *.swp
+*.iml
