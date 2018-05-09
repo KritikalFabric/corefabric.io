@@ -3,8 +3,8 @@ corefabric.io							0.1.0-preview
 
 Project for Raspberry Pi 3 model B and Mac OS X, SmartOS & Linux.
 
-(c) 2014-2016	Ben Gould
-(c) 2014-2016   Alex Kritikos
+(c) 2014-2018   Ben Gould
+(c) 2014-2018   Alex Kritikos
 
 org.kritikal.fabric:
 	Licensed under the Apache Public License version 2.0
@@ -13,11 +13,38 @@ Portions are in the public domain.
 ```
 Quick-start!
 
+Build docker containers locally via ```./docker-start.sh``` 
+or download pre-built docker containers ```./docker-quick.sh```
+if you have access to our docker registry.
+
 ```
-awfulhak:corefabric.io ben$ (cd a2/ && ./clean.sh && ./build.sh) &&\
-(cd docker/ && ./create.sh) &&\
-./gradlew clean runShadow
+awfulhak:corefabric.io ben$ ./docker-quick.sh
 ```
+
+& in another terminal:
+
+```
+awfulhak:corefabric.io ben$ ./gradlew clean runShadow
+```
+
+nb. https://stackoverflow.com/questions/32808215/where-to-set-the-insecure-registry-flag-on-mac-os
+
+this goes in your daemon.json:
+
+```
+{
+  "debug" : true,
+  "experimental" : true,
+  "insecure-registries": ["registry.dc1.amb1ent.org:443"]
+}
+```
+
+and you probably want to make a configuration file:
+
+```
+awfulhak:corefabric.io ben$ ln -s config.json.example config.json
+```
+
 Features
 ```
 wierd and wonderful message queues
@@ -31,8 +58,7 @@ Development environment
 ```
 node-js is needed for our angular2 web-development environment
 
-awfulhak:corefabric.io ben$ git submodule init
-awfulhak:corefabric.io ben$ git submodule update
+awfulhak:corefabric.io ben$ brew install autoconf automake libtool
 awfulhak:corefabric.io ben$ ./tools/dependencies/clean.sh
 awfulhak:corefabric.io ben$ ./tools/dependencies/install.sh
 awfulhak:corefabric.io ben$ (cd a2/ && ./clean.sh && ./run.sh)
