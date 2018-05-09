@@ -58,44 +58,6 @@ public class DelaySendEnqueueWorkerVerticle extends AbstractVerticle implements 
 
     public static void ensureQueue(String connectionString) throws SQLException
     {
-        Connection con = DriverManager.getConnection(connectionString);
-        PreparedStatement stmt = con.prepareStatement("SELECT EXISTS(" +
-                "    SELECT * " +
-                "    FROM information_schema.tables " +
-                "    WHERE " +
-                "      table_schema = 'queues' AND " +
-                "      table_name = 'send_q'" +
-                "    )");
-        try {
-            boolean exists = false;
-            if (stmt.execute()) {
-                ResultSet rs = stmt.getResultSet();
-                try {
-                    if (rs.next()) {
-                        exists = rs.getBoolean(1);
-                    }
-                } finally {
-                    rs.close();
-                }
-            }
-            if (!exists) {
-                stmt = con.prepareStatement("CREATE SCHEMA IF NOT EXISTS queues");
-                stmt.executeUpdate();
-                stmt = con.prepareStatement("CREATE SEQUENCE queues.send_q_serial");
-                stmt.executeUpdate();
-                stmt = con.prepareStatement("CREATE TABLE queues.send_q ("
-                        + "q_id bigint NOT NULL DEFAULT nextval('queues.send_q_serial'),"
-                        + "a text NOT NULL,"
-                        + "b jsonb NOT NULL,"
-                        + "dt timestamptz NOT NULL)");
-                stmt.executeUpdate();
-
-                // TODO: CREATE INDEX idxgin ON api USING gin (jdoc); etc.
-            }
-        }
-        finally {
-            stmt.close();
-        }
     }
 
     public void stop() throws Exception
@@ -116,7 +78,7 @@ public class DelaySendEnqueueWorkerVerticle extends AbstractVerticle implements 
             try
             {
                 Timestamp ts = new Timestamp(new java.util.Date().getTime() + delayMilliseconds);
-                PreparedStatement stmt = con.prepareStatement("INSERT INTO queues.send_q (a, b, dt) VALUES (?, ?::jsonb, ?)");
+                PreparedStatement stmt = con.prepareStatement("INSERT INTO node.send_q (a, b, dt) VALUES (?, ?::jsonb, ?)");
                 try {
                     stmt.setString(1, message.address());
                     stmt.setString(2, message.body().toString());
