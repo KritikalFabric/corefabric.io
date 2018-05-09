@@ -36,7 +36,7 @@ CREATE TABLE node.send_q (
     CONSTRAINT dt UNIQUE (dt, q_id)
 );
 
-CREATE OR REPLACE FUNCTION node.dequeue_send_q(addresses text[]) RETURNS SETOF node.send_q AS $$
+CREATE OR REPLACE FUNCTION node.dequeue_send_q(addresses text[]) RETURNS SETOF node.send_q AS \$\$
 DECLARE c CURSOR FOR SELECT * FROM node.send_q WHERE ARRAY[a] <@ addresses AND dt < current_timestamp FOR UPDATE OF send_q;
 BEGIN
 FOR r IN c LOOP
@@ -44,7 +44,7 @@ FOR r IN c LOOP
     RETURN NEXT r;
 END LOOP;
 END;
-$$
+\$\$
 LANGUAGE plpgsql;
 
 \connect corefabric__config_db;
