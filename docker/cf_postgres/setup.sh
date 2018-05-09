@@ -15,6 +15,7 @@ CREATE DATABASE corefabric__config_db;
 
 CREATE SCHEMA db;
 CREATE SCHEMA cf;
+CREATE SCHEMA node;
 
 CREATE TABLE db.schema_versions (
     schema_version_id       bigserial       NOT NULL,
@@ -29,6 +30,7 @@ INSERT INTO db.schema_versions (schema_tag, schema_revision) VALUES ('node', 1);
 
 CREATE SCHEMA db;
 CREATE SCHEMA cf;
+CREATE SCHEMA config;
 
 CREATE TABLE db.schema_versions (
     schema_version_id       bigserial       NOT NULL,
