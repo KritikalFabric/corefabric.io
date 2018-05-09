@@ -13,8 +13,6 @@ services:
     image: corefabric:cf_base
     links:
      - postgres
-    ports:
-     - "1080:1080"
     volumes:
      - ./a2:/a2
      - ./nfs:/nfs
