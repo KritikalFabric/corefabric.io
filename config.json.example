@@ -27,9 +27,10 @@
     "app-web": [{}],
     "dtn-node": [],
     "mqtt-broker":[],
-    "app-config-server": [{
-	"listenIp4": "127.0.0.1",
-	"listenPort": 8082,
+    "app-config-server": [
+      {
+        "listenIp4": "127.0.0.1",
+        "listenPort": 8082,
         "config_db": {
           "host": "localhost",
           "port": 54321,
@@ -37,6 +38,7 @@
           "user": "postgres",
           "password": "password"
         }
-    }]
+      }
+    ]
   }
 }
