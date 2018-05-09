@@ -4,6 +4,12 @@
 
 service postgresql start
 
-# database setup goes here
+su - postgres -c psql <<SQL
+ALTER ROLE postgres WITH SUPERUSER LOGIN PASSWORD 'password';
+
+CREATE DATABASE corefabric__node_db;
+
+CREATE DATABASE corefabric__config_db;
+SQL
 
 service postgresql stop
