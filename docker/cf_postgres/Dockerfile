@@ -7,3 +7,5 @@ COPY start.sh /root/
 
 COPY pg_hba.conf /etc/postgresql/10/main/
 COPY postgresql.conf /etc/postgresql/10/main/
+
+EXPOSE 54321

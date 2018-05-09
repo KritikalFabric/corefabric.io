@@ -4,7 +4,7 @@ services:
     build: docker/cf_postgres
     image: corefabric:cf_postgres
     ports:
-     - "54321:5432"
+     - "54321:54321"
     volumes:
      - ./nfs:/nfs
      - /var/lib/postgresql

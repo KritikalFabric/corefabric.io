@@ -11,3 +11,4 @@ config.json
 jDtnConfig.xml
 *.swp
 *.iml
+out
