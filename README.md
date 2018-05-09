@@ -58,8 +58,7 @@ Development environment
 ```
 node-js is needed for our angular2 web-development environment
 
-awfulhak:corefabric.io ben$ git submodule init
-awfulhak:corefabric.io ben$ git submodule update
+awfulhak:corefabric.io ben$ brew install autoconf automake libtool
 awfulhak:corefabric.io ben$ ./tools/dependencies/clean.sh
 awfulhak:corefabric.io ben$ ./tools/dependencies/install.sh
 awfulhak:corefabric.io ben$ (cd a2/ && ./clean.sh && ./run.sh)
