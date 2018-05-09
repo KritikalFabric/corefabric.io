@@ -65,7 +65,7 @@ public class DelaySendDequeueWorkerVerticle extends AbstractVerticle {
                         return BasicDataSourceHelper.pool(1, basicDataSource -> {
                                     basicDataSource.setUrl(connectionString);
                                     basicDataSource.setUsername("postgres");
-                                    basicDataSource.setPassword("darkhorse45");
+                                    basicDataSource.setPassword("password");
                                     basicDataSource.setAccessToUnderlyingConnectionAllowed(true);
                                 });
                     }).getConnection();
