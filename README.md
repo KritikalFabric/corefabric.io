@@ -39,6 +39,12 @@ this goes in your daemon.json:
 }
 ```
 
+and you probably want to make a configuration file:
+
+```
+awfulhak:corefabric.io ben$ ln -s config.json.example config.json
+```
+
 Features
 ```
 wierd and wonderful message queues
