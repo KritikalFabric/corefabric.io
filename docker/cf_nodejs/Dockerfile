@@ -6,4 +6,3 @@ RUN bash -c 'DEBIAN_FRONTEND=noninteractive apt-get install -y nodejs build-esse
 COPY start.sh /root/
 
 EXPOSE 3000
-EXPOSE 3001

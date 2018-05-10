@@ -13,7 +13,6 @@ services:
     image: corefabric:cf_nodejs
     ports:
          - "3000:3000"
-         - "3001:3001"
     links:
      - postgres
     volumes:
