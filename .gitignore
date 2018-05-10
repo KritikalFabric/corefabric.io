@@ -13,3 +13,4 @@ jDtnConfig.xml
 *.iml
 out
 a2.tar.gz
+package-lock.json
