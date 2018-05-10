@@ -50,6 +50,13 @@ and you probably want to make a configuration file:
 awfulhak:corefabric.io ben$ ln -s config.json.example config.json
 ```
 
+Easy Links!!!
+-------------
+
+1. <http://localhost:1080/>      - webserver embeddded in core fabric
+2. <http://localhost:3000/>      - nodejs development webserver in docker
+3. <http://localhost:3001/>      - nodejs browsersync control panel
+
 Features
 --------
 
