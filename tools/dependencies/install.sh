@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 source ./env.sh
 
@@ -54,8 +54,8 @@ fi; # end gcc, libtool (Xtest)
 cd $COREFABRIC/tools/dependencies/protobuf && (
 echo 'INSTALLING protobuf compiler';
 ( \
-	./autogen.sh && \
 	$LIBTOOLIZE && \
+	./autogen.sh && \
 	(./configure --prefix=$COREFABRIC_DEST && $MAKE $COREFABRIC_SPEED && $MAKE install) || \
 	(echo 'FAILED' && exit -1) \
 ) || exit -1;
