@@ -27,6 +27,12 @@ CREATE TABLE db.schema_versions (
 );
 INSERT INTO db.schema_versions (schema_tag, schema_revision) VALUES ('node', 1);
 
+CREATE TABLE node.instance_local_cfg (
+    key                     varchar(64)     NOT NULL,
+    value                   text            NOT NULL,
+    CONSTRAINT pk PRIMARY KEY (key)
+);
+
 CREATE TABLE node.send_q (
     q_id                    bigserial       NOT NULL,
     a                       text            NOT NULL,
