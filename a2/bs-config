@@ -1,6 +1,8 @@
 module.exports = {
     ghostMode: false,
     watch: false,
+    watchEvents:[],
+    files: false,
     minify: false,
     open: false
 };
