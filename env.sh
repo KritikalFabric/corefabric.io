@@ -88,7 +88,7 @@ CONFIG_SITE="$COREFABRIC_DEST/share/config.site"; export CONFIG_SITE
 ###############################################################################
 # linux ubuntu yakkity 64-bit                                                 #
 ###############################################################################
-COREFABRIC_SPEED=' -j '
+COREFABRIC_SPEED=''
 COREFABRIC_BUILD='x86_64-linux-gnu'; export COREFABRIC_BUILD
 COREFABRIC_HOST='x86_64-linux-gnu'; export COREFABRIC_HOST
 COREFABRIC_TARGET='x86_64-linux-gnu'; export COREFABRIC_TARGET
