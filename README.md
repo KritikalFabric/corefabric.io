@@ -1,3 +1,6 @@
+corefabric.io
+=============
+
 ```
 corefabric.io							0.1.0-preview
 
@@ -11,7 +14,9 @@ org.kritikal.fabric:
 
 Portions are in the public domain.
 ```
+
 Quick-start!
+------------
 
 Build docker containers locally via ```./docker-start.sh``` 
 or download pre-built docker containers ```./docker-quick.sh```
@@ -46,6 +51,8 @@ awfulhak:corefabric.io ben$ ln -s config.json.example config.json
 ```
 
 Features
+--------
+
 ```
 wierd and wonderful message queues
 
@@ -54,7 +61,23 @@ $foo/bar/baz -- is a "system" message queue and as such reserved.  we use this.
 #/| & #/|foo -- is a "cluster" message queue just the same as the previous.
 nb. system and cluster can be combined using this 2nd technique.
 ```
-Development environment 
+
+Build information
+-----------------
+
+Building the software is a two step process.
+
+1.  first, fetch docker containers [or modify your script to build them] and
+    build the "a2" sub-project; uses nodejs 10; modified local files by loopback.
+    run ```$ ./docker-nodejs-build.sh```.
+    
+2.  secondly, build the jar file via ```$ ./gradlew build``` (or embed the a2 content and 
+    run via ```$ ./gradlew runShadow```).
+
+
+Deprecated development environment information follows
+------------------------------------------------------
+ 
 ```
 node-js is needed for our angular2 web-development environment
 
