@@ -1,0 +1,6 @@
+module.exports = {
+    ghostMode: false,
+    watch: false,
+    minify: false,
+    open: false
+};
