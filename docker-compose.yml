@@ -8,9 +8,12 @@ services:
     volumes:
      - ./nfs:/nfs
      - /var/lib/postgresql
-  node:
-    build: docker/cf_base
-    image: corefabric:cf_base
+  nodejs:
+    build: docker/cf_nodejs
+    image: corefabric:cf_nodejs
+    ports:
+         - "3000:3000"
+         - "3001:3001"
     links:
      - postgres
     volumes:
