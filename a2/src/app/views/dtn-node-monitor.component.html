@@ -1,0 +1,41 @@
+
+<div class="row">
+    <div class="panel panel-info">
+        <div class="panel-heading">Publish</div>
+        <div class="panel-body form-group">
+            <form (submit)="publish()">
+                <div class="col-xs-3">
+                    <input class="form-control" type="text" [(ngModel)]="state.topic" [ngModelOptions]="{standalone: true}" placeholder="MQTT Topic..." />
+                </div>
+                <div class="col-xs-9">
+                    <div class="container-fluid">
+                        <div class="row">
+                            <div class="col-xs-10">
+                                <input class="form-control"  type="text" [(ngModel)]="state.newMessage" [ngModelOptions]="{standalone: true}" placeholder="Send message..." />
+                            </div>
+                            <div class="col-xs-2">
+                                <input class="form-control"  type="submit" value="Publish" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="panel panel-danger">
+        <div class="panel-heading">History <span class="pull-right"><input type="checkbox" [(ngModel)]="state.system" [ngModelOptions]="{standalone:true}" /> system messages</span></div>
+        <div class="panel-body">
+            <div *ngFor="let m of messages" class="row">
+                <div class="col-xs-3">
+                    {{m.topic}}
+                </div>
+                <div class="col-xs-9">
+                    {{m.message}}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

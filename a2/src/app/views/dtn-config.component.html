@@ -1,0 +1,83 @@
+<div class="container-fluid">
+    <div class="row">
+        <div class="panel panel-success col-xs-4" *ngIf="apipage.data.stats" style="overflow:hidden;">
+            <div class="panel-heading">DTN statistics</div>
+            <div class="panel-body" style="height:120px;">
+                <div class="container-fluid">
+                    <div class="row">
+                        <div class="col-xs-2">
+                            <a title="data bundles sourced" style="text-decoration:none;"><span class="text-primary">{{apipage.data.stats.nDataBundlesSourced}}</span></a>
+                        </div>
+                        <div class="col-xs-2">
+                            <a title="data bundles received" style="text-decoration:none"><span class="text-danger">{{apipage.data.stats.nDataBundlesReceived}}</span></a>
+                        </div>
+                        <div class="col-xs-2">
+                            <a title="data bundles forwarded" style="text-decoration:none"><span class="text-warning">{{apipage.data.stats.nDataBundlesFwded}}</span></a>
+                        </div>
+                        <div class="col-xs-2">
+                            <a title="data bundles delivered" style="text-decoration:none"><span class="text-success">{{apipage.data.stats.nDataBundlesDelivered}}</span></a>
+                        </div>
+                        <div class="col-xs-2">
+                            <a title="data bundles expired" style="text-decoration:none"><span class="text-muted">{{apipage.data.stats.nBundlesExpired}}</span></a>
+                        </div>
+                        <br />
+                        <div class="col-xs-2">
+                            <a title="status reports sent" style="text-decoration:none"><span class="text-success">{{apipage.data.stats.nStatusReportsSent}}</span></a>
+                        </div>
+                        <div class="col-xs-2">
+                            <a title="status reports received" style="text-decoration:none"><span class="text-danger">{{apipage.data.stats.nStatusReportsReceived}}</span></a>
+                        </div>
+                        <div class="col-xs-2">
+                            <a title="custody signals sent" style="text-decoration:none"><span class="text-success">{{apipage.data.stats.nCustodySignalsSent}}</span></a>
+                        </div>
+                        <div class="col-xs-2">
+                            <a title="custody signals received" style="text-decoration:none"><span class="text-danger">{{apipage.data.stats.nCustodySignalsReceived}}</span></a>
+                        </div>
+                        <div class="col-xs-2">
+                            <a title="custody signals expired" style="text-decoration:none"><span class="text-warning">{{apipage.data.stats.nCustodySignalsExpired}}</span></a>
+                        </div>
+                        <br />
+                        <div class="col-xs-2">
+                            <a title="retained bytes" style="text-decoration:none"><span class="text-danger">{{apipage.data.stats.nRetainedBytes}}</span></a>
+                        </div>
+                        <div class="col-xs-2">
+                            <a title="encoding msecs" style="text-decoration:none"><span class="text-muted">{{apipage.data.stats.nEncodingMSecs}}</span></a>
+                        </div>
+                        <div class="col-xs-2">
+                            <a title="decoding msecs" style="text-decoration:none"><span class="text-muted">{{apipage.data.stats.nDecodingMSecs}}</span></a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="panel panel-success col-xs-4" *ngIf="apipage.data.dtn.isRouter" style="overflow:hidden;">
+            <div class="panel-heading">Router</div>
+            <div class="panel-body" style="height:120px;">
+                Router accepting connections
+                <span class="text-success"><br />Operational</span>
+            </div>
+        </div>
+        <div *ngIf="!apipage.data.dtn.isRouter" class="panel col-xs-4 {{panelClassFor(apipage.data.dtn.ping)}}" style="overflow:hidden;">
+            <div class="panel-heading">Network Route</div>
+            <div class="panel-body" style="height:120px;">
+                {{apipage.data.dtn.routerHostname}}<span *ngIf="apipage.data.dtn.ping" [class]="classFor(apipage.data.dtn.ping)"><br />{{messageFor(apipage.data.dtn.ping)}}</span>
+            </div>
+        </div>
+        <div *ngFor="let route of apipage.data['dtn-mqtt-bridge']" class="panel col-xs-4 {{panelClassFor(route.ping)}}" style="overflow:hidden;">
+            <div class="panel-heading">MQTT Bridging</div>
+            <div class="panel-body" style="height:120px;">
+                <code>{{route.subscribe}}</code><span *ngIf="route.not"> (excluding <code>{{route.not}}</code>)</span>
+                routes to
+                <code>{{route.to}}</code><span *ngIf="route.ping" [class]="classFor(route.ping)"><br />{{messageFor(route.ping)}}</span>
+            </div>
+        </div>
+        <div *ngFor="let neighbor of neighbors" class="panel col-xs-4 {{panelClassFor(neighbor.ping)}}" style="overflow:hidden;">
+            <div class="panel-heading">Neighbor</div>
+            <div class="panel-body" style="height:120px;">
+                <code>dtn://{{neighbor.name}}/</code>
+                <span [class]="classFor(neighbor.ping)"><br />{{messageFor(neighbor.ping)}}</span>
+            </div>
+        </div>
+    </div>
+</div>
+<!--<pre>{{ apipage.data | json }}</pre>-->
