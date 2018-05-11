@@ -1,4 +1,4 @@
 #!/bin/sh -v
 
-npm install
+npm install --save-dev
 ng update --all
