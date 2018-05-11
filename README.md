@@ -2,7 +2,7 @@ corefabric.io
 =============
 
 ```
-corefabric.io							0.1.0-preview
+corefabric.io							0.2.0-angular6
 
 Project for Raspberry Pi 3 model B and Mac OS X, SmartOS & Linux.
 
@@ -54,7 +54,7 @@ Easy Links!!!
 -------------
 
 1. <http://localhost:1080/>      - webserver embeddded in core fabric
-2. <http://localhost:3000/>      - nodejs development webserver in docker
+2. <http://localhost:4200/>      - angular "ng start" dev environment
 
 Features
 --------

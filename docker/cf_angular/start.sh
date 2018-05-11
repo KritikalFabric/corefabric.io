@@ -8,4 +8,4 @@
 
 # does nothing; your services go here.
 
-(cd /a2 && ./run.sh)
+(cd /a2 && ./start.sh)
