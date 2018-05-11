@@ -4,7 +4,7 @@
 
 import { Injectable, NgZone } from '@angular/core';
 
-import { Scheduler } from 'rxjs/Rx';
+import { timer } from 'rxjs/observable/timer';
 
 import { FabricHelpers } from './fabric.helpers.service';
 
@@ -138,9 +138,9 @@ export class FabricComms {
         this.connect();
         var work:any = function() {
             comms.connect();
-            Scheduler.async.schedule(work, 15000, null);
         };
-        Scheduler.async.schedule(work, 15000, null);
+        const source = timer(15000,15000); // TODO disconnect / destroy handling?
+        source.subscribe(work);
     }
 
     private uuid:UUID = new UUID(null);
