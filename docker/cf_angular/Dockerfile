@@ -9,4 +9,4 @@ COPY start.sh /root/
 
 RUN bash -c '/root/angular-setup.sh'
 
-EXPOSE 3000
+EXPOSE 4200

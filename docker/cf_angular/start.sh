@@ -8,5 +8,4 @@
 
 # does nothing; your services go here.
 
-#(cd /a2 && ./run.sh)
-tail -f /var/log/syslog
+(cd /a2 && ng serve)
