@@ -4,4 +4,4 @@ umask 000
 chmod 777 /root
 cd /root
 npm install -g npm@latest
-npm install -g @angular/cli
+npm install -g --save-dev @angular/cli@latest
