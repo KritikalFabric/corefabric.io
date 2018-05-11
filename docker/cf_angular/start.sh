@@ -8,4 +8,4 @@
 
 # does nothing; your services go here.
 
-(cd /a2 && ng serve)
+(cd /a2 && ./start.sh)
