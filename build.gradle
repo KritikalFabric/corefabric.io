@@ -29,7 +29,7 @@ jar {
 	baseName "corefabric.io"
 }
 
-version = '0.1.0-preview' // our version
+version = '0.2.0-angular6' // our version
 vertxVersion = '3.3.3' // vert.x version
 
 sourceCompatibility = '1.8'
