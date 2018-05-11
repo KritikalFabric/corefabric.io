@@ -121,7 +121,6 @@ task wrapper(type: Wrapper) {
 task cpa2(type: Copy) {
     from 'a2/dist/a2'
     into 'build/resources/main/web/a2'
-    exclude '**/*.ts'
 }
 
 shadowJar.dependsOn 'cpa2'
