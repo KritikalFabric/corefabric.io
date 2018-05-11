@@ -1,4 +1,5 @@
-#!/bin/sh
-npm install typings
-npm install lite-server@2.2.2
-npm install && npm start
+#!/bin/sh -v
+
+npm install rxjs@5.0.0-beta.12 && \
+npm install && \
+npm start
