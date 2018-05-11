@@ -1,0 +1,13 @@
+<a (click)="ui.select(item)">
+    <i *ngIf="item.iconClasses" [class]="item.iconClasses"></i><span>{{item.label}}</span>
+    <span [innerHTML]="item.html"></span>
+</a>
+<ul *ngIf="item.children">
+    <li *ngFor="let x of item.children"
+        [ngClass]="{ hasChild: (x.children!==undefined),
+                      active: ui.isSelected(x),
+                        open: (x.children!==undefined) && ui.isOpen(x) }"
+    >
+        <nav-renderer-horizontal [item]="x"></nav-renderer-horizontal>
+    </li>
+</ul>

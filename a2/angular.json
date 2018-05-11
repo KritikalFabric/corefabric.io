@@ -20,12 +20,27 @@
             "tsConfig": "src/tsconfig.app.json",
             "assets": [
               "src/favicon.ico",
-              "src/assets"
+              "src/assets",
+              "src/download",
+              "src/static"
             ],
             "styles": [
+              "src/static/vendor/font-awesome/css/font-awesome.min.css",
+              "src/download/maverick-theme/prebuilt/assets/fonts/glyphicons/css/glyphicons.min.css",
+              "src/download/maverick-theme/prebuilt/assets/plugins/form-fseditor/fseditor.css",
+              "src/download/maverick-theme/prebuilt/assets/plugins/jcrop/css/jquery.Jcrop.min.css",
+              "src/download/maverick-theme/prebuilt/assets/css/styles.css",
               "src/styles.css"
             ],
-            "scripts": []
+            "scripts": [
+              "src/download/maverick-theme/prebuilt/assets/plugins/misc/less.js",
+              "src/static/vendor/text-encoding/encoding-indexes.js",
+              "src/static/vendor/text-encoding/encoding.js",
+              "src/static/vendor/unclassified/destringify.js",
+              "src/static/vendor/eclipse-paho/mqttws31.js",
+              "src/static/vendor/enquire-js/enquire.js",
+              "src/static/vendor/unclassified/miscellaneous.js"
+            ]
           },
           "configurations": {
             "production": {
