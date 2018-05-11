@@ -18,3 +18,4 @@ services:
     volumes:
      - ./a2:/a2
      - ./nfs:/nfs
+     - /a2/node_modules
