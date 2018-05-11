@@ -1,101 +1,14 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
-  <base href="/" />
+  <meta charset="utf-8">
+  <title>A2</title>
+  <base href="/">
 
-  <!--<link rel="icon" type="image/png" href="favicon.png">-->
-
-  <link rel='stylesheet' type='text/css' href='static/vendor/font-awesome/css/font-awesome.min.css' />
-
-  <!-- prochtml:remove:dist -->
-  <link href="download/maverick-theme/app/assets/less/styles.less" rel="stylesheet/less" media="all">
-  <!-- /prochtml -->
-
-  <link href='http://fonts.googleapis.com/css?family=Roboto:300,400,500,700' rel='stylesheet' type='text/css'>
-
-  <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries. Placeholdr.js enables the placeholder attribute -->
-  <!--[if lte IE 9]>
-  <link rel="stylesheet" href="download/maverick-theme/prebuilt/assets/css/ie8.css">
-  <script type="text/javascript" src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
-  <script type="text/javascript" src="http://cdnjs.cloudflare.com/ajax/libs/respond.js/1.1.0/respond.min.js"></script>
-  <script type="text/javascript" src="download/maverick-theme/prebuilt/bower_components/flot/excanvas.min.js"></script>
-  <script type='text/javascript' src='download/maverick-theme/prebuilt/assets/plugins/misc/placeholdr.js'></script>
-  <script type="text/javascript" src="download/maverick-theme/prebuilt/assets/plugins/misc/media.match.min.js"></script>
-  <![endif]-->
-
-  <!-- The following CSS are included as plugins and can be removed if unused-->
-
-  <!-- build:css assets/css/vendor.css -->
-  <!-- bower:css -->
-  <!--
-  <link rel="stylesheet" href="download/maverick-theme/prebuilt/bower_components/font-awesome/css/font-awesome.css" />
-  <link rel="stylesheet" href="download/maverick-theme/prebuilt/bower_components/seiyria-bootstrap-slider/dist/css/bootstrap-slider.min.css" />
-  <link rel="stylesheet" href="download/maverick-theme/prebuilt/bower_components/angular-ui-tree/dist/angular-ui-tree.min.css" />
-  <link rel="stylesheet" href="download/maverick-theme/prebuilt/bower_components/ng-grid/ng-grid.css" />
-  <link rel="stylesheet" href="download/maverick-theme/prebuilt/bower_components/angular-xeditable/dist/css/xeditable.css" />
-  -->
-  <!-- broken <link rel="stylesheet" href="download/maverick-theme/prebuilt/bower_components/iCheck/skins/all.css" /> -->
-  <!--
-  <link rel="stylesheet" href="download/maverick-theme/prebuilt/bower_components/pnotify/pnotify.core.css" />
-  <link rel="stylesheet" href="download/maverick-theme/prebuilt/bower_components/pnotify/pnotify.buttons.css" />
-  <link rel="stylesheet" href="download/maverick-theme/prebuilt/bower_components/pnotify/pnotify.history.css" />
-  <link rel="stylesheet" href="download/maverick-theme/prebuilt/bower_components/nanoscroller/bin/css/nanoscroller.css" />
-  <link rel="stylesheet" href="download/maverick-theme/prebuilt/bower_components/textAngular/src/textAngular.css" />
-  <link rel="stylesheet" href="download/maverick-theme/prebuilt/bower_components/angular-ui-grid/ui-grid.css" />
-  <link rel="stylesheet" href="download/maverick-theme/prebuilt/bower_components/switchery/dist/switchery.css" />
-  <link rel="stylesheet" href="download/maverick-theme/prebuilt/bower_components/ng-sortable/dist/ng-sortable.css" />
-  <link rel="stylesheet" href="download/maverick-theme/prebuilt/bower_components/fullcalendar/fullcalendar.css" />
-  <link rel="stylesheet" href="download/maverick-theme/prebuilt/bower_components/angular-meditor/dist/meditor.min.css" />
-  <link rel="stylesheet" href="download/maverick-theme/prebuilt/bower_components/angular-ui-select/dist/select.css" />
-  <link rel="stylesheet" href="download/maverick-theme/prebuilt/bower_components/animate.css/animate.css" />
-  <link rel="stylesheet" href="download/maverick-theme/prebuilt/bower_components/bootstrap-daterangepicker/daterangepicker-bs3.css" />
-  <link rel="stylesheet" href="download/maverick-theme/prebuilt/bower_components/nvd3/src/nv.d3.css" />
-  <link rel="stylesheet" href="download/maverick-theme/prebuilt/bower_components/skylo/vendor/styles/skylo.css" />
-  <link rel="stylesheet" href="download/maverick-theme/prebuilt/bower_components/bootstrap-datepaginator/dist/bootstrap-datepaginator.min.css" />
-  -->
-  <!-- endbower -->
-  <link rel='stylesheet' type='text/css' href='download/maverick-theme/prebuilt/assets/fonts/glyphicons/css/glyphicons.min.css' />
-  <link rel='stylesheet' type='text/css' href='download/maverick-theme/prebuilt/assets/plugins/form-fseditor/fseditor.css' />
-  <link rel='stylesheet' type='text/css' href='download/maverick-theme/prebuilt/assets/plugins/jcrop/css/jquery.Jcrop.min.css' />
-  <!-- endbuild -->
-
-  <!-- build:css({.tmp,app}) assets/css/main.css -->
-  <link rel="stylesheet" href="download/maverick-theme/prebuilt/assets/css/styles.css">
-  <!-- endbuild -->
-
-  <!-- prochtml:remove:dist -->
-  <!--<script type="text/javascript">less = { env: 'development'};</script>-->
-  <script type="text/javascript" src="download/maverick-theme/prebuilt/assets/plugins/misc/less.js"></script>
-  <!-- /prochtml -->
-  <!-- 1. Load libraries -->
-  <!-- Polyfill(s) for older browsers -->
-  <script src="node_modules/core-js/client/shim.min.js"></script>
-  <script src="node_modules/zone.js/dist/zone.js"></script>
-  <script src="node_modules/reflect-metadata/Reflect.js"></script>
-  <script src="node_modules/systemjs/dist/system.src.js"></script>
-  <!-- 2. Configure SystemJS -->
-  <script src="systemjs.config.js"></script>
-  <script>
-    System.import('app').catch(function(err){ console.error(err); });
-  </script>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" type="image/x-icon" href="favicon.ico">
 </head>
-<!-- 3. Display the application -->
-<body class="sidebar-default navbar-default">
-<p align="center"><i class="fa fa-circle-o-notch fa-spin fa-5x"></i><span class="sr-only">Loading...</span></p>
+<body>
+  <app-root></app-root>
 </body>
-
-<!--[if lt IE 9]>
-<script src="bower_components/es5-shim/es5-shim.js"></script>
-<script src="bower_components/json3/lib/json3.min.js"></script>
-<![endif]-->
-<script src="static/vendor/text-encoding/encoding-indexes.js"></script>
-<script src="static/vendor/text-encoding/encoding.js"></script>
-<script src="static/vendor/unclassified/destringify.js"></script>
-<script src="static/vendor/eclipse-paho/mqttws31.js"></script>
-<!-- needs jQuery for now, disabled: <script src="static/vendor/kritikal-org/fabric-charts.js"></script> -->
-<script src="static/vendor/enquire-js/enquire.js"></script>
-<script src="static/vendor/unclassified/miscellaneous.js"></script>
-
 </html>
