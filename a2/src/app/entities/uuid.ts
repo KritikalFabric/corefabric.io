@@ -1,4 +1,4 @@
-var uuid = require('node-uuid');
+import * as uuid from 'node-uuid';
 
 export class UUID
 {
