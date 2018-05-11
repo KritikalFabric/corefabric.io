@@ -1,14 +1,14 @@
-import * as uuid from 'node-uuid';
+import { UUID } from 'angular2-uuid';
 
-export class UUID
+export class UUIDGEN
 {
     private _value:any;
 
     constructor(value:string) {
         if (value === null) {
-            this._value = uuid.v4();
+            this._value = UUID.UUID();
         } else {
-            this._value = uuid.unparse(uuid.parse(value));
+            this._value = value;
         }
     }
 

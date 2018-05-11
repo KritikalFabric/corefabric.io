@@ -6,7 +6,7 @@ import { FabricComms, FabricCommsOnMessageCallback } from './fabric.comms.servic
 import { FabricHelpers } from './fabric.helpers.service';
 import { FabricUIService } from './fabric.ui.service';
 import { FabricApiDoc } from '../entities/fabric.apidoc.entity';
-import { UUID } from '../entities/uuid';
+import { UUIDGEN } from '../entities/uuid';
 
 declare var Paho; // vendor/eclipse-paho
 

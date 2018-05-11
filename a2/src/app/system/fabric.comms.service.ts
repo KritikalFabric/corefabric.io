@@ -8,7 +8,7 @@ import { timer } from 'rxjs/observable/timer';
 
 import { FabricHelpers } from './fabric.helpers.service';
 
-import { UUID } from '../entities/uuid';
+import { UUIDGEN } from '../entities/uuid';
 
 declare var Paho; // vendor/eclipse-paho
 
@@ -143,7 +143,7 @@ export class FabricComms {
         source.subscribe(work);
     }
 
-    private uuid:UUID = new UUID(null);
+    private uuid:UUIDGEN = new UUIDGEN(null);
     private clientID:string;
     private mqttClient:any;
     private connected:boolean;

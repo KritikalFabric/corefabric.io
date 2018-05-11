@@ -2,7 +2,7 @@ import { Injectable, Pipe, PipeTransform, Output, EventEmitter } from '@angular/
 import { Router } from '@angular/router';
 import { FabricUIService } from '../system/fabric.ui.service';
 import { FabricComms } from '../system/fabric.comms.service';
-import { UUID } from '../entities/uuid';
+import { UUIDGEN } from '../entities/uuid';
 import {ThemeEvent} from "./theme/theme.event.entity";
 
 @Injectable()
@@ -260,7 +260,7 @@ export class UIService extends FabricUIService {
     public setKeys(children) {
         let x = this;
         children.filter(child => {
-            let key = new UUID(null).getValue();
+            let key = new UUIDGEN(null).getValue();
             child.key = key;
             if (child.children !== undefined) {
                 x.setKeys(child.children);
