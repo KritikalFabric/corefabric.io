@@ -13,7 +13,7 @@ class HomeApiDoc {}
 
 @Component({
     selector: 'home-detail',
-    templateUrl: 'app/views/home.component.html'
+    templateUrl: 'home.component.html'
 })
 export class HomeComponent implements OnChanges {
 

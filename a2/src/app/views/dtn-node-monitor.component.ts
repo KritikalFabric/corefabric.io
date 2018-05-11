@@ -1,18 +1,18 @@
 import { Component, Input } from '@angular/core';
-import { Http } from '@angular/http';
+import { HttpClient } from '@angular/common/http';
 import {UIService} from "../local/ui.service";
 import {FabricComms} from "../system/fabric.comms.service";
 import { FabricHelpers } from "../system/fabric.helpers.service";
 
 @Component({
     selector: 'dtn-node-monitor',
-    templateUrl: 'app/views/dtn-node-monitor.component.html'
+    templateUrl: 'dtn-node-monitor.component.html'
 })
 export class DtnNodeMonitorComponent {
-    constructor(private ui:UIService, private comms:FabricComms, private http:Http, private fabricHelpers:FabricHelpers) {
+    constructor(private ui:UIService, private comms:FabricComms, private http:HttpClient, private fabricHelpers:FabricHelpers) {
         this.ui.setTitle('node monitor', 'node-monitor', '(on-node) MQTT monitor');
         let x:DtnNodeMonitorComponent = this;
-        this.http.get('http://' + this.fabricHelpers.getHost() + ':1080/api/json/node-monitor').map(res=>res.json()).toPromise().then(o => {x.state.topic = o.topic;});
+        this.http.get('http://' + this.fabricHelpers.getHost() + ':1080/api/json/node-monitor').subscribe((o:any) => {x.state.topic = o.topic;});
     }
     public state = {
         topic:'',

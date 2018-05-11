@@ -4,7 +4,7 @@ import { UIService } from '../../local/ui.service';
 
 @Component({
     selector: 'nav-renderer',
-    templateUrl: 'app/views/templates/nav-renderer.component.html'
+    templateUrl: 'nav-renderer.component.html'
 })
 export class NavRendererComponent {
     @Input()

@@ -14,7 +14,7 @@ class DtnCfgApiDoc {
 
 @Component({
     selector: 'dtn-config-detail',
-    templateUrl: 'app/views/dtn-config.component.html'
+    templateUrl: 'dtn-config.component.html'
 })
 export class DtnConfigComponent implements OnChanges {
     constructor(private fabricDocApi:FabricDocApi, private ui:UIService) {

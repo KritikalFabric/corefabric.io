@@ -14,7 +14,7 @@ enableProdMode()
 
 @Component({
   selector: 'body',
-  templateUrl: 'app/app.component.html',
+  templateUrl: 'app.component.html',
   providers: [
     FabricHelpers,
       FabricComms,

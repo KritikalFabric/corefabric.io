@@ -4,7 +4,7 @@ import { UIService } from '../../local/ui.service';
 
 @Component({
     selector: 'nav-renderer-horizontal',
-    templateUrl: 'app/views/templates/nav-renderer-horizontal.component.html'
+    templateUrl: 'nav-renderer-horizontal.component.html'
 })
 export class NavRendererHorizontalComponent {
     @Input()
