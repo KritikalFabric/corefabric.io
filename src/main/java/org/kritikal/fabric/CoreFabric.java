@@ -66,7 +66,7 @@ public class CoreFabric {
         }
     }
     public static class BuildConfig {
-        public static String VERSION = "0.1.0-preview";
+        public static String VERSION = "0.2.0-angular6";
     }
     public static class ServerConfiguration {
         public static final UUID instance = UUID.randomUUID();
@@ -88,6 +88,7 @@ public class CoreFabric {
             public final int port;
         }
         public static boolean hazelcastJoinTcpip = false;
+        public static boolean hazelcastJoinMulticast = true;
         public static final ArrayList<ClusterPeer> peers = new ArrayList<>();
         protected static void apply(JsonObject globalConfig) {
             JsonObject node = globalConfig.getJsonObject("node");
@@ -99,6 +100,7 @@ public class CoreFabric {
             }
             JsonObject cluster = globalConfig.getJsonObject("cluster");
             if (cluster != null) {
+                hazelcastJoinMulticast = cluster.getBoolean("multicast", true);
                 hazelcastJoinTcpip = cluster.getBoolean("tcpip", false);
                 if (hazelcastJoinTcpip) {
                     JsonArray ary = cluster.getJsonArray("peers");
@@ -149,6 +151,10 @@ public class CoreFabric {
                 }
             });
             tcpIpConfig.setEnabled(true);
+        }
+        if (!ServerConfiguration.hazelcastJoinMulticast && !ServerConfiguration.hazelcastJoinTcpip) {
+            joinConfig.getMulticastConfig().setEnabled(false);
+            tcpIpConfig.setEnabled(false);
         }
         hazelcastClusterManager = new HazelcastClusterManager(hazelcastConfig);
         vertxOptions.setClusterManager(hazelcastClusterManager);

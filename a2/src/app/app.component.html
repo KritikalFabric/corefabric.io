@@ -1,0 +1,514 @@
+<style>
+    .dropdown.open .dropdown-menu.animated {
+    -webkit-animation-name: {{ui.get('dropdownTransitionStyle')}};
+    animation-name: {{ui.get('dropdownTransitionStyle')}};
+    -webkit-animation-duration: .5s;
+    animation-duration: .5s;
+    }
+    .dropdown-menu.animated {
+        -webkit-animation-name: none;
+        animation-name: none;
+    }
+
+    .mainview-animation.animated.ng-enter {
+    -webkit-animation-name: {{ui.get('pageTransitionStyle')}};
+    animation-name: {{ui.get('pageTransitionStyle')}};
+    }
+</style>
+
+<div id="headerbar"
+     [ngClass]="{headerbarHide: ui.get('headerBarHidden'), headerbarShow: !ui.get('headerBarHidden')}"
+     *ngIf="!ui.get('fullscreen')">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-xs-6 col-sm-2">
+                <a href="#" class="shortcut-tiles tiles-brown">
+                    <div class="tiles-body">
+                        <div class="pull-left"><i class="glyphicon glyphicon-star"></i></div>
+                    </div>
+                    <div class="tiles-footer">
+                        Create Post
+                    </div>
+                </a>
+            </div>
+            <div class="col-xs-6 col-sm-2">
+                <a href="#" class="shortcut-tiles tiles-grape">
+                    <div class="tiles-body">
+                        <div class="pull-left"><i class="glyphicon glyphicon-user"></i></div>
+                        <div class="pull-right"><span class="badge">2</span></div>
+                    </div>
+                    <div class="tiles-footer">
+                        Contacts
+                    </div>
+                </a>
+            </div>
+            <div class="col-xs-6 col-sm-2">
+                <a href="#" class="shortcut-tiles tiles-primary">
+                    <div class="tiles-body">
+                        <div class="pull-left"><i class="glyphicon glyphicon-envelope"></i></div>
+                        <div class="pull-right"><span class="badge">10</span></div>
+                    </div>
+                    <div class="tiles-footer">
+                        Messages
+                    </div>
+                </a>
+            </div>
+            <div class="col-xs-6 col-sm-2">
+                <a href="#" class="shortcut-tiles tiles-inverse">
+                    <div class="tiles-body">
+                        <div class="pull-left"><i class="glyphicon glyphicon-camera"></i></div>
+                        <div class="pull-right"><span class="badge">3</span></div>
+                    </div>
+                    <div class="tiles-footer">
+                        Gallery
+                    </div>
+                </a>
+            </div>
+
+            <div class="col-xs-6 col-sm-2">
+                <a href="#" class="shortcut-tiles tiles-midnightblue">
+                    <div class="tiles-body">
+                        <div class="pull-left"><i class="glyphicon glyphicon-cog"></i></div>
+                    </div>
+                    <div class="tiles-footer">
+                        Settings
+                    </div>
+                </a>
+            </div>
+            <div class="col-xs-6 col-sm-2">
+                <a href="#" class="shortcut-tiles tiles-orange">
+                    <div class="tiles-body">
+                        <div class="pull-left"><i class="glyphicon glyphicon-wrench"></i></div>
+                    </div>
+                    <div class="tiles-footer">
+                        Plugins
+                    </div>
+                </a>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<header
+        id="topnav"
+        class="navbar ng-hide"
+        [ngClass]="{'navbar-fixed-top': ui.get('fixedHeader'), 'navbar-static-top': !ui.get('fixedHeader')}"
+        role="banner"
+        *ngIf="!layoutLoading">
+    <a id="leftmenu-trigger" (click)="ui.toggleLeftBar(); applyClassesToBody();"></a>
+    <a id="rightmenu-trigger" (click)="ui.toggleRightBar(); applyClassesToBody();"></a>
+
+
+    <div class="navbar-header pull-left visible-xs hidden-sm hidden-md hidden-lg hidden-xl hidden-xxl" style="display:none;overflow: hidden;">
+        <div class="navbar-text sidebar-muted-text"><div style="white-space:nowrap;font-size:11pt !important;vertical-align: middle;line-height:1.5;font-weight:400;" >&nbsp;<i class="fa fa-superpowers" style="margin-top:4px;"></i>&nbsp;cf</div></div>
+    </div>
+    <div class="navbar-header pull-left visible-xs visible-sm">
+        <a class="navbar-text sidebar-default-text " style="font-size:11pt !important;vertical-align: middle; color: #262d33;overflow:hidden;">&nbsp;&nbsp;{{ui.getTitle()}}</a>
+    </div>
+    <div class="navbar-header pull-left hidden-xs hidden-sm">
+        <h1 class="navbar-text sidebar-default-text" style="font-size:11pt !important;vertical-align: middle;line-height:1.5;font-weight:400;">{{ui.getSubTitle()}}</h1>
+    </div>
+    <div class="navbar-header pull-left hidden-xs" style="overflow: hidden;">
+        <div class="navbar-text sidebar-muted-text" style="position:absolute;left:50%;transform:translateX(-50%);"><div style="position:relative;left:-50%;"><div style="white-space:nowrap;font-size:11pt !important;vertical-align: middle;line-height:1.5;font-weight:400;" ><i class="fa fa-superpowers" style="margin-top:4px;"></i>&nbsp;corefabric.io</div></div></div>
+    </div>
+
+    <!--<div id="search-inline"
+         class="nav navbar-nav navbar-form hidden-xs"
+         [ngClass]="{
+          active: ui.get('showSmallSearchBar')
+        }">
+        <div class="input-icon">
+            <i class="glyphicon glyphicon-search search"></i>
+            <input type="text" placeholder="Type to search..." class="form-control" tabindex="1">
+            <i class="glyphicon glyphicon-remove remove visible-xs-inline-block" (click)="ui.toggleSearchBar()"></i>
+        </div>
+    </div>-->
+
+    <ul class="nav navbar-nav pull-right toolbar">
+        <li class="dropdown" *ngIf="!ui.isLoggedIn">
+            <a href="#" style="font-size: 14px"><i class="fa fa-sign-in"></i> Log in</a>
+        </li>
+        <li class="dropdown" *ngIf="ui.isLoggedIn" dropdown>
+            <a href class="dropdown-toggle username" dropdown-toggle><img src="download/maverick-theme/app/assets/demo/avatar/dangerfield.png" alt="Dangerfield" /></a>
+            <ul class="dropdown-menu animated userinfo arrow">
+                <li class="userlinks">
+                    <ul class="dropdown-menu">
+                        <li><a href="#">Edit Profile <i class="pull-right glyphicon glyphicon-pencil"></i></a></li>
+                        <li><a href="#">Account <i class="pull-right glyphicon glyphicon-user"></i></a></li>
+                        <li><a href="#">Settings <i class="pull-right glyphicon glyphicon-cog"></i></a></li>
+                        <li class="divider"></li>
+                        <li><a href="#">Earnings <i class="pull-right glyphicon glyphicon-stats"></i></a></li>
+                        <li><a href="#">Statement <i class="pull-right glyphicon glyphicon-list-alt"></i></a></li>
+                        <li><a href="#">Withdrawals <i class="pull-right glyphicon glyphicon-credit-card"></i></a></li>
+                        <li class="divider"></li>
+                        <li><a href="" class="text-right" (click)="ui.logOut()">Sign Out</a></li>
+                    </ul>
+                </li>
+            </ul>
+        </li>
+        <li class="dropdown hidden-xs" dropdown *ngIf="ui.isLoggedIn">
+            <a href class="dropdown-toggle" dropdown-toggle>
+                <i class="glyphicon glyphicon-envelope"></i><span class="badge badge-danger" *ngIf="ui.messageCenter.unseenCount>0">{{ui.messageCenter.unseenCount}}</span>
+            </a>
+            <ul class="dropdown-menu animated messages arrow">
+                <li class="dd-header">
+                    <span>Messages ({{ui.messageCenter.unseenCount}})</span>
+                    <span><a href="#"><i class="glyphicon glyphicon-cog"></i></a></span>
+                </li>
+                <div class="scrollthis" scrollable>
+                    <li *ngFor="let item of ui.messageCenter.messages">
+                        <a href="#" [ngClass]="{active: !item.read}">
+                            <button tooltip-placement="top" tooltip-append-to-body="true" tooltip="Mark read" class="btn-mark-read" *ngIf="!item.read" (click)="ui.setRead(item)"><i class="glyphicon glyphicon-unchecked"></i></button>
+                            <button tooltip-placement="top" tooltip-append-to-body="true" tooltip="Mark unread" class="btn-mark-unread" *ngIf="item.read" (click)="ui.setUnread(item)"><i class="glyphicon glyphicon-check"></i></button>
+                            <span class="time">{{item.time}}</span>
+                            <img [src]="item.thumb" alt="avatar" />
+                            <div>
+                                <span class="name">{{item.name}}</span>
+                                <span class="msg">{{item.message}}</span>
+                            </div>
+                        </a>
+                    </li>
+                </div>
+                <li class="dd-footer"><a href="#" (click)="ui.setReadAll()">Mark all read</a></li>
+            </ul>
+        </li>
+        <li class="dropdown" dropdown *ngIf="ui.isLoggedIn">
+            <a href dropdown-toggle class="dropdown-toggle">
+                <i class="glyphicon glyphicon-globe"></i><span class="badge badge-indigo" *ngIf="ui.notificationCenter.unseenCount>0">{{ui.notificationCenter.unseenCount}}</span>
+            </a>
+            <ul class="dropdown-menu animated notifications arrow">
+                <li class="dd-header">
+                    <span>Notifications ({{ui.notificationCenter.unseenCount}})</span>
+                    <span><a href="#"><i class="glyphicon glyphicon-cog"></i></a></span>
+                </li>
+                <div class="scrollthis" scrollable>
+                    <li *ngFor="let item of ui.notificationCenter.notifications">
+                        <a href="#" class="{{item.class}}" [ngClass]="{active: !item.seen}">
+                            <button tooltip-placement="top" tooltip-append-to-body="true" tooltip="Mark seen" class="btn-mark-read" *ngIf="!item.seen" (click)="ui.setSeen(item)"><i class="glyphicon glyphicon-unchecked"></i></button>
+                            <button tooltip-placement="top" tooltip-append-to-body="true" tooltip="Mark unseen" class="btn-mark-unread" *ngIf="item.seen" (click)="ui.setUnseen(item)"><i class="glyphicon glyphicon-check"></i></button>
+                            <span class="time">{{item.time}}</span>
+                            <i class="{{item.iconClasses}}"></i>
+                            <span class="msg">{{item.text}}</span>
+                        </a>
+                    </li>
+                </div>
+                <li class="dd-footer"><a href="javascript:;" (click)="ui.setSeenAll()">Mark all seen</a></li>
+            </ul>
+        </li>
+        <li class="visible-xs-block">
+            <a href="#" (click)="ui.toggleSearchBar()"><i class="glyphicon glyphicon-search"></i></a>
+        </li>
+        <li (click)="ui.showHeaderBar()" class="hidden-xs">
+            <a href="" id="headerbardropdown"><i class="glyphicon glyphicon-th"></i></a>
+        </li>
+        <!--<li class="dropdown demodrop" dropdown>
+            <a href dropdown-toggle class="dropdown-toggle tooltips"><i class="glyphicon glyphicon-cog"></i></a>
+            <ul class="dropdown-menu animated arrow dropdown-menu-form" id="demo-dropdown">
+
+                <div class="tabular">
+                    <div class="tabular-row">
+                        <div class="tabular-cell pt0">
+                            <label for="demo-header-variations" class="control-label">Header Colors</label>
+
+                            <ul class="list-inline demo-color-variation" id="demo-header-variations">
+                                <li><a class="color-default"      href="javascript:;" ng-click="setNavbarClass('navbar-default', $event)"></a></li>
+                                <li><a class="color-inverse"      href="javascript:;" ng-click="setNavbarClass('navbar-inverse', $event)"></a></li>
+                                <li><a class="color-midnightblue" href="javascript:;" ng-click="setNavbarClass('navbar-midnightblue', $event)"></a></li>
+                                <li><a class="color-primary"      href="javascript:;" ng-click="setNavbarClass('navbar-primary', $event)"></a></li>
+                                <li><a class="color-indigo"      href="javascript:;" ng-click="setNavbarClass('navbar-indigo', $event)"></a></li>
+                                <li><a class="color-success"      href="javascript:;" ng-click="setNavbarClass('navbar-success', $event)"></a></li>
+                                <li><a class="color-green"      href="javascript:;" ng-click="setNavbarClass('navbar-green', $event)"></a></li>
+                                <li><a class="color-grape"      href="javascript:;" ng-click="setNavbarClass('navbar-grape', $event)"></a></li>
+                                <li><a class="color-orange"      href="javascript:;" ng-click="setNavbarClass('navbar-orange', $event)"></a></li>
+                                <li><a class="color-danger"      href="javascript:;" ng-click="setNavbarClass('navbar-danger', $event)"></a></li>
+                            </ul>
+                        </div>
+                        <div class="tabular-cell pt0">
+                            <label for="demo-color-variations" class="control-label">Sidebar Colors</label>
+                            <ul class="list-inline demo-color-variation">
+                                <li><a class="color-default"      href="javascript:;" ng-click="setSidebarClass('sidebar-default', $event)"></a></li>
+                                <li><a class="color-inverse"      href="javascript:;" ng-click="setSidebarClass('sidebar-inverse', $event)"></a></li>
+                                <li><a class="color-midnightblue" href="javascript:;" ng-click="setSidebarClass('sidebar-midnightblue', $event)"></a></li>
+                                <li><a class="color-primary"      href="javascript:;" ng-click="setSidebarClass('sidebar-primary', $event)"></a></li>
+                                <li><a class="color-indigo"      href="javascript:;" ng-click="setSidebarClass('sidebar-indigo', $event)"></a></li>
+                                <li><a class="color-success"      href="javascript:;" ng-click="setSidebarClass('sidebar-success', $event)"></a></li>
+                                <li><a class="color-green"      href="javascript:;" ng-click="setSidebarClass('sidebar-green', $event)"></a></li>
+                                <li><a class="color-grape"      href="javascript:;" ng-click="setSidebarClass('sidebar-grape', $event)"></a></li>
+                                <li><a class="color-orange"      href="javascript:;" ng-click="setSidebarClass('sidebar-orange', $event)"></a></li>
+                                <li><a class="color-danger"      href="javascript:;" ng-click="setSidebarClass('sidebar-danger', $event)"></a></li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="tabular-row">
+                        <div class="tabular-cell">
+                            <label for="layoutFixedHeader">Fixed Header</label>
+                            <div ng-click="$event.stopPropagation()">
+                                <input type="checkbox" ng-model="layoutFixedHeader" class="js-switch" ui-switch="{color: '#E43B11', secondaryColor: '#F89279'}" />
+                            </div>
+                        </div>
+                        <div class="tabular-cell">
+                            <label for="layoutLayoutBoxed"><a href="#/layout-fixed">Boxed Layout</a></label>
+                            <div ng-click="$event.stopPropagation()">
+                                <input type="checkbox" ng-model="layoutLayoutBoxed" class="js-switch" ui-switch="{color: '#E43B11', secondaryColor: '#F89279'}" />
+                            </div>
+                        </div>
+                    </div>
+                    <div class="tabular-row">
+                        <div class="tabular-cell">
+                            <label for="layoutLayoutHorizontal">Horizontal Nav</label>
+                            <div ng-click="$event.stopPropagation()">
+                                <input type="checkbox" ng-model="layoutLayoutHorizontal" class="js-switch" ui-switch="{color: '#E43B11', secondaryColor: '#F89279'}" />
+                            </div>
+                        </div>
+                        <div class="tabular-cell">
+                        </div>
+                    </div>
+                    <div class="tabular-row">
+                        <div class="tabular-cell pb0 pr10">
+                            <label for="layoutDropdownTransitionStyle">Dropdown Animation</label>
+                            <div ng-click="$event.stopPropagation()">
+                                <select ng-model="layoutDropdownTransitionStyle" class="form-control">
+                                    <option value="{{item}}"
+                                            ng-selected="item == layoutDropdownTransitionStyle"
+                                            ng-repeat="item in layoutPageTransitionStyleList">{{item}}</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="tabular-cell pb0 pl10">
+                            <label for="layoutPageTransitionStyle">Transition Animation</label>
+                            <div ng-click="$event.stopPropagation()">
+                                <select ng-model="layoutPageTransitionStyle" class="form-control">
+                                    <option value="{{item}}"
+                                            ng-selected="item == layoutPageTransitionStyle"
+                                            ng-repeat="item in layoutPageTransitionStyleList">{{item}}</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </ul>
+        </li>-->
+    </ul>
+</header>
+
+<nav id="headernav" class="navbar ng-hide" role="navigation" *ngIf="ui.get('layoutHorizontal') && !ui.layoutLoading">
+    <div class="nav">
+        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-ex1-collapse">
+            <i class="fa fa-reorder"></i>
+        </button>
+    </div>
+    <div class="collapse navbar-collapse navbar-ex1-collapse" [ngClass]="{'large-icons-nav': ui.get('layoutHorizontalLargeIcons')}" id="horizontal-navbar">
+        <ul id="top-nav" class="nav navbar-nav">
+            <li *ngFor="let item of ui.nav.menu | horizontalNavFilter"
+                [ngClass]="{ hasChild: (item.children!==undefined),
+                                    active: ui.isSelected(item),
+                                      open: (item.children!==undefined) && ui.isOpen(item),
+                           'nav-separator': item.separator==true }"
+
+            >
+                <nav-renderer-horizontal [item]="item"></nav-renderer-horizontal>
+            </li>
+        </ul>
+    </div>
+</nav>
+
+<div id="wrapper">
+    <div id="layout-static">
+        <div class="static-sidebar-wrapper" *ngIf="!ui.layoutLoading">
+            <nav class="static-sidebar" role="navigation">
+                <ul id="sidebar" sticky-scroll="50">
+                    <li id="search">
+                        <a href="">
+                            <i class="fa fa-binoculars opacity-control"></i>
+                        </a>
+                        <form (submit)="ui.goToSearch()">
+                            <input type="text" [(ngModel)]="ui.searchQuery" [ngModelOptions]="{standalone: true}" class="search-query" placeholder="Type to filter..." (keyup)="ui.delayFilter()" />
+                            <button type="submit" (click)="ui.goToSearch()"><i class="fa fa-binoculars"></i></button>
+                        </form>
+                    </li>
+                    <li *ngFor="let item of ui.nav.menu"
+                        [ngClass]="{ hasChild: (item.children!==undefined),
+                                        active: ui.isSelected(item),
+                                          open: (item.children!==undefined) && ui.isOpen(item),
+                               'nav-separator': item.separator==true,
+                               'hidden': item.separator==true&&ui.hasSearchQuery(),
+                                'search-focus': (ui.hasSearchQuery() && ui.isSelected(item)) }"
+                    >
+                        <nav-renderer [item]="item" *ngIf="!(ui.hasSearchQuery() && !ui.isSelected(item))"></nav-renderer>
+                    </li>
+                </ul>
+            </nav> <!-- #sidebar-->
+        </div>
+        <div class="static-content-wrapper">
+            <div class="static-content">
+                <div id="wrap" class="mainview-animation animated">
+
+    <div id="page-heading" *ngIf="false"><!-- remove some screen junk -->
+        <ol class="breadcrumb">
+            <li><a [routerLink]="[ui.getRouterLinkArg1()]">{{ui.getTitle()}}</a></li>
+            <!--<li class="active">{{ui.getSubTitle()}}</li>-->
+        </ol>
+
+        <h1>{{ui.getSubTitle()}}</h1>
+        <div class="options">
+            <div class="btn-toolbar">
+                <div class="btn-group" dropdown>
+                    <ul class="dropdown-menu" role="menu">
+                        <li><a href="#">Action</a></li>
+                        <li><a href="#">Another action</a></li>
+                        <li><a href="#">Something else here</a></li>
+                        <li class="divider"></li>
+                        <li><a href="#">Separated link</a></li>
+                    </ul>
+                </div>
+                <a href="#" class="btn btn-default hidden-xs"><i class="glyphicon glyphicon-cog"></i></a>
+            </div>
+        </div>
+    </div>
+
+
+    <div class="container-fluid">
+
+        <router-outlet></router-outlet>
+
+    </div> <!-- container-fluid -->
+                </div> <!--wrap -->
+            </div>
+            <footer role="contentinfo" *ngIf="!ui.layoutLoading">
+                <div class="clearfix">
+                    <ul class="list-unstyled list-inline pull-left">
+                        <li>
+                            corefabric.io
+                        </li>
+                        <li>
+                            &copy; 2014-2018
+                        </li>
+                        <li class="hidden-xs hidden-sm">
+                            the corefabric team
+                        </li>
+                        <li class="hidden-xs hidden-sm hidden-md">
+                            all rights reserved
+                        </li>
+                    </ul>
+                    <div style="pull-right">
+                        <ul class="list-unstyled list-inline pull-right">
+                            <li>
+                              0.2.0-angular6
+                            </li>
+                            <li>
+                                <button class="btn btn-default btn-sm hidden-print" back-to-top style="padding: 1px 10px;"><i class="fa fa-angle-up"></i></button>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </footer>
+        </div>
+    </div>
+</div>
+
+<div class="infobar-wrapper">
+    <!-- TODO: accordion <div class="infobar" sticky-scroll="50" rightbar-right-position="ui.get('layoutBoxed')">
+        <div scrollable style="height: 100%;padding-bottom:40px">
+            <accordion close-others="ui.infobar.rightbarAccordionsShowOne">
+                <accordion-group is-open="ui.infobar.rightbarAccordions[1].open" [ngClass]="{open:ui.infobar.rightbarAccordions[1].open}">
+                    <accordion-heading>
+                        Pending Tasks <small>(5)</small>
+                    </accordion-heading>
+
+                    <progressbar contextual="true" value="25" heading="Backend Development" type="info"></progressbar>
+                    <progressbar contextual="true" value="77" heading="Bug Fix" type="primary"></progressbar>
+                    <progressbar contextual="true" value="70" heading="Javascript Code" type="success"></progressbar>
+                    <progressbar contextual="true" value="55" heading="Preparing Documentation" type="danger"></progressbar>
+                    <progressbar contextual="true" value="25" heading="Mobile App" type="orange"></progressbar>
+
+                    <!-- <span class="more"><a href="#/ui-progressbars">View all Pending</a></span> - ->
+                </accordion-group>
+
+                <accordion-group is-open="ui.infobar.rightbarAccordions[2].open" [ngClass]="{open:ui.infobar.rightbarAccordions[2].open}" id="chatbar">
+                    <accordion-heading>
+                        Online Contacts
+                    </accordion-heading>
+                    <ul class="chat-users">
+                        <li data-stats="{{user.status}}" *ngFor="let user of ui.infobar.chatters" >
+                            <a href="#" (click)="ui.toggleChatBox(user)">
+                                <img src="download/maverick-theme/app/assets/demo/avatar/{{user.avatar}}" alt="">
+                                <span>{{user.name}}</span>
+                            </a>
+                        </li>
+                    </ul>
+                    <!-- <span class="more"><a href="#/extras-chatroom">See all</a></span> - ->
+                </accordion-group>
+
+                <accordion-group is-open="ui.infobar.rightbarAccordions[3].open" [ngClass]="{open:ui.infobar.rightbarAccordions[3].open}">
+                    <accordion-heading>
+                        Storage Space
+                    </accordion-heading>
+
+                    <div class="clearfix" style="margin-bottom: 5px;margin-top:10px;">
+                        <div class="progress-title pull-left">1.31 GB of 1.50 GB used</div>
+                        <div class="progress-percentage pull-right">87.3%</div>
+                    </div>
+                    <div class="progress">
+                        <div class="progress-bar progress-bar-success" style="width: 50%"></div>
+                        <div class="progress-bar progress-bar-warning" style="width: 25%"></div>
+                        <div class="progress-bar progress-bar-danger" style="width: 12.3%"></div>
+                    </div>
+                </accordion-group>
+            </accordion>
+        </div>
+    </div>--> <!-- .infobar -->
+
+    <div id="chat-box" *ngIf="ui.get('showChatBox')" position-chat-box="currentChatterId" (click)="$event.stopPropagation()">
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <h2>Alfred Hitchcok</h2>
+            </div>
+            <div class="panel-body">
+                <div class="panel-chat" id="chat" scroll-to-bottom="ui.chatbox.messages.length + ui.chatbox.userTyping" scrollable>
+                    <div class="chat-message me">
+                        <div class="chat-contact">
+                            <img src="download/maverick-theme/app/assets/demo/avatar/tennant.png" alt="">
+                        </div>
+                        <div class="chat-text">
+                            This is a really weird chat room. I keep getting strange responses. :S
+                        </div>
+                    </div>
+                    <div class="chat-message chat-primary">
+                        <div class="chat-contact">
+                            <img src="download/maverick-theme/app/assets/demo/avatar/potter.png" alt="">
+                        </div>
+                        <div class="chat-text">
+                            Why don't you tell us more about what's bothering you?
+                        </div>
+                    </div>
+                    <div *ngFor="let msg of ui.chatbox.messages" class="chat-message {{msg.class}}">
+                        <div class="chat-contact">
+                            <img src="download/maverick-theme/app/assets/demo/avatar/{{msg.avatar}}" alt="">
+                        </div>
+                        <div class="chat-text">
+                            {{msg.text}}
+                        </div>
+                    </div>
+
+                    <div class="chat-message chat-success" *ngIf="userTyping">
+                        <div class="chat-contact">
+                            <img src="download/maverick-theme/app/assets/demo/avatar/{{ui.chatbox.userAvatar}}" alt="">
+                        </div>
+                        <div class="chat-text" style="width:30px">
+                            ...
+                        </div>
+                    </div>
+                </div>
+                <form (submit)="ui.sendMessage(ui.chatbox.userText)">
+                    <div class="input-group">
+                        <input type="text" placeholder="Enter your message here" [(ngModel)]="ui.chatbox.userText" [ngModelOptions]="{standalone: true}" class="form-control no-validate">
+                        <span class="input-group-btn">
+              <button type="button" class="btn btn-primary" (click)="ui.sendMessage(ui.chatbox.userText)"><i class="fa fa-comments-o"></i></button>
+            </span>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div> <!-- #chat-box placed outside because of overflow -->
+</div>

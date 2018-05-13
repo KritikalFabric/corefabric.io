@@ -1,5 +1,3 @@
-#!/bin/sh
-rm -rfv node_modules
-rm -rfv typings
-npm install
-npm run typings install
+#!/bin/sh -v
+
+rm -rf node_modules

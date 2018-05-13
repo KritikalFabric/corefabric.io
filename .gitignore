@@ -10,3 +10,7 @@ get-pip.py
 config.json
 jDtnConfig.xml
 *.swp
+*.iml
+out
+a2.tar.gz
+package-lock.json

@@ -252,7 +252,7 @@ public class ConfigurationManager {
             con.setTransactionIsolation(Connection.TRANSACTION_READ_UNCOMMITTED);
             con.setAutoCommit(false);
             try {
-                PreparedStatement statement = con.prepareStatement("SELECT key, value FROM instance_local_cfg FOR UPDATE;");
+                PreparedStatement statement = con.prepareStatement("SELECT key, value FROM node.instance_local_cfg FOR UPDATE;");
                 try {
                     ResultSet rs = statement.executeQuery();
                     try {

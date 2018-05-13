@@ -65,7 +65,7 @@ public class DelaySendDequeueWorkerVerticle extends AbstractVerticle {
                         return BasicDataSourceHelper.pool(1, basicDataSource -> {
                                     basicDataSource.setUrl(connectionString);
                                     basicDataSource.setUsername("postgres");
-                                    basicDataSource.setPassword("darkhorse45");
+                                    basicDataSource.setPassword("password");
                                     basicDataSource.setAccessToUnderlyingConnectionAllowed(true);
                                 });
                     }).getConnection();
@@ -77,7 +77,7 @@ public class DelaySendDequeueWorkerVerticle extends AbstractVerticle {
                             array.append(i == 0 ? "?" : ",?");
                         }
                         array.append("]");
-                        PreparedStatement stmt = con.prepareStatement("LOCK TABLE queues.send_q IN EXCLUSIVE MODE NOWAIT; SELECT a, b FROM queues.dequeue_send_q(" +
+                        PreparedStatement stmt = con.prepareStatement("LOCK TABLE node.send_q IN EXCLUSIVE MODE NOWAIT; SELECT a, b FROM node.dequeue_send_q(" +
                                 array.toString() + ");");
                         try {
                             int i = 0;
@@ -132,31 +132,6 @@ public class DelaySendDequeueWorkerVerticle extends AbstractVerticle {
 
     public static void ensureDequeue(String connectionString) throws Exception
     {
-        Connection con = DriverManager.getConnection(connectionString);
-        try
-        {
-            PreparedStatement stmt = con.prepareStatement(
-                "CREATE OR REPLACE FUNCTION queues.dequeue_send_q(addresses text[]) RETURNS SETOF queues.send_q AS $$ " +
-                        "DECLARE c CURSOR FOR SELECT * FROM queues.send_q WHERE ARRAY[a] <@ addresses AND dt < current_timestamp FOR UPDATE OF send_q;\n" +
-                "BEGIN\n" +
-                        "FOR r IN c LOOP\n" +
-                            "DELETE FROM queues.send_q WHERE CURRENT OF c;\n" +
-                            "RETURN NEXT r;\n" +
-                        "END LOOP;\n" +
-                "END;\n" +
-                "$$\n" +
-                "LANGUAGE plpgsql;"
-            );
-            try {
-                stmt.executeUpdate();
-            }
-            finally {
-                stmt.close();
-            }
-        }
-        finally {
-            con.close();
-        }
     }
 
 }

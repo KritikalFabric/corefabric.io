@@ -159,16 +159,9 @@ public class DBInterfaceJDBC implements DBInterface {
 			try {
                 Statement statement = _connection.createStatement();
                 try {
-                    // TODO:FIXME
-                    // DROP old table anyway
-                    try {
-                        statement.executeUpdate("DROP TABLE " + BundleDatabaseConstants.TABLE_NAME_OLD);
-                        _connection.commit();
-                    } catch (SQLException ignore) {
-                        _connection.rollback();
-                    }
                     // Start clean - from unit tests only!
                     if (startClean) {
+                        _logger.warning("Clearing " + db + " of DTN data.");
                         try {
                             statement.executeUpdate("DROP TABLE " + BundleDatabaseConstants.TABLE_NAME);
                             _connection.commit();
@@ -210,7 +203,7 @@ public class DBInterfaceJDBC implements DBInterface {
                                     BundleDatabaseConstants.STORAGETYPE_COL +
                                     "));";
                     //") on conflict abort);";
-                    _logger.warning(statementText);
+                    _logger.fine(statementText);
                     statement.executeUpdate(statementText);
                     _connection.commit();
                     statementText =
@@ -227,7 +220,7 @@ public class DBInterfaceJDBC implements DBInterface {
                                     BundleDatabaseConstants.DATA_BLOB_COL +
                                     "));";
                     //") on conflict abort);";
-                    _logger.warning(statementText);
+                    _logger.fine(statementText);
                     statement.executeUpdate(statementText);
                     _connection.commit();
                 } finally {
