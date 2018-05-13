@@ -24,7 +24,7 @@
     "rxjs": "^6.0.0",
     "rxjs-compat": "^6.1.0",
     "zone.js": "^0.8.26",
-    "angular2-uuid": "^1.1.1"
+    "uuid": "^3.2.1"
   },
   "devDependencies": {
     "@angular/compiler-cli": "^6.0.0",
