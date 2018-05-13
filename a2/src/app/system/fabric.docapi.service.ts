@@ -60,7 +60,9 @@ export interface FabricDocApiListCallback {
     (ad:FabricApiDoc[]):void
 }
 
-@Injectable()
+@Injectable({
+  providedIn: 'root',
+})
 export class FabricDocApi {
     constructor(private http:Http, private fabricComms:FabricComms, private fabricHelpers:FabricHelpers, private fabricUI:FabricUIService) {
     }

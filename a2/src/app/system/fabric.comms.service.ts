@@ -51,7 +51,9 @@ export class MqttSubscription {
     }
 }
 
-@Injectable()
+@Injectable({
+  providedIn: 'root',
+})
 export class FabricComms {
     constructor(private zone:NgZone, private fabricHelpers: FabricHelpers) {
         var cookie = fabricHelpers.getCookie('corefabric');

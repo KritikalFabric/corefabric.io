@@ -5,7 +5,9 @@
 import { Injectable } from '@angular/core';
 import { FabricComms } from './fabric.comms.service';
 
-@Injectable()
+@Injectable({
+  providedIn: 'root',
+})
 export class FabricUIService {
 
     constructor(private fabricComms:FabricComms) {

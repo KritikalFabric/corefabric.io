@@ -9,7 +9,9 @@ import { Http, Response } from '@angular/http';
 declare var TextDecoder; // vendor/text-encoding
 declare var __window; // index.html
 
-@Injectable()
+@Injectable({
+  providedIn: 'root',
+})
 export class FabricHelpers {
     constructor(private http: Http) { }
 
