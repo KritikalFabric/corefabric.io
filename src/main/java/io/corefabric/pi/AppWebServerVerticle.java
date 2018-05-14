@@ -168,7 +168,7 @@ public class AppWebServerVerticle extends AbstractVerticle {
 
                 cookieCutter(req);
 
-                if (file.startsWith("app/") || file.endsWith(".js")) {
+                if (file.endsWith(".html")) {
                     req.response().headers().add("Pragma", "no-cache");
                     req.response().headers().add("Cache-control", "no-cache, no-store, private, must-revalidate");
                 } else {
