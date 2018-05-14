@@ -14,7 +14,7 @@
       "password": "password"
     },
     "app_config_uri": "http://127.0.0.1:8082/",
-    "tmp": "/var/tmp",
+    "tmp": "/var/tmp"
   },
   "cluster": {
     "multicast": false
