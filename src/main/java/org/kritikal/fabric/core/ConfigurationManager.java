@@ -36,8 +36,10 @@ public class ConfigurationManager {
             db = node_db.getString("db", "corefabric__node_db");
             user = node_db.getString("user", "postgres");
             password = node_db.getString("password", "password");
+            tmp = node.getString("tmp", "/var/tmp");
         }
         public static String appConfigUri;
+        public static String tmp;
         public static String host;
         public static int port;
         public static String db;
