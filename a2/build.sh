@@ -1,3 +1,3 @@
 #!/bin/sh -v
 
-exec ng build
+exec ng build --prod --build-optimizer --vendor-chunk=true

@@ -1,4 +1,4 @@
-import { Component, enableProdMode, OnChanges } from '@angular/core';
+import { Component, enableProdMode, OnChanges, Input } from '@angular/core';
 
 import { FabricHelpers } from './system/fabric.helpers.service';
 import { FabricComms } from './system/fabric.comms.service';
@@ -25,35 +25,40 @@ enableProdMode()
 })
 
 export class AppComponent implements OnChanges {
-  constructor(public ui:UIService) { }
+  constructor(private _ui:UIService) { }
+
+  	@Input()
+	public set ui(ui: UIService) { /* no-op */ }
+
+	public get ui():UIService { return this._ui; }
 
   public ngOnInit() {
     let x:AppComponent = this;
-    this.ui.layoutLoading=false;
-    this.ui.themeEvent.subscribe(
+    this._ui.layoutLoading=false;
+    this._ui.themeEvent.subscribe(
         event => {
           switch(event.type) {
             case ThemeEvent.MAXWIDTH767: {
-              x.ui.layoutIsSmallScreen = event.maxWidthFlag;
+              x._ui.layoutIsSmallScreen = event.maxWidthFlag;
               if (event.maxWidthFlag) {
-                x.ui.set('leftbarShown', false);
+                x._ui.set('leftbarShown', false);
               } else {
-                x.ui.set('leftbarCollapsed', false);
+                x._ui.set('leftbarCollapsed', false);
               }
             }
             break;
             case ThemeEvent.CHANGED: {
               switch (event.changedVar) {
                 case 'fixedHeader': {
-                  x.ui.layoutFixedHeader = x.ui.get(event.changedVar);
+                  x._ui.layoutFixedHeader = x._ui.get(event.changedVar);
                 }
                 break;
                 case 'layoutHorizontal': {
-                  x.ui.layoutLayoutHorizontal = x.ui.get(event.changedVar);
+                  x._ui.layoutLayoutHorizontal = x._ui.get(event.changedVar);
                 }
                 break;
                 case 'layoutBoxed': {
-                  x.ui.layoutLayoutBoxed = x.ui.get(event.changedVar);
+                  x._ui.layoutLayoutBoxed = x._ui.get(event.changedVar);
                 }
               }
             }
@@ -86,10 +91,10 @@ export class AppComponent implements OnChanges {
     );
     enquire.register('screen and (max-width: 767px)', {
       match: function() {
-        x.ui.themeEvent.emit(ThemeEvent.maxWidth767(true));
+        x._ui.themeEvent.emit(ThemeEvent.maxWidth767(true));
       },
       unmatch: function() {
-        x.ui.themeEvent.emit(ThemeEvent.maxWidth767(false));
+        x._ui.themeEvent.emit(ThemeEvent.maxWidth767(false));
       }
     });
     this.applyClassesToBody();
@@ -100,12 +105,12 @@ export class AppComponent implements OnChanges {
   }
 
   public ngOnDestroy() {
-    this.ui.themeEvent.unsubscribe();
+    this._ui.themeEvent.unsubscribe();
     enquire.unregister('screen and (max-width: 767px)');
   }
 
   public applyClassesToBody() {
-    let collapsed = !!this.ui.get('leftbarCollapsed');
+    let collapsed = !!this._ui.get('leftbarCollapsed');
     let body = document.getElementsByTagName('body')[0];
     if (collapsed) {
       body.classList.add('sidebar-collapsed');

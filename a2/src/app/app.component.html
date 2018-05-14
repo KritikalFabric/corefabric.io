@@ -95,7 +95,7 @@
         class="navbar ng-hide"
         [ngClass]="{'navbar-fixed-top': ui.get('fixedHeader'), 'navbar-static-top': !ui.get('fixedHeader')}"
         role="banner"
-        *ngIf="!layoutLoading">
+        *ngIf="!ui.layoutLoading">
     <a id="leftmenu-trigger" (click)="ui.toggleLeftBar(); applyClassesToBody();"></a>
     <a id="rightmenu-trigger" (click)="ui.toggleRightBar(); applyClassesToBody();"></a>
 

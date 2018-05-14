@@ -17,11 +17,18 @@ class HomeApiDoc {}
 })
 export class HomeComponent implements OnChanges {
 
-    constructor(private fabricDocApi:FabricDocApi, private ui:UIService) {
-        this.ui.setTitle('home', 'home', 'Project Overview');
+    constructor(private fabricDocApi:FabricDocApi, private _ui:UIService) {
+        this._ui.setTitle('home', 'home', 'Project Overview');
     }
 
     apipage:FabricApiPage = null;
+
+
+            @Input()
+            public set ui(ui: UIService) { /* no-op */ }
+
+            public get ui():UIService { return this._ui; }
+
 
     ngOnInit() {
         let c:HomeConfig = new HomeConfig();

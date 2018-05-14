@@ -5,7 +5,9 @@ import { FabricComms } from '../system/fabric.comms.service';
 import { UUIDGEN } from '../entities/uuid';
 import {ThemeEvent} from "./theme/theme.event.entity";
 
-@Injectable()
+@Injectable({
+  providedIn: 'root',
+  })
 export class UIService extends FabricUIService {
     @Output()
     public themeEvent = new EventEmitter<ThemeEvent>();
