@@ -7,6 +7,7 @@ import io.netty.handler.codec.http.ServerCookieEncoder;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
+import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.eventbus.Message;
 import io.vertx.core.http.*;
@@ -15,6 +16,7 @@ import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.web.Router;
 import org.kritikal.fabric.CoreFabric;
+import org.kritikal.fabric.core.ConfigurationManager;
 import org.kritikal.fabric.core.exceptions.FabricError;
 import org.kritikal.fabric.daemon.MqttBrokerVerticle;
 import org.kritikal.fabric.core.VERTXDEFINES;
@@ -25,10 +27,13 @@ import org.kritikal.fabric.net.http.BinaryBodyHandler;
 import org.kritikal.fabric.net.http.CorsOptionsHandler;
 import org.kritikal.fabric.net.mqtt.MqttBroker;
 
-import java.io.InputStream;
+import java.io.*;
+import java.util.Enumeration;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
+import java.util.jar.JarFile;
+import java.util.zip.ZipEntry;
 
 /**
  * Created by ben on 11/3/16.
@@ -82,9 +87,108 @@ public class AppWebServerVerticle extends AbstractVerticle {
         return null;
     }
 
+    private static void extract(JarFile parentJar, ZipEntry entry, String destination)
+        throws java.io.FileNotFoundException, java.io.IOException
+    {
+        BufferedInputStream is = new BufferedInputStream(parentJar.getInputStream(entry));
+        try {
+            File f = new File(destination);
+            String parentName = f.getParent();
+            if (parentName != null) {
+                File dir = new File(parentName);
+                dir.mkdirs();
+            }
+
+            BufferedOutputStream os = new BufferedOutputStream(new FileOutputStream(f));
+            try {
+                int c;
+                while ((c = is.read()) != -1) {
+                    os.write((byte) c);
+                }
+            }
+            finally {
+                os.close();
+            }
+        }
+        finally {
+            is.close();
+        }
+    }
+
+    private static void sendFile(HttpServerRequest req, String pathToFile) {
+        if (pathToFile.endsWith(".html")) {
+            req.response().headers().add("Pragma", "no-cache");
+            req.response().headers().add("Cache-control", "no-cache, no-store, private, must-revalidate");
+        } else {
+            req.response().headers().add("Cache-control", "cache, store");
+        }
+
+        if (pathToFile.endsWith(".html")) {
+            req.response().headers().add("Content-Type", "text/html; charset=UTF-8");
+        } else if (pathToFile.endsWith(".js")) {
+            req.response().headers().add("Content-Type", "text/javascript; charset=UTF-8");
+        } else if (pathToFile.endsWith(".json")) {
+            req.response().headers().add("Content-Type", "application/json; charset=UTF-8");
+        } else if (pathToFile.endsWith(".css")) {
+            req.response().headers().add("Content-Type", "text/css; charset=UTF-8");
+        } else if (pathToFile.endsWith(".txt")) {
+            req.response().headers().add("Content-Type", "text/plain; charset=UTF-8");
+        } else {
+            req.response().headers().add("Content-Type", "application/octet-stream");
+        }
+
+        req.response().sendFile(pathToFile);
+    }
+
     @Override
     public void start() throws Exception {
         super.start();
+
+        UUID uuid = UUID.randomUUID();
+        final String tempdir = ConfigurationManager.Shim.tmp + "/" + uuid.toString() + "/";
+        try {
+            File file = new File(tempdir);
+            file.mkdirs();
+        }
+        catch (Throwable t) {
+            // ignore
+        }
+
+        String runningJar = new File(AppWebServerVerticle.class.getProtectionDomain().getCodeSource().getLocation().toURI()).getAbsolutePath();
+        JarFile jarFile = null;
+        try {
+            jarFile = new JarFile(runningJar);
+            Enumeration entries = jarFile.entries();
+
+            while (entries.hasMoreElements()) {
+                ZipEntry entry = (ZipEntry) entries.nextElement();
+                final String[] parts = entry.getName().split("/");
+                if (parts.length < 3) continue;
+                if (!"web".equals(parts[0])) continue;
+                if (!"a2".equals(parts[1])) continue;
+                if (entry.isDirectory()) continue;
+
+                StringBuilder newPath = new StringBuilder();
+                newPath.append(tempdir);
+                for (int i = 2; i < parts.length; ++i) {
+                    if (i > 2) newPath.append("/");
+                    newPath.append(parts[i]);
+                }
+
+                extract(jarFile, entry, newPath.toString());
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            if (jarFile != null) {
+                try {
+                    jarFile.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+
 
         HttpServerOptions httpServerOptions = new HttpServerOptions();
         httpServerOptions.setSoLinger(0);
@@ -108,7 +212,7 @@ public class AppWebServerVerticle extends AbstractVerticle {
         NodeMonitorJson.addRoute(router, corsOptionsHandler);
         DtnConfigJson.addRoute(router, corsOptionsHandler);
         StatusJson.addRoute(router, corsOptionsHandler);
-        router.post("/api/doc").blockingHandler(rc -> {
+        router.post("/api/doc").handler(rc -> {
             HttpServerRequest req = rc.request();
             JsonObject body = rc.getBodyAsJson();
 
@@ -145,7 +249,7 @@ public class AppWebServerVerticle extends AbstractVerticle {
                 }
             });
         });
-        router.get().blockingHandler(rc -> {
+        router.get().handler(rc -> {
             HttpServerRequest req = rc.request();
             if (CoreFabric.ServerConfiguration.DEBUG) logger.info("app-web-server\t" + req.path());
 
@@ -168,71 +272,40 @@ public class AppWebServerVerticle extends AbstractVerticle {
 
                 cookieCutter(req);
 
-                if (file.endsWith(".html")) {
-                    req.response().headers().add("Pragma", "no-cache");
-                    req.response().headers().add("Cache-control", "no-cache, no-store, private, must-revalidate");
-                } else {
-                    req.response().headers().add("Cache-control", "cache, store");
-                }
-
-                InputStream fileStream = getClass().getClassLoader().getResourceAsStream("web/a2/" + file); // <-- blocking api call
-                if (fileStream == null) {
-                    if (file.endsWith(".js") ||
-                            file.endsWith(".map") ||
-                            file.endsWith(".css") ||
-                            file.endsWith(".less") ||
-                            file.endsWith(".json") ||
-                            file.endsWith(".png") ||
-                            file.endsWith(".jpg") ||
-                            file.endsWith(".jpeg") ||
-                            file.endsWith(".gif") ||
-                            file.endsWith(".txt") ||
-                            file.endsWith(".html")) {
-                        req.response().setStatusCode(404).setStatusMessage("Not Found");
-                        req.response().end();
-                        return;
-                    }
-                    file = "index.html";
-                    fileStream = getClass().getClassLoader().getResourceAsStream("web/a2/index.html");
-                }
-                if (fileStream != null) {
-                    try {
-                        Buffer buffer = Buffer.buffer();
-                        byte[] b = new byte[1024];
-                        int n;
-                        try {
-                            while ((n = fileStream.read(b)) > 0) {
-                                buffer.appendBytes(b, 0, n);
-                            }
-                            req.response().headers().add("Content-Length", Long.toString(buffer.length()));
-                            if (file.endsWith(".html")) {
-                                req.response().headers().add("Content-Type", "text/html; charset=UTF-8");
-                            } else if (file.endsWith(".js")) {
-                                req.response().headers().add("Content-Type", "text/javascript; charset=UTF-8");
-                            } else if (file.endsWith(".json")) {
-                                req.response().headers().add("Content-Type", "application/json; charset=UTF-8");
-                            } else if (file.endsWith(".css")) {
-                                req.response().headers().add("Content-Type", "text/css; charset=UTF-8");
-                            } else if (file.endsWith(".txt")) {
-                                req.response().headers().add("Content-Type", "text/plain; charset=UTF-8");
+                final String filesystemLocation = tempdir + file;
+                final String indexHtmlLocation = tempdir + "index.html";
+                vertx.fileSystem().exists(filesystemLocation, new Handler<AsyncResult<Boolean>>() {
+                    @Override
+                    public void handle(AsyncResult<Boolean> event) {
+                        if (event.succeeded()) {
+                            if (event.result()) {
+                                sendFile(req, filesystemLocation);
                             } else {
-                                req.response().headers().add("Content-Type", "application/octet-stream");
+                                if (filesystemLocation.endsWith(".js") ||
+                                        filesystemLocation.endsWith(".map") ||
+                                        filesystemLocation.endsWith(".css") ||
+                                        filesystemLocation.endsWith(".less") ||
+                                        filesystemLocation.endsWith(".json") ||
+                                        filesystemLocation.endsWith(".png") ||
+                                        filesystemLocation.endsWith(".jpg") ||
+                                        filesystemLocation.endsWith(".jpeg") ||
+                                        filesystemLocation.endsWith(".gif") ||
+                                        filesystemLocation.endsWith(".txt") ||
+                                        filesystemLocation.endsWith(".html")) {
+                                    req.response().setStatusCode(404).setStatusMessage("Not Found");
+                                    req.response().end();
+                                    return;
+                                } else {
+                                    sendFile(req, indexHtmlLocation);
+                                }
                             }
-                            req.response().write(buffer).end();
-                        } catch (Throwable t) {
-                            req.response().setStatusCode(500).end();
+                        } else {
+                            req.response().setStatusCode(500);
+                            req.response().end();
+                            return;
                         }
-                    } finally {
-                        try {
-                            fileStream.close();
-                        } catch (Throwable t) { /* ignore */ }
                     }
-                }
-                else {
-                    // we can't get here!
-                    req.response().setStatusCode(302).setStatusMessage("Found").headers().add("Location", "/");
-                    req.response().end();
-                }
+                });
             }
             else {
                 req.response().setStatusCode(500).end();
