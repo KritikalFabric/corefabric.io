@@ -3,6 +3,10 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2012
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "corefabric-comms", "corefabric-comms\corefabric-comms.csproj", "{724C8628-0BD4-4F42-BB71-119C6D74D109}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "corefabric-comms-test", "corefabric-comms-test\corefabric-comms-test.csproj", "{182AA6F0-81F2-4225-AF34-71E1B173B730}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "corefabric-comms-test", "corefabric-comms-test\corefabric-comms-test.csproj", "{DCE76B30-D9EC-4AB2-A617-F41359B31108}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -13,5 +17,13 @@ Global
 		{724C8628-0BD4-4F42-BB71-119C6D74D109}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{724C8628-0BD4-4F42-BB71-119C6D74D109}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{724C8628-0BD4-4F42-BB71-119C6D74D109}.Release|Any CPU.Build.0 = Release|Any CPU
+		{182AA6F0-81F2-4225-AF34-71E1B173B730}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{182AA6F0-81F2-4225-AF34-71E1B173B730}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{182AA6F0-81F2-4225-AF34-71E1B173B730}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{182AA6F0-81F2-4225-AF34-71E1B173B730}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DCE76B30-D9EC-4AB2-A617-F41359B31108}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DCE76B30-D9EC-4AB2-A617-F41359B31108}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DCE76B30-D9EC-4AB2-A617-F41359B31108}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DCE76B30-D9EC-4AB2-A617-F41359B31108}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
