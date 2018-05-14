@@ -71,6 +71,18 @@ nb. system and cluster can be combined using this 2nd technique.
 Build information
 -----------------
 
+Before trying the build we need some tooling.  You will need to set-up
+some environment and also install the correct version of protoc to match
+our protocol buffers libraries:
+
+1.  ```$ git submodule init```
+
+2.  ```$ git submodule update```
+
+3.  ```$ ./tools/dependencies/install.sh```
+
+To complete this task you need the UNIX admin badge.
+
 Building the software is a two step process.
 
 1.  first, fetch docker containers [or modify your script to build them] and
