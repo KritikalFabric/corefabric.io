@@ -73,9 +73,14 @@ Build information
 
 Building the software is a two step process.
 
-1.  first, fetch docker containers [or modify your script to build them] and
-    build the "a2" sub-project; uses nodejs 10; modified local files by loopback.
-    run ```$ ./docker-nodejs-build.sh```.
+1.  first, fetch docker containers and
+    build the "a2" sub-project.
+    run ```$ ./docker-angular-build.sh```.
+    
+    nb. if you have "ng" tooling locally you could try:
+    ```$ (cd a2/ && ./clean.sh && ./build.sh)```.
+    
+    we prefer putting that junk in docker.
     
 2.  secondly, build the jar file via ```$ ./gradlew build``` (or embed the a2 content and 
     run via ```$ ./gradlew runShadow```).
