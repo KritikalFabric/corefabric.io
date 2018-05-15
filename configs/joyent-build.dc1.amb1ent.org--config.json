@@ -1,6 +1,6 @@
 {
   "node": {
-    "hostname": "10.100.1.33",
+    "hostname": "joyent-build.test.clusterfabric.io",
     "ip4": "10.100.1.33",
     "localhostIf": "lo0",
     "wanIf": "net0",
@@ -21,7 +21,7 @@
   },
   "dtn": {
     "isRouter": true,
-    "routerHostname": "10.100.1.33",
+    "routerHostname": "joyent-build.test.clusterfabric.io",
     "routerIp4": "10.100.1.33"
   },
   "roles": {
@@ -44,7 +44,7 @@
     "dtn-mqtt-bridge":[{
       "subscribe":"nodes/#",
       "not":"nodes/development/awfulhak/#",
-      "to":"dtn://172.16.127.131/MqttBridge"
+      "to":"dtn://awfulhak.test.clusterfabric.io/MqttBridge"
     },{
       "subscribe":"nodes/#",
       "not":"nodes/development/krital-mac-pro/#",
