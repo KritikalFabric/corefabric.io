@@ -29,6 +29,7 @@ awfulhak:corefabric.io ben$ ./docker-quick.sh
 & in another terminal:
 
 ```
+awfulhak:corefabric.io ben$ ./docker-angular-build.sh
 awfulhak:corefabric.io ben$ ./gradlew clean runShadow
 ```
 
