@@ -122,9 +122,9 @@ public class AppWebServerVerticle extends AbstractVerticle {
     private static void sendFile(HttpServerRequest req, String pathToFile, boolean acceptEncodingGzip) {
         if (pathToFile.endsWith(".html")) {
             req.response().headers().add("Pragma", "no-cache");
-            req.response().headers().add("Cache-control", "no-cache, no-store, private, must-revalidate");
+            req.response().headers().add("Cache-Control", "no-cache, no-store, private, must-revalidate");
         } else {
-            req.response().headers().add("Cache-control", "cache, store");
+            req.response().headers().add("Cache-Control", "public, max-age=7200");
         }
 
         if (pathToFile.endsWith(".html")) {
