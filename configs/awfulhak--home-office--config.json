@@ -40,6 +40,10 @@
           "password": "password"
         }
       }
-    ]
+    ],
+    "dtn-mqtt-bridge":[{
+      "subscribe":"nodes/development/awfulhak/#",
+      "to":"dtn://joyent-build.test.clusterfabric.io/MqttBridge"
+    }]
   }
 }
