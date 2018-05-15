@@ -44,7 +44,7 @@
     "dtn-mqtt-bridge":[{
       "subscribe":"nodes/#",
       "not":"nodes/development/awfulhak/#",
-      "to":"dtn://172.16.73.67/MqttBridge"
+      "to":"dtn://172.16.34.2/MqttBridge"
     },{
       "subscribe":"nodes/#",
       "not":"nodes/development/krital-mac-pro/#",

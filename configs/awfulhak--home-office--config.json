@@ -1,9 +1,9 @@
 {
   "node": {
-    "hostname": "172.16.73.67",
-    "ip4": "172.16.73.67",
+    "hostname": "172.16.34.2",
+    "ip4": "172.16.34.2",
     "localhostIf": "lo0",
-    "wanIf": "en5",
+    "wanIf": "utun1",
     "name": "awfulhak",
     "zone": "development",
     "node_db": {
