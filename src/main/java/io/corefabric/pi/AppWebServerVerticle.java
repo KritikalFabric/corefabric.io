@@ -34,6 +34,7 @@ import java.util.UUID;
 import java.util.function.Function;
 import java.util.jar.JarFile;
 import java.util.zip.ZipEntry;
+import org.apache.commons.io.FileUtils;
 
 /**
  * Created by ben on 11/3/16.
@@ -42,6 +43,8 @@ public class AppWebServerVerticle extends AbstractVerticle {
 
     final Logger logger = LoggerFactory.getLogger(AppWebServerVerticle.class);
     HttpServer server = null;
+    String tempdir = null;
+    boolean runningInsideJar = true;
 
     private static String cookieCutter(HttpServerRequest req) {
         String corefabric = null;
@@ -140,12 +143,27 @@ public class AppWebServerVerticle extends AbstractVerticle {
         req.response().sendFile(pathToFile);
     }
 
+    /* FIXME: stop() is not called
+
+    @Override
+    public void stop() throws Exception {
+        server.close();
+        server = null;
+        if (runningInsideJar) {
+            FileUtils.deleteDirectory(new File(tempdir));
+            if (CoreFabric.ServerConfiguration.DEBUG) logger.info("app-web-server\tCleaned:\t" + tempdir);
+        }
+        super.stop();
+    }
+
+    */
+
     @Override
     public void start() throws Exception {
         super.start();
 
         UUID uuid = UUID.randomUUID();
-        final String tempdir = ConfigurationManager.Shim.tmp + "/" + uuid.toString() + "/";
+        tempdir = ConfigurationManager.Shim.tmp + "/corefabric__" + uuid.toString() + "/";
         try {
             File file = new File(tempdir);
             file.mkdirs();
@@ -155,40 +173,45 @@ public class AppWebServerVerticle extends AbstractVerticle {
         }
 
         String runningJar = new File(AppWebServerVerticle.class.getProtectionDomain().getCodeSource().getLocation().toURI()).getAbsolutePath();
-        JarFile jarFile = null;
-        try {
-            jarFile = new JarFile(runningJar);
-            Enumeration entries = jarFile.entries();
+        if (CoreFabric.ServerConfiguration.DEBUG) logger.info("app-web-server\tCode running from:\t" + runningJar);
+        runningInsideJar = runningJar.endsWith("-fat.jar");
+        if (runningInsideJar) {
+            JarFile jarFile = null;
+            try {
+                jarFile = new JarFile(runningJar);
+                Enumeration entries = jarFile.entries();
 
-            while (entries.hasMoreElements()) {
-                ZipEntry entry = (ZipEntry) entries.nextElement();
-                final String[] parts = entry.getName().split("/");
-                if (parts.length < 3) continue;
-                if (!"web".equals(parts[0])) continue;
-                if (!"a2".equals(parts[1])) continue;
-                if (entry.isDirectory()) continue;
+                while (entries.hasMoreElements()) {
+                    ZipEntry entry = (ZipEntry) entries.nextElement();
+                    final String[] parts = entry.getName().split("/");
+                    if (parts.length < 3) continue;
+                    if (!"web".equals(parts[0])) continue;
+                    if (!"a2".equals(parts[1])) continue;
+                    if (entry.isDirectory()) continue;
 
-                StringBuilder newPath = new StringBuilder();
-                newPath.append(tempdir);
-                for (int i = 2; i < parts.length; ++i) {
-                    if (i > 2) newPath.append("/");
-                    newPath.append(parts[i]);
+                    StringBuilder newPath = new StringBuilder();
+                    newPath.append(tempdir);
+                    for (int i = 2; i < parts.length; ++i) {
+                        if (i > 2) newPath.append("/");
+                        newPath.append(parts[i]);
+                    }
+
+                    extract(jarFile, entry, newPath.toString());
                 }
-
-                extract(jarFile, entry, newPath.toString());
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        } finally {
-            if (jarFile != null) {
-                try {
-                    jarFile.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
+            } catch (Exception e) {
+                e.printStackTrace();
+            } finally {
+                if (jarFile != null) {
+                    try {
+                        jarFile.close();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
                 }
             }
         }
 
+        if (CoreFabric.ServerConfiguration.DEBUG) logger.info("app-web-server\tServing from: " + (runningInsideJar ? tempdir : "a2/dist/a2"));
 
         HttpServerOptions httpServerOptions = new HttpServerOptions();
         httpServerOptions.setSoLinger(0);
@@ -272,8 +295,8 @@ public class AppWebServerVerticle extends AbstractVerticle {
 
                 cookieCutter(req);
 
-                final String filesystemLocation = tempdir + file;
-                final String indexHtmlLocation = tempdir + "index.html";
+                final String filesystemLocation = (runningInsideJar ? tempdir : "a2/dist/a2") + file;
+                final String indexHtmlLocation = (runningInsideJar ? tempdir : "a2/dist/a2") + "index.html";
                 vertx.fileSystem().exists(filesystemLocation, new Handler<AsyncResult<Boolean>>() {
                     @Override
                     public void handle(AsyncResult<Boolean> event) {
