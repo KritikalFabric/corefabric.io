@@ -1,14 +1,14 @@
 {
   "node": {
-    "hostname": "joyent-build.test.clusterfabric.io",
-    "ip4": "10.100.1.33",
+    "hostname": "awfulhak.test.clusterfabric.io",
+    "ip4": "172.16.73.67",
     "localhostIf": "lo0",
-    "wanIf": "net0",
-    "name": "joyent-build",
-    "zone": "development",
+    "wanIf": "en5",
+    "name": "localhost",
+    "zone": "localzone",
     "node_db": {
-      "host": "pg.dc1.amb1ent.org",
-      "port": 5432,
+      "host": "localhost",
+      "port": 54321,
       "db": "corefabric__node_db",
       "user": "postgres",
       "password": "password"
@@ -26,29 +26,20 @@
   },
   "roles": {
     "app-web": [{}],
+    "dtn-node": [],
     "mqtt-broker":[],
     "app-config-server": [
       {
         "listenIp4": "127.0.0.1",
         "listenPort": 8082,
         "config_db": {
-          "host": "pg.dc1.amb1ent.org",
-          "port": 5432,
+          "host": "localhost",
+          "port": 54321,
           "db": "corefabric__config_db",
           "user": "postgres",
           "password": "password"
         }
       }
-    ],
-    "dtn-router":[{}],
-    "dtn-mqtt-bridge":[{
-      "subscribe":"nodes/#",
-      "not":"nodes/development/awfulhak/#",
-      "to":"dtn://awfulhak.test.clusterfabric.io/MqttBridge"
-    },{
-      "subscribe":"nodes/#",
-      "not":"nodes/development/krital-mac-pro/#",
-      "to":"dtn://krital-mac-pro.test.clusterfabric.io/MqttBridge"
-    }]
+    ]
   }
 }
