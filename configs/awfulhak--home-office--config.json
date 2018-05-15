@@ -4,8 +4,8 @@
     "ip4": "172.16.73.67",
     "localhostIf": "lo0",
     "wanIf": "en5",
-    "name": "localhost",
-    "zone": "localzone",
+    "name": "awfulhak",
+    "zone": "development",
     "node_db": {
       "host": "localhost",
       "port": 54321,
