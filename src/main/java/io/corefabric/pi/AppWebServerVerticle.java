@@ -29,6 +29,7 @@ import org.kritikal.fabric.net.mqtt.MqttBroker;
 
 import java.io.*;
 import java.util.Enumeration;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
@@ -118,7 +119,7 @@ public class AppWebServerVerticle extends AbstractVerticle {
         }
     }
 
-    private static void sendFile(HttpServerRequest req, String pathToFile) {
+    private static void sendFile(HttpServerRequest req, String pathToFile, boolean acceptEncodingGzip) {
         if (pathToFile.endsWith(".html")) {
             req.response().headers().add("Pragma", "no-cache");
             req.response().headers().add("Cache-control", "no-cache, no-store, private, must-revalidate");
@@ -140,7 +141,11 @@ public class AppWebServerVerticle extends AbstractVerticle {
             req.response().headers().add("Content-Type", "application/octet-stream");
         }
 
-        req.response().sendFile(pathToFile);
+        if (acceptEncodingGzip) {
+            req.response().headers().add("Content-Encoding", "gzip");
+        }
+
+        req.response().sendFile(pathToFile + (acceptEncodingGzip ? ".gz" : ""));
     }
 
     /* FIXME: stop() is not called
@@ -295,14 +300,23 @@ public class AppWebServerVerticle extends AbstractVerticle {
 
                 cookieCutter(req);
 
+                boolean gzip = false;
+                for (Map.Entry<String, String> stringStringEntry : req.headers()) {
+                    if (stringStringEntry.getKey().toLowerCase().equals("accept-encoding") &&
+                            stringStringEntry.getValue().toLowerCase().contains("gzip")) {
+                        gzip = true;
+                    }
+                }
+                final boolean acceptEncodingGzip = gzip;
+
                 final String filesystemLocation = (runningInsideJar ? tempdir : "a2/dist/a2") + file;
                 final String indexHtmlLocation = (runningInsideJar ? tempdir : "a2/dist/a2") + "index.html";
-                vertx.fileSystem().exists(filesystemLocation, new Handler<AsyncResult<Boolean>>() {
+                vertx.fileSystem().exists(filesystemLocation + (acceptEncodingGzip ? ".gz" : ""), new Handler<AsyncResult<Boolean>>() {
                     @Override
                     public void handle(AsyncResult<Boolean> event) {
                         if (event.succeeded()) {
                             if (event.result()) {
-                                sendFile(req, filesystemLocation);
+                                sendFile(req, filesystemLocation, acceptEncodingGzip);
                             } else {
                                 if (filesystemLocation.endsWith(".js") ||
                                         filesystemLocation.endsWith(".map") ||
@@ -319,7 +333,7 @@ public class AppWebServerVerticle extends AbstractVerticle {
                                     req.response().end();
                                     return;
                                 } else {
-                                    sendFile(req, indexHtmlLocation);
+                                    sendFile(req, indexHtmlLocation, acceptEncodingGzip);
                                 }
                             }
                         } else {
