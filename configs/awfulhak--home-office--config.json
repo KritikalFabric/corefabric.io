@@ -1,9 +1,9 @@
 {
   "node": {
     "hostname": "awfulhak.test.clusterfabric.io",
-    "ip4": "172.16.127.131",
+    "ip4": "172.16.73.67",
     "localhostIf": "lo0",
-    "wanIf": "en0",
+    "wanIf": "en5",
     "name": "awfulhak",
     "zone": "development",
     "node_db": {
