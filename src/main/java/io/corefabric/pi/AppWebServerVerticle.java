@@ -128,15 +128,15 @@ public class AppWebServerVerticle extends AbstractVerticle {
         }
 
         if (pathToFile.endsWith(".html")) {
-            req.response().headers().add("Content-Type", "text/html; charset=UTF-8");
+            req.response().headers().add("Content-Type", "text/html; charset=utf-8");
         } else if (pathToFile.endsWith(".js")) {
-            req.response().headers().add("Content-Type", "text/javascript; charset=UTF-8");
+            req.response().headers().add("Content-Type", "text/javascript; charset=utf-8");
         } else if (pathToFile.endsWith(".json")) {
-            req.response().headers().add("Content-Type", "application/json; charset=UTF-8");
+            req.response().headers().add("Content-Type", "application/json; charset=utf-8");
         } else if (pathToFile.endsWith(".css")) {
-            req.response().headers().add("Content-Type", "text/css; charset=UTF-8");
+            req.response().headers().add("Content-Type", "text/css; charset=utf-8");
         } else if (pathToFile.endsWith(".txt")) {
-            req.response().headers().add("Content-Type", "text/plain; charset=UTF-8");
+            req.response().headers().add("Content-Type", "text/plain; charset=utf-8");
         } else {
             req.response().headers().add("Content-Type", "application/octet-stream");
         }
@@ -251,7 +251,7 @@ public class AppWebServerVerticle extends AbstractVerticle {
 
             //String host = req.headers().get("Host");
             //String instancekey = host.split("\\.")[0];
-            final String instancekey = "demo"; //FIXME
+            final String instancekey = "development/demo"; //FIXME zone/instance
 
             final String corefabric = cookieCutter(req);
 
@@ -269,7 +269,7 @@ public class AppWebServerVerticle extends AbstractVerticle {
                         String optionsOrigin = req.headers().get("Origin");
                         if (optionsOrigin == null) optionsOrigin = "*";
                         req.response().headers().add("Access-Control-Allow-Origin", optionsOrigin);
-                        req.response().headers().add("Content-Type", "application/json; charset=UTF-8");
+                        req.response().headers().add("Content-Type", "application/json; charset=utf-8");
                         req.response().end(event.encode());
                     } else {
                         req.response().setStatusCode(500).end();

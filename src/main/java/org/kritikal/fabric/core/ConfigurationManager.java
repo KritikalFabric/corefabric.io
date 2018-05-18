@@ -1,9 +1,11 @@
 package org.kritikal.fabric.core;
 
 import io.vertx.core.Vertx;
+import io.vertx.core.http.HttpClient;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
+import org.kritikal.fabric.CoreFabric;
 import org.kritikal.fabric.daemon.MqttBrokerVerticle;
 
 import java.io.BufferedReader;
@@ -29,7 +31,23 @@ public class ConfigurationManager {
     public static class Shim {
         public static void apply(JsonObject globalConfig) {
             JsonObject node = globalConfig.getJsonObject("node", new JsonObject());
-            appConfigUri = node.getString("app_config", "http://127.0.0.1:8082/");
+            appConfigUri = node.getString("app_config_uri", "http://127.0.0.1:8082/");
+            if (appConfigUri.contains("127.0.0.1") || appConfigUri.contains("localhost")) {
+                appConfigForceSynchronousHttp = true;
+            } else {
+                appConfigForceSynchronousHttp = false;
+            }
+            try {
+                URL url = new URL(appConfigUri);
+                appConfigHost = url.getHost();
+                appConfigPort = url.getPort();
+            }
+            catch (Exception e) {
+                logger.fatal("configuration-manager\tCannot parse [" + appConfigUri + "]\t" + e.getMessage());
+                appConfigHost = "127.0.0.1";
+                appConfigPort = 8082;
+                appConfigForceSynchronousHttp = true;
+            }
             JsonObject node_db = node.getJsonObject("node_db", new JsonObject());
             host = node_db.getString("host", "localhost");
             port = node_db.getInteger("port", 5432);
@@ -39,6 +57,9 @@ public class ConfigurationManager {
             tmp = node.getString("tmp", "/var/tmp");
         }
         public static String appConfigUri;
+        public static String appConfigHost;
+        public static int appConfigPort;
+        public static boolean appConfigForceSynchronousHttp = true;
         public static String tmp;
         public static String host;
         public static int port;
@@ -194,7 +215,7 @@ public class ConfigurationManager {
             return configuration;
         });
         if (c.state == Configuration.State.UNKNOWN || c.refreshAfter == 0 || c.refreshAfter > new java.util.Date().getTime()) {
-            final JsonObject jsonClusterConfig = new JsonObject(getJsonClusterConfiguration(instancekey));
+            final JsonObject jsonClusterConfig = new JsonObject(getJsonClusterConfigurationBlockingApi(instancekey));
             if (c.refreshAfter == 0) {
                 c.reset();
             }
@@ -207,7 +228,7 @@ public class ConfigurationManager {
         return c;
     }
 
-    private static String getJsonClusterConfiguration(String instancekey)
+    private static String getJsonClusterConfigurationBlockingApi(String instancekey)
     {
         StringBuilder content = new StringBuilder();
         try {
@@ -289,22 +310,50 @@ public class ConfigurationManager {
         final String topic = clusterTopic(instancekey);
         JsonObject cachedMqttObject = MqttBrokerVerticle.mqttBroker().apiPeek(topic);
         if(null == cachedMqttObject) {
-            clusterRequests.compute(instancekey, (k, v) -> {
-                if (null == v || !v) {
-                    v = true;
-                    vertx.executeBlocking(f ->
-                    {
-                        // get it synchronously
-                        String json = getJsonClusterConfiguration(instancekey);
+            if (Shim.appConfigForceSynchronousHttp) {
+                clusterRequests.compute(instancekey, (k, v) -> {
+                    if (null == v || !v) {
+                        v = true;
+                        vertx.executeBlocking(f ->
+                        {
+                            // get it synchronously
+                            String json = getJsonClusterConfigurationBlockingApi(instancekey);
 
+                            try {
+                                MqttBrokerVerticle.mqttBroker().apiPublish(topic, json.getBytes("UTF-8"), 0, true, TTL);
+                            } catch (UnsupportedEncodingException uee) {
+                                logger.fatal("", uee);
+                            }
+                            clusterRequests.put(instancekey, false);
+                            nextStep(json, q);
+                        }, false, r -> {
+                        });
+                    }
+                    return v;
+                });
+            } else {
+                // full async path
+                final HttpClient httpClient = vertx.createHttpClient();
+                httpClient.getNow(Shim.appConfigPort, Shim.appConfigHost, Shim.appConfigUri + instancekey, response -> {
+                    response.bodyHandler(buffer -> {
+                        final StringBuilder bodyBuilder = new StringBuilder();
+                        try {
+                            bodyBuilder.append(new String(buffer.getBytes(0, buffer.length()), "UTF-8"));
+                        }
+                        catch (UnsupportedEncodingException uee) {
+                            logger.fatal("configuration-manager\t" + uee.toString());
+                        }
+                        final String s = bodyBuilder.toString();
+                        final String json = s.isEmpty() ? "{}" : s;
+                        if (CoreFabric.ServerConfiguration.DEBUG) {
+                            logger.info("configuration-manager\t" + instancekey + "\t" + json);
+                        }
                         try { MqttBrokerVerticle.mqttBroker().apiPublish(topic, json.getBytes("UTF-8"), 0, true, TTL); } catch (UnsupportedEncodingException uee) { logger.fatal("", uee); }
                         clusterRequests.put(instancekey, false);
                         nextStep(json, q);
-                    }, false, r -> {
                     });
-                }
-                return v;
-            });
+                });
+            }
         }
         else {
             String content = null;
@@ -339,7 +388,7 @@ public class ConfigurationManager {
 
             if (!list.isEmpty()) {
                 // get it synchronously
-                String json = getJsonClusterConfiguration(instancekey);
+                String json = getJsonClusterConfigurationBlockingApi(instancekey);
 
                 try { MqttBrokerVerticle.mqttBroker().apiPublish(topic, json.getBytes("UTF-8"), 0, true, TTL); } catch (UnsupportedEncodingException uee) { logger.fatal("", uee); }
                 clusterRequests.put(instancekey, false);
@@ -380,7 +429,7 @@ public class ConfigurationManager {
             String json = null;
             {
                 // get it synchronously
-                json = getJsonClusterConfiguration(instancekey);
+                json = getJsonClusterConfigurationBlockingApi(instancekey);
 
                 try { MqttBrokerVerticle.mqttBroker().apiPublish(topic, json.getBytes("UTF-8"), 0, true, TTL); } catch (UnsupportedEncodingException uee) { logger.fatal("", uee); }
                 clusterRequests.put(instancekey, false);
