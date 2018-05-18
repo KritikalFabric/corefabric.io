@@ -5,6 +5,7 @@ import io.vertx.core.http.HttpClient;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
+import org.kritikal.fabric.CoreFabric;
 import org.kritikal.fabric.daemon.MqttBrokerVerticle;
 
 import java.io.BufferedReader;
@@ -309,46 +310,50 @@ public class ConfigurationManager {
         final String topic = clusterTopic(instancekey);
         JsonObject cachedMqttObject = MqttBrokerVerticle.mqttBroker().apiPeek(topic);
         if(null == cachedMqttObject) {
-            clusterRequests.compute(instancekey, (k, v) -> {
-                if (null == v || !v) {
-                    v = true;
-                    if (Shim.appConfigForceSynchronousHttp) {
+            if (Shim.appConfigForceSynchronousHttp) {
+                clusterRequests.compute(instancekey, (k, v) -> {
+                    if (null == v || !v) {
+                        v = true;
                         vertx.executeBlocking(f ->
                         {
                             // get it synchronously
                             String json = getJsonClusterConfigurationBlockingApi(instancekey);
 
-                            try { MqttBrokerVerticle.mqttBroker().apiPublish(topic, json.getBytes("UTF-8"), 0, true, TTL); } catch (UnsupportedEncodingException uee) { logger.fatal("", uee); }
+                            try {
+                                MqttBrokerVerticle.mqttBroker().apiPublish(topic, json.getBytes("UTF-8"), 0, true, TTL);
+                            } catch (UnsupportedEncodingException uee) {
+                                logger.fatal("", uee);
+                            }
                             clusterRequests.put(instancekey, false);
                             nextStep(json, q);
                         }, false, r -> {
                         });
-                    } else {
-                        final HttpClient httpClient = vertx.createHttpClient();
-                        httpClient.getNow(Shim.appConfigPort, Shim.appConfigHost, instancekey, response -> {
-                            if (response.statusCode() != 200) {
-                                nextStep("", q);
-                                return;
-                            }
-                            response.bodyHandler(buffer -> {
-                                String json = "";
-                                try {
-                                    json = new String(buffer.getBytes(0, buffer.length()), "UTF-8");
-                                }
-                                catch (UnsupportedEncodingException uee) {
-                                    logger.fatal("configuration-manager\t" + uee.toString());
-                                }
-
-                                // now fire!
-                                try { MqttBrokerVerticle.mqttBroker().apiPublish(topic, json.getBytes("UTF-8"), 0, true, TTL); } catch (UnsupportedEncodingException uee) { logger.fatal("", uee); }
-                                clusterRequests.put(instancekey, false);
-                                nextStep(json, q);
-                            });
-                        });
                     }
-                }
-                return v;
-            });
+                    return v;
+                });
+            } else {
+                // full async path
+                final HttpClient httpClient = vertx.createHttpClient();
+                httpClient.getNow(Shim.appConfigPort, Shim.appConfigHost, Shim.appConfigUri + instancekey, response -> {
+                    response.bodyHandler(buffer -> {
+                        final StringBuilder bodyBuilder = new StringBuilder();
+                        try {
+                            bodyBuilder.append(new String(buffer.getBytes(0, buffer.length()), "UTF-8"));
+                        }
+                        catch (UnsupportedEncodingException uee) {
+                            logger.fatal("configuration-manager\t" + uee.toString());
+                        }
+                        final String s = bodyBuilder.toString();
+                        final String json = s.isEmpty() ? "{}" : s;
+                        if (CoreFabric.ServerConfiguration.DEBUG) {
+                            logger.info("configuration-manager\t" + instancekey + "\t" + json);
+                        }
+                        try { MqttBrokerVerticle.mqttBroker().apiPublish(topic, json.getBytes("UTF-8"), 0, true, TTL); } catch (UnsupportedEncodingException uee) { logger.fatal("", uee); }
+                        clusterRequests.put(instancekey, false);
+                        nextStep(json, q);
+                    });
+                });
+            }
         }
         else {
             String content = null;
