@@ -59,8 +59,7 @@ public class AppConfigServerVerticle extends AbstractVerticle {
                 req.response().headers().add("Cache-Control", "public, max-age=5");
                 req.response().headers().add("Content-Type", "application/json; charset=utf-8");
                 req.response().headers().add("Content-Length", Long.toString(bodyBytes.length));
-                req.response().write(Buffer.buffer(bodyBytes));
-                req.response().end();
+                req.response().write(Buffer.buffer(bodyBytes)).end();
                 if (CoreFabric.ServerConfiguration.DEBUG) logger.info("app-config-server\t" + zone + "\t" + instance + "\t" + body);
             }
             catch (UnsupportedEncodingException uee) {
