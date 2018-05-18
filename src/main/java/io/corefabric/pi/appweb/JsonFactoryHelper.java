@@ -14,7 +14,7 @@ public class JsonFactoryHelper {
         router.options(ROUTE).handler(corsOptionsHandler);
         router.get(ROUTE).blockingHandler(rc -> {
             HttpServerRequest req = rc.request();
-            req.response().headers().add("Content-Type", "application/json; charset=UTF-8");
+            req.response().headers().add("Content-Type", "application/json; charset=utf-8");
             req.response().headers().add("Pragma", "no-cache");
             req.response().headers().add("Cache-control", "no-cache, no-store, private, must-revalidate");
             req.response().headers().add("Access-Control-Allow-Credentials", "true");

@@ -26,6 +26,19 @@ public class CoreFabricRoleRegistry {
             org.kritikal.fabric.dtn.jdtn.JsonConfigShim.bootstrap();
         }
 
+        RoleRegistry.addRole(new Role(new String[] {"mqtt-broker"}, "app-config-server", (future, array) -> {
+
+            JsonObject config = array.size() > 0 ? array.getJsonObject(0) : new JsonObject();
+            DeploymentOptions deploymentOptions = new DeploymentOptions();
+            deploymentOptions.setWorker(false);
+            deploymentOptions.setConfig(config);
+            vertx.deployVerticle("io.corefabric.pi.AppConfigServerVerticle", f1 -> {
+                if (f1.failed()) future.fail("app-config-server");
+                else future.complete();
+            });
+
+        }));
+
         RoleRegistry.addRole(new Role(new String[] {"dtn-shell", "mqtt-broker"}, "app-web", (future, array) -> {
 
             JsonObject config = array.size() > 0 ? array.getJsonObject(0) : new JsonObject();
