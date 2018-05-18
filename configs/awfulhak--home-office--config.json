@@ -13,7 +13,7 @@
       "user": "postgres",
       "password": "password"
     },
-    "app_config_uri": "http://127.0.0.1:8082/",
+    "app_config_uri": "http://joyent-build.dc1.amb1ent.org:8082/",
     "tmp": "/var/tmp"
   },
   "cluster": {
@@ -28,7 +28,7 @@
     "app-web": [{}],
     "dtn-node": [],
     "mqtt-broker":[],
-    "app-config-server": [
+    "DISABLED--app-config-server": [
       {
         "listenIp4": "127.0.0.1",
         "listenPort": 8082,
