@@ -66,7 +66,7 @@ public class CoreFabric {
         }
     }
     public static class BuildConfig {
-        public static String VERSION = "0.2.0-angular6";
+        public static String VERSION = "0.2.1-autoconf";
     }
     public static class ServerConfiguration {
         public static final UUID instance = UUID.randomUUID();

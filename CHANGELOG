@@ -3,3 +3,5 @@ Initial import from the original fabric project.
 Docker for devops.
 
 0.2.0-angular6:     bump angular version across a 2 year time span
+
+0.2.1-autoconf:     automated node configuration and registration with the config repository
