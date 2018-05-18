@@ -38,7 +38,7 @@ buildConfig {
 	sourceSets {
 		main {
 			packageName = 'org.kritikal.fabric.core'
-			appName = 'Kritikal Fabric: Core'
+			appName = 'corefabric: compute platform services'
 			version = version
 		}
 	}
