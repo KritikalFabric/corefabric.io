@@ -25,6 +25,7 @@
               "src/static"
             ],
             "styles": [
+              "src/download/maverick-theme/app/assets/less/maverick-theme.css",
               "src/static/vendor/font-awesome/css/font-awesome.min.css",
               "src/download/maverick-theme/prebuilt/assets/fonts/glyphicons/css/glyphicons.min.css",
               "src/download/maverick-theme/prebuilt/assets/plugins/form-fseditor/fseditor.css",
@@ -33,7 +34,6 @@
               "src/styles.css"
             ],
             "scripts": [
-              "src/download/maverick-theme/prebuilt/assets/plugins/misc/less.js",
               "src/static/vendor/text-encoding/encoding-indexes.js",
               "src/static/vendor/text-encoding/encoding.js",
               "src/static/vendor/unclassified/destringify.js",

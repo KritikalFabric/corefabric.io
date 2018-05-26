@@ -1,11 +1,11 @@
 {
   "node": {
-    "hostname": "localhost.localdomain",
-    "ip4": "127.0.0.1",
+    "hostname": "awfulhak.test.clusterfabric.io",
+    "ip4": "172.16.73.67",
     "localhostIf": "lo0",
-    "wanIf": "en0",
-    "name": "localhost",
-    "zone": "localzone",
+    "wanIf": "en5",
+    "name": "awfulhak",
+    "zone": "development",
     "node_db": {
       "host": "localhost",
       "port": 54321,
@@ -13,22 +13,22 @@
       "user": "postgres",
       "password": "password"
     },
-    "app_config_uri": "http://127.0.0.1:8082/",
+    "app_config_uri": "http://joyent-build.dc1.amb1ent.org:8082/",
     "tmp": "/var/tmp"
   },
   "cluster": {
     "multicast": false
   },
   "dtn": {
-    "isRouter": true,
-    "routerHostname": "localhost.localdomain",
-    "routerIp4": "127.0.0.1"
+    "isRouter": false,
+    "routerHostname": "joyent-build.test.clusterfabric.io",
+    "routerIp4": "10.100.1.33"
   },
   "roles": {
     "app-web": [{}],
     "dtn-node": [],
     "mqtt-broker":[],
-    "app-config-server": [
+    "DISABLED--app-config-server": [
       {
         "listenIp4": "127.0.0.1",
         "listenPort": 8082,
@@ -40,6 +40,10 @@
           "password": "password"
         }
       }
-    ]
+    ],
+    "dtn-mqtt-bridge":[{
+      "subscribe":"nodes/development/awfulhak/#",
+      "to":"dtn://joyent-build.test.clusterfabric.io/MqttBridge"
+    }]
   }
 }

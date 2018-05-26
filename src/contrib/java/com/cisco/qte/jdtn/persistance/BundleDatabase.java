@@ -854,7 +854,7 @@ public class BundleDatabase extends AbstractStartableComponent {
 	 * @param callback Callback for each Bundle restored
 	 * @throws JDtnException on errors
 	 */
-	public void restoreBundles(BundleDatabaseRestoreCallback callback) 
+	public void restoreBundles(BundleDatabaseRestoreCallback callback)
 	throws  JDtnException {
 		if (GeneralManagement.isDebugLogging()) {
 			_logger.finer("restoreBundles()");
@@ -921,7 +921,7 @@ public class BundleDatabase extends AbstractStartableComponent {
 					}
 					MediaRepository.File file = new MediaRepository.File(storageType, pathnameStr);
 					file.setOid(oid);
-					DecodeState decodeState = new DecodeState(file, 0L, fileLength);
+					DecodeState decodeState = new DecodeState(con, file, 0L, fileLength);
 					Bundle bundle = new Bundle(decodeState, eidScheme);
 
 					Link link = LinksList.getInstance().findLinkByName(linkName);

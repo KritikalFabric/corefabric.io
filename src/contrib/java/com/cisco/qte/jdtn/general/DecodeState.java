@@ -30,10 +30,13 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 package com.cisco.qte.jdtn.general;
 
 import com.cisco.qte.jdtn.apps.MediaRepository;
+import com.cisco.qte.jdtn.persistance.DBInterfaceJDBC;
 import org.kritikal.fabric.contrib.jdtn.BlobAndBundleDatabase;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.sql.Connection;
 import java.sql.SQLException;
 
 
@@ -60,7 +63,11 @@ public class DecodeState {
 	public long _fileLength;
 	/** isInFile==true; the open File */
 	public InputStream _fis;
-	
+
+	BlobAndBundleDatabase blobAndBundleDatabase = null;
+	public Connection con = null;
+
+
 	/**
 	 * Constructor which fills in all members from arguments for an
 	 * in-memory buffer.
@@ -82,20 +89,23 @@ public class DecodeState {
 	 * RandomAccessFile and there's no way to detect EOF.
 	 * @throws IOException if cannot open the file or seek to initial Offset.
 	 */
-	public DecodeState(MediaRepository.File aFilePath, long aOffset, long aLength)
+	public DecodeState(java.sql.Connection con, MediaRepository.File aFilePath, long aOffset, long aLength)
 	throws JDtnException {
 		storeInFileParameters(aFilePath, aOffset, aLength);
 		this._isInFile = true;
 
-		throw new Error("Not implemented.");/*
-		try {
-			_fis = new FileInputStream(aFilePath);
+		this.con = con;
+		blobAndBundleDatabase = BlobAndBundleDatabase.getInstance();
+		byte[] file = blobAndBundleDatabase.mediaGetBodyData(con, _filePath);
+		_fis = new ByteArrayInputStream(file);
+		try
+		{
 			if (_fileOffset != 0) {
 				_fis.skip(_fileOffset);
 			}
 		} catch (IOException e) {
 			throw new JDtnException(e);
-		}*/
+		}
 	}
 
 	/**

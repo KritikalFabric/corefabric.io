@@ -37,3 +37,6 @@ testem.log
 # System Files
 .DS_Store
 Thumbs.db
+
+# generated crap
+src/download/maverick-theme/app/assets/less/maverick-theme.css

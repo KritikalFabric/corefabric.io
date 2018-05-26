@@ -126,6 +126,9 @@ public class SecondaryBundleBlock extends BundleBlock {
 	throws JDtnException {
 		
 		super(bundle, decodeState);
+
+		final java.sql.Connection con = decodeState.con;
+
 		setBlockType(blockType);
 		decodeBlockProcessingFlags(Utils.sdnvDecodeInt(decodeState));
 		if (containsEidReference()) {
@@ -153,6 +156,7 @@ public class SecondaryBundleBlock extends BundleBlock {
 			decodeState.spillToFile(file, blockLength);
 			DecodeState decodeState2 =
 				new DecodeState(
+						con,
 						file, 
 						0, 
 						blockLength);

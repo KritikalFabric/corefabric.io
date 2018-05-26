@@ -228,7 +228,10 @@ public class DBInterfaceJDBC implements DBInterface {
                 }
             }
             catch (Throwable t) {
-			    try { _connection.rollback(); } catch (SQLException ignore) { }
+			    try { _connection.rollback(); } catch (SQLException dontIgnore) {
+			        _logger.warning("Database error creating tables.");
+			        _logger.warning(dontIgnore.getMessage());
+                }
 			    throw t;
             }
             finally {
