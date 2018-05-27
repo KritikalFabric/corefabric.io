@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
 using System.Net.Http;
-
+using System.Net.WebSockets;
 
 namespace corefabric_comms
 {
