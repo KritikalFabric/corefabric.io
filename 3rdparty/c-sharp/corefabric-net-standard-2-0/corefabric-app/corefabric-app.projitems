@@ -6,7 +6,7 @@
     <SharedGUID>{FF071173-E059-449D-AF3D-41A0D3908CEC}</SharedGUID>
   </PropertyGroup>
   <PropertyGroup Label="Configuration">
-    <Import_RootNamespace>corefabric-app</Import_RootNamespace>
+    <Import_RootNamespace>corefabric_app</Import_RootNamespace>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)Helpers\Command.cs" />

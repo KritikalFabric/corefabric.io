@@ -2,6 +2,14 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
+    <RootNamespace>corefabric_comms</RootNamespace>
   </PropertyGroup>
 
+  <ItemGroup>
+    <Folder Include="net\" />
+    <Folder Include="net\mqtt\" />
+    <Folder Include="net\websocket-mqtt\" />
+    <Folder Include="net\mqtt\codec\" />
+    <Folder Include="net\mqtt\entites\" />
+  </ItemGroup>
 </Project>

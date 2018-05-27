@@ -20,7 +20,7 @@ namespace corefabricapp
             }
         }
 
-        readonly Uri BaseAddress = new Uri($"{App.BackendUrl}/");
+        readonly Uri BaseAddress = new Uri($"{App.BackendUrl}/corefabric-app/");
 
         public FabricDataStore()
         {
