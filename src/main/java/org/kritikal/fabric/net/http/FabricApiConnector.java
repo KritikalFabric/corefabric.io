@@ -22,7 +22,7 @@ public class FabricApiConnector {
 
         FabricRestApi restApi = (FabricRestApi)a;
         try {
-            final Object o = clazz.getConstructor(null).newInstance();
+            final Object o = clazz.getConstructor(new Class[]{}).newInstance();
             if (restApi.worker()) {
                 connectRestApiWorker(restApi, o, clazz, router, corsOptionsHandler);
             } else {
