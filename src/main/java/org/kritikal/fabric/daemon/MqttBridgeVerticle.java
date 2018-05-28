@@ -3,7 +3,6 @@ package org.kritikal.fabric.daemon;
 import com.cisco.qte.jdtn.apps.AbstractApp;
 import com.cisco.qte.jdtn.bp.*;
 import com.cisco.qte.jdtn.general.GeneralManagement;
-import com.cisco.qte.jdtn.general.JDtnException;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.vertx.core.AbstractVerticle;
@@ -21,7 +20,6 @@ import org.kritikal.fabric.net.mqtt.codec.EncodePublish;
 import org.kritikal.fabric.net.mqtt.entities.AbstractMessage;
 import org.kritikal.fabric.net.mqtt.entities.PublishMessage;
 
-import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
 import java.util.UUID;
 
@@ -79,7 +77,7 @@ public class MqttBridgeVerticle extends AbstractVerticle {
                 bufferContainer.append(Buffer.buffer(publishMessage));
                 try {
                     PublishMessage publishMessage1 = DecodePublish.decode(bufferContainer, true);
-                    MqttBrokerVerticle.mqttBroker().apiPublish(publishMessage1.getTopicName(), publishMessage1.getPayload().array(), (int)(publishMessage1.getQos().getValue()), publishMessage1.isRetainFlag());
+                    MqttBrokerVerticle.syncBroker().syncApiPublish(publishMessage1.getTopicName(), publishMessage1.getPayload().array(), (int)(publishMessage1.getQos().getValue()), publishMessage1.isRetainFlag());
                 }
                 catch (BufferContainer.NeedMoreDataException ignore1) { }
             }
@@ -157,7 +155,7 @@ public class MqttBridgeVerticle extends AbstractVerticle {
         else
             logger.info("Routing MQTT from [" + subscription + "] to " + toEndPointId + " (ignoring " + notSubscription + ")");
 
-        MqttBrokerVerticle.mqttBroker().apiSubscribe(subscription, "mqtt.bridge." + uuid);
+        MqttBrokerVerticle.syncBroker().syncApiSubscribe(subscription, "mqtt.bridge." + uuid);
     }
 
     @Override

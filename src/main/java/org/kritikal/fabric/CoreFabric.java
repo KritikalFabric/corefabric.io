@@ -21,6 +21,7 @@ import java.io.InputStreamReader;
 import java.net.Inet4Address;
 import java.util.ArrayList;
 import java.util.UUID;
+import org.kritikal.fabric.core.BuildConfig;
 
 /**
  * Created by ben on 07/03/2016.
@@ -29,7 +30,7 @@ public class CoreFabric {
     public final static Logger logger = LoggerFactory.getLogger(CoreFabric.class);
     public static JsonObject globalConfig = null;
     static {
-        logger.info("corefabric.io - " + BuildConfig.VERSION);
+        logger.info(BuildConfig.NAME + " - " + BuildConfig.VERSION);
 
         {
             ArrayList<String> files = new ArrayList<>();
@@ -64,9 +65,6 @@ public class CoreFabric {
         if (globalConfig == null) {
             logger.fatal("Unable to locate config.json");
         }
-    }
-    public static class BuildConfig {
-        public static String VERSION = "0.2.0-angular6";
     }
     public static class ServerConfiguration {
         public static final UUID instance = UUID.randomUUID();

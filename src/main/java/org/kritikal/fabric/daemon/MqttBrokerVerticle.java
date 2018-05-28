@@ -1,38 +1,33 @@
 package org.kritikal.fabric.daemon;
 
-import io.netty.buffer.ByteBuf;
 import io.vertx.core.AbstractVerticle;
-import io.vertx.core.buffer.Buffer;
+import io.vertx.core.AsyncResult;
 import io.vertx.core.eventbus.MessageConsumer;
-import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import io.vertx.core.net.NetServerOptions;
-import org.kritikal.fabric.CoreFabric;
 import org.kritikal.fabric.core.VERTXDEFINES;
-import org.kritikal.fabric.net.BufferContainer;
-import org.kritikal.fabric.net.mqtt.IMqttBroker;
-import org.kritikal.fabric.net.mqtt.MqttBroker;
+import org.kritikal.fabric.net.mqtt.IAsyncMqttBroker;
+import org.kritikal.fabric.net.mqtt.ISyncMqttBroker;
+import org.kritikal.fabric.net.mqtt.SyncMqttBroker;
 import io.vertx.core.eventbus.Message;
-import io.vertx.core.http.ServerWebSocket;
 import io.vertx.core.Handler;
 import io.vertx.core.http.HttpServer;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.net.NetServer;
 import io.vertx.core.net.NetSocket;
-import org.kritikal.fabric.net.mqtt.codec.DecodePublish;
-import org.kritikal.fabric.net.mqtt.entities.PublishMessage;
 
 import java.io.UnsupportedEncodingException;
 
 /**
  * Created by ben on 04/02/15.
  */
-public class MqttBrokerVerticle extends AbstractVerticle /*implements Handler<Message<Buffer>>*/ {
+public class MqttBrokerVerticle extends AbstractVerticle {
 
     final static Logger logger = LoggerFactory.getLogger(MqttBrokerVerticle.class);
 
-    static MqttBroker mqttBroker = null;
+    static SyncMqttBroker syncMqttBroker = null;
+    static AsyncMqttBroker asyncMqttBroker = null;
 
     NetServer netServer = null;
     HttpServer httpServer = null;
@@ -53,7 +48,7 @@ public class MqttBrokerVerticle extends AbstractVerticle /*implements Handler<Me
             bufferContainer.append(event.body());
             PublishMessage publishMessage = DecodePublish.decode(bufferContainer, true);
             if (publishMessage.origin.equals(CoreFabric.ServerConfiguration.instance)) return;
-            mqttBroker.enqueue(null, publishMessage);
+            syncBroker.enqueue(null, publishMessage);
         }
         catch (Throwable t) {
             logger.warn("", t);
@@ -66,7 +61,8 @@ public class MqttBrokerVerticle extends AbstractVerticle /*implements Handler<Me
 
         final Logger logger = LoggerFactory.getLogger(getClass());
 
-        if (mqttBroker == null) mqttBroker = new MqttBroker(getVertx());
+        if (syncMqttBroker == null) syncMqttBroker = new SyncMqttBroker(getVertx());
+        if (asyncMqttBroker == null) asyncMqttBroker = new AsyncMqttBroker();
 
         //mcMqttEnqueue = vertx.eventBus().consumer("mqtt.enqueue");
         //mcMqttEnqueue.handler(this);
@@ -81,11 +77,11 @@ public class MqttBrokerVerticle extends AbstractVerticle /*implements Handler<Me
             netServer.connectHandler(new Handler<NetSocket>() {
                 @Override
                 public void handle(NetSocket netSocket) {
-                    if (mqttBroker.DEBUG) {
+                    if (syncMqttBroker.DEBUG) {
                         logger.debug("Incoming connection MQTT");
                     }
-                    final MqttBroker.MyMqttServerProtocol mqttServerProtocol = new MqttBroker.MyMqttServerProtocol(logger, getVertx(), mqttBroker, netSocket);
-                    mqttBroker.waitingForConnect.add(mqttServerProtocol);
+                    final SyncMqttBroker.MyMqttServerProtocol mqttServerProtocol = new SyncMqttBroker.MyMqttServerProtocol(logger, getVertx(), syncMqttBroker, netSocket);
+                    syncMqttBroker.waitingForConnect.add(mqttServerProtocol);
                 }
             });
             netServer.listen(1883);
@@ -102,13 +98,13 @@ public class MqttBrokerVerticle extends AbstractVerticle /*implements Handler<Me
             httpServer.websocketHandler(new Handler<ServerWebSocket>() {
                 @Override
                 public void handle(ServerWebSocket webSocket) {
-                    if (mqttBroker.DEBUG) {
+                    if (syncBroker.DEBUG) {
                         logger.debug("Incoming connection MQTT/WebSockets");
                     }
                     if (!"/mqtt".equals(webSocket.path())) webSocket.reject();
                     else {
-                        final MqttBroker.MyMqttServerProtocol mqttServerProtocol = new MqttBroker.MyMqttServerProtocol(logger, getVertx(), mqttBroker, webSocket, corefabric);
-                        mqttBroker.waitingForConnect.add(mqttServerProtocol);
+                        final SyncMqttBroker.MyMqttServerProtocol mqttServerProtocol = new SyncMqttBroker.MyMqttServerProtocol(logger, getVertx(), syncBroker, webSocket, corefabric);
+                        syncBroker.waitingForConnect.add(mqttServerProtocol);
                     }
                 }
             });
@@ -123,11 +119,11 @@ public class MqttBrokerVerticle extends AbstractVerticle /*implements Handler<Me
         // vertx2 sockJSServer.installApp(sockJSConfig, new Handler<SockJSSocket>() {
         // vertx2     @Override
         // vertx2     public void handle(SockJSSocket sockJSSocket) {
-        // vertx2         if (mqttBroker.DEBUG) {
+        // vertx2         if (syncBroker.DEBUG) {
         // vertx2             logger.debug("Incoming connection MQTT/SockJS");
         // vertx2         }
-        // vertx2         final MqttBroker.MyMqttServerProtocol mqttServerProtocol = mqttBroker.new MyMqttServerProtocol(logger, getVertx(), mqttBroker, sockJSSocket);
-        // vertx2         mqttBroker.waitingForConnect.add(mqttServerProtocol);
+        // vertx2         final SyncMqttBroker.MyMqttServerProtocol mqttServerProtocol = syncBroker.new MyMqttServerProtocol(logger, getVertx(), syncBroker, sockJSSocket);
+        // vertx2         syncBroker.waitingForConnect.add(mqttServerProtocol);
         // vertx2     }
         // vertx2 });
         // FIXME sockjs support
@@ -137,25 +133,47 @@ public class MqttBrokerVerticle extends AbstractVerticle /*implements Handler<Me
             @Override
             public void handle(Message<JsonObject> event) {
                 JsonObject mqttApiCall = event.body();
+                long ttl = mqttApiCall.containsKey("ttl") ? mqttApiCall.getLong("ttl") : -1;
                 if (mqttApiCall.containsKey("stringBody")) {
                     try {
-                        mqttBroker.apiPublish(
-                                mqttApiCall.getString("topic"),
-                                mqttApiCall.getString("stringBody").getBytes("UTF-8"),
-                                mqttApiCall.getInteger("qos"),
-                                mqttApiCall.containsKey("retain") && mqttApiCall.getBoolean("retain")
-                        );
+                        if (ttl < 0) {
+                            syncMqttBroker.syncApiPublish(
+                                    mqttApiCall.getString("topic"),
+                                    mqttApiCall.getString("stringBody").getBytes("UTF-8"),
+                                    mqttApiCall.getInteger("qos"),
+                                    mqttApiCall.containsKey("retain") && mqttApiCall.getBoolean("retain")
+                            );
+                        } else {
+                            syncMqttBroker.syncApiPublish(
+                                    mqttApiCall.getString("topic"),
+                                    mqttApiCall.getString("stringBody").getBytes("UTF-8"),
+                                    mqttApiCall.getInteger("qos"),
+                                    mqttApiCall.containsKey("retain") && mqttApiCall.getBoolean("retain"),
+                                    ttl
+                            );
+                        }
                     } catch (UnsupportedEncodingException ex) {
                         logger.debug("Can't find UTF-8", ex);
                     }
                 } else {
-                    mqttBroker.apiPublish(
-                            mqttApiCall.getString("topic"),
-                            mqttApiCall.containsKey("body") ? mqttApiCall.getBinary("body") : null,
-                            mqttApiCall.getInteger("qos"),
-                            mqttApiCall.containsKey("retain") && mqttApiCall.getBoolean("retain")
-                    );
+                    if (ttl < 0) {
+                        syncMqttBroker.syncApiPublish(
+                                mqttApiCall.getString("topic"),
+                                mqttApiCall.containsKey("body") ? mqttApiCall.getBinary("body") : null,
+                                mqttApiCall.getInteger("qos"),
+                                mqttApiCall.containsKey("retain") && mqttApiCall.getBoolean("retain")
+                        );
+                    } else {
+                        syncMqttBroker.syncApiPublish(
+                                mqttApiCall.getString("topic"),
+                                mqttApiCall.containsKey("body") ? mqttApiCall.getBinary("body") : null,
+                                mqttApiCall.getInteger("qos"),
+                                mqttApiCall.containsKey("retain") && mqttApiCall.getBoolean("retain"),
+                                ttl
+                        );
+                    }
                 }
+                event.reply(null);
             }
         });
 
@@ -163,10 +181,11 @@ public class MqttBrokerVerticle extends AbstractVerticle /*implements Handler<Me
             @Override
             public void handle(Message<JsonObject> event) {
                 JsonObject mqttApiCall = event.body();
-                mqttBroker.apiSubscribe(
+                syncMqttBroker.syncApiSubscribe(
                         mqttApiCall.getString("topic"),
                         mqttApiCall.getString("bus-address")
                 );
+                event.reply(null);
             }
         });
 
@@ -174,10 +193,11 @@ public class MqttBrokerVerticle extends AbstractVerticle /*implements Handler<Me
             @Override
             public void handle(Message<JsonObject> event) {
                 JsonObject mqttApiCall = event.body();
-                mqttBroker.apiUnsubscribe(
+                syncMqttBroker.syncApiUnsubscribe(
                         mqttApiCall.getString("topic"),
                         mqttApiCall.getString("bus-address")
                 );
+                event.reply(null);
             }
         });
 
@@ -185,7 +205,7 @@ public class MqttBrokerVerticle extends AbstractVerticle /*implements Handler<Me
             @Override
             public void handle(Message<JsonObject> event) {
                 JsonObject mqttApiCall = event.body();
-                event.reply(mqttBroker.apiPeek(
+                event.reply(syncMqttBroker.syncApiPeek(
                         mqttApiCall.getString("topic")
                 ), VERTXDEFINES.DELIVERY_OPTIONS);
             }
@@ -197,7 +217,7 @@ public class MqttBrokerVerticle extends AbstractVerticle /*implements Handler<Me
                 JsonObject mqttApiCall = event.body();
                 if (mqttApiCall.containsKey("stringBody")) {
                     try {
-                        mqttBroker.apiBroadcast(
+                        syncMqttBroker.syncApiBroadcast(
                                 mqttApiCall.getString("topic"),
                                 mqttApiCall.getString("stringBody").getBytes("UTF-8"),
                                 mqttApiCall.getInteger("qos"),
@@ -207,18 +227,73 @@ public class MqttBrokerVerticle extends AbstractVerticle /*implements Handler<Me
                         logger.fatal("Can't find UTF-8 encoding.", ex);
                     }
                 } else {
-                    mqttBroker.apiBroadcast(
+                    syncMqttBroker.syncApiBroadcast(
                             mqttApiCall.getString("topic"),
                             mqttApiCall.containsKey("body") ? mqttApiCall.getBinary("body") : null,
                             mqttApiCall.getInteger("qos"),
                             mqttApiCall.containsKey("retain") && mqttApiCall.getBoolean("retain")
                     );
                 }
+                event.reply(null);
             }
         });
     }
 
-    public static IMqttBroker mqttBroker() { return mqttBroker; }
+    public static ISyncMqttBroker syncBroker() { return syncMqttBroker; }
+
+    public static IAsyncMqttBroker asyncBroker() { return asyncMqttBroker; }
+
+    public class AsyncMqttBroker implements IAsyncMqttBroker {
+        public void apiPeek(String topic, Handler<JsonObject> handler) {
+            final JsonObject mqttApiCall = new JsonObject();
+            mqttApiCall.put("topic", topic);
+            if (handler == null) {
+                throw new RuntimeException("AsyncMqttBroker.apiPeek() requires handler");
+            } else {
+                vertx.eventBus().send("mqtt.peek", mqttApiCall, new Handler<AsyncResult<Message<JsonObject>>>() {
+                    @Override
+                    public void handle(AsyncResult<Message<JsonObject>> event) {
+                        if (event.failed()) {
+                            handler.handle(null);
+                        } else {
+                            handler.handle(event.result().body());
+                        }
+                    }
+                });
+            }
+        }
+
+        public void apiPublish(String topic, byte[] body, int qos, boolean retained, Handler<Void> handler) {
+            final JsonObject mqttApiCall = new JsonObject();
+            mqttApiCall.put("topic", topic);
+            mqttApiCall.put("qos", qos);
+            mqttApiCall.put("retained", retained);
+            mqttApiCall.put("body", body);
+            if (handler == null) {
+                vertx.eventBus().send("mqtt.publish", mqttApiCall);
+            } else {
+                vertx.eventBus().send("mqtt.publish", mqttApiCall, (vo1d) -> {
+                    handler.handle(null);
+                });
+            }
+        }
+
+        public void apiPublish(String topic, byte[] body, int qos, boolean retained, long ttl, Handler<Void> handler) {
+            final JsonObject mqttApiCall = new JsonObject();
+            mqttApiCall.put("topic", topic);
+            mqttApiCall.put("qos", qos);
+            mqttApiCall.put("retained", retained);
+            mqttApiCall.put("body", body);
+            mqttApiCall.put("ttl", ttl);
+            if (handler == null) {
+                vertx.eventBus().send("mqtt.publish", mqttApiCall);
+            } else {
+                vertx.eventBus().send("mqtt.publish", mqttApiCall, (vo1d) -> {
+                    handler.handle(null);
+                });
+            }
+        }
+    }
 
     @Override
     public void stop() throws Exception {

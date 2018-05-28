@@ -1,0 +1,49 @@
+{
+  "node": {
+    "hostname": "awfulhak.test.clusterfabric.io",
+    "ip4": "172.16.34.2",
+    "localhostIf": "lo0",
+    "wanIf": "utun1",
+    "name": "awfulhak",
+    "zone": "development",
+    "node_db": {
+      "host": "localhost",
+      "port": 54321,
+      "db": "corefabric__node_db",
+      "user": "postgres",
+      "password": "password"
+    },
+    "app_config_uri": "http://joyent-build.dc1.amb1ent.org:8082/",
+    "tmp": "/var/tmp"
+  },
+  "cluster": {
+    "multicast": false
+  },
+  "dtn": {
+    "isRouter": false,
+    "routerHostname": "joyent-build.test.clusterfabric.io",
+    "routerIp4": "10.100.1.33"
+  },
+  "roles": {
+    "app-web": [{}],
+    "dtn-node": [],
+    "mqtt-broker":[],
+    "DISABLED--app-config-server": [
+      {
+        "listenIp4": "127.0.0.1",
+        "listenPort": 8082,
+        "config_db": {
+          "host": "localhost",
+          "port": 54321,
+          "db": "corefabric__config_db",
+          "user": "postgres",
+          "password": "password"
+        }
+      }
+    ],
+    "dtn-mqtt-bridge":[{
+      "subscribe":"nodes/development/awfulhak/#",
+      "to":"dtn://joyent-build.test.clusterfabric.io/MqttBridge"
+    }]
+  }
+}
