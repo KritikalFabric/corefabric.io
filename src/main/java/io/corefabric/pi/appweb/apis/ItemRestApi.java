@@ -6,12 +6,20 @@ import org.kritikal.fabric.fabricapi.*;
 
 import java.io.UnsupportedEncodingException;
 
-@FabricRestApi(url="/corefabric-app/api/", worker=true)
+@FabricRestApi(url="/corefabric-app/api/", worker=false)
 public class ItemRestApi {
 
     @FabricHttpGet(url="item")
     public JsonArray getItems(FabricRestCall call) {
-        return new JsonArray();
+        JsonArray ary = new JsonArray();
+        for (int i = 1; i <= 3; ++i) {
+            JsonObject o = new JsonObject();
+            o.put("id", i);
+            o.put("title", "title " + i);
+            o.put("description", "description " + i);
+            ary.add(o);
+        }
+        return ary;
     }
 
     @FabricHttpGet(url="item/:id")
@@ -19,6 +27,8 @@ public class ItemRestApi {
         int id = Integer.parseInt(call.param("id"));
         JsonObject o = new JsonObject();
         o.put("id", id);
+        o.put("title", "title " + id);
+        o.put("description", "description " + id);
         return o;
     }
 
