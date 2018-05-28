@@ -7,7 +7,10 @@ namespace corefabricapp
 {
     public class ItemsViewModel : BaseViewModel
     {
+        // TODO: our API will contain plumbing for ObservableCollection<T>
+        //
         public ObservableCollection<Item> Items { get; set; }
+
         public Command LoadItemsCommand { get; set; }
         public Command AddItemCommand { get; set; }
 
@@ -15,6 +18,9 @@ namespace corefabricapp
         {
             Title = "Browse";
             Items = new ObservableCollection<Item>();
+
+            // TODO: CF.fabric.subscribe(Items, "corefabric-app/development/demo/api/item/#");
+
             LoadItemsCommand = new Command(async () => await ExecuteLoadItemsCommand());
             AddItemCommand = new Command<Item>(async (Item item) => await AddItem(item));
         }
@@ -28,8 +34,8 @@ namespace corefabricapp
 
             try
             {
-                Items.Clear();
                 var items = await DataStore.GetItemsAsync(true);
+                Items.Clear();
                 foreach (var item in items)
                 {
                     Items.Add(item);
@@ -38,6 +44,7 @@ namespace corefabricapp
             catch (Exception ex)
             {
                 Debug.WriteLine(ex);
+                Items.Clear();
             }
             finally
             {
@@ -47,8 +54,13 @@ namespace corefabricapp
 
         async Task AddItem(Item item)
         {
-            Items.Add(item);
+            // TODO: our API will eventually contain a local push-buffer of changes
+            //       for REST / FabricApi plumbing
             await DataStore.AddItemAsync(item);
+
+            // TODO: eventually our API will plumb stuff so well this is also automatic
+            //
+            await ExecuteLoadItemsCommand();
         }
     }
 }
