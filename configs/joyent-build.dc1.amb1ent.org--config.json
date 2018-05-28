@@ -29,7 +29,7 @@
     "mqtt-broker":[],
     "app-config-server": [
       {
-        "listenIp4": "127.0.0.1",
+        "listenIp4": "0.0.0.0",
         "listenPort": 8082,
         "config_db": {
           "host": "pg.dc1.amb1ent.org",
