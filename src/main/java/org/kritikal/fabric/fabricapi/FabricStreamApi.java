@@ -7,7 +7,6 @@ import java.lang.annotation.Target;
 
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
-public @interface FabricApi {
-    public String url() default "";
-    public boolean worker() default true;
+public @interface FabricStreamApi {
+    String url() default "";
 }

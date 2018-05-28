@@ -22,6 +22,7 @@ import io.corefabric.pi.appweb.json.NodeMonitorJson;
 import io.corefabric.pi.appweb.json.StatusJson;
 import org.kritikal.fabric.net.http.BinaryBodyHandler;
 import org.kritikal.fabric.net.http.CorsOptionsHandler;
+import org.kritikal.fabric.net.http.FabricApiConnector;
 import org.kritikal.fabric.net.mqtt.SyncMqttBroker;
 
 import java.io.*;
@@ -231,6 +232,7 @@ public class AppWebServerVerticle extends AbstractVerticle {
         final Router router = Router.router(vertx);
         router.route().handler(new BinaryBodyHandler());
         final CorsOptionsHandler corsOptionsHandler = new CorsOptionsHandler();
+        FabricApiConnector.connectRestApi(io.corefabric.pi.appweb.apis.ItemRestApi.class, router, corsOptionsHandler);
         router.options("/api/doc").handler(corsOptionsHandler);
         NodeMonitorJson.addRoute(router, corsOptionsHandler);
         DtnConfigJson.addRoute(router, corsOptionsHandler);
