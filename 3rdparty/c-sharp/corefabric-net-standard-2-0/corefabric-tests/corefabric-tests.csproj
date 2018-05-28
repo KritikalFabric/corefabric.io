@@ -40,5 +40,11 @@
   <ItemGroup>
     <None Include="packages.config" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\corefabric-comms\corefabric-comms.csproj">
+      <Project>{DD475131-B747-4469-91B4-FEA680CD6E4A}</Project>
+      <Name>corefabric-comms</Name>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
 </Project>
