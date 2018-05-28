@@ -6,6 +6,7 @@ import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.json.JsonObject;
 import com.cisco.qte.jdtn.general.Management;
+import org.kritikal.fabric.contrib.jdtn.JDtnConfig;
 
 /**
  * Created by ben on 24/10/2016.
@@ -37,7 +38,7 @@ public class JsonConfigShim {
         boolean isRouter = dtn.getBoolean("isRouter", false);
 
         if (isRouter) {
-            vertx.fileSystem().writeFileBlocking("jDtnConfig.xml", Buffer.buffer("<JDtnConfig version='3'>\n" +
+            JDtnConfig.xml = "<JDtnConfig version='3'>\n" +
                     "  <General\n" +
                     "  >\n" +
                     "  </General>\n" +
@@ -133,12 +134,12 @@ public class JsonConfigShim {
                     "  />\n" +
                     "  <UdpCl\n" +
                     "  />\n" +
-                    "</JDtnConfig>\n"));
+                    "</JDtnConfig>\n";
         } else {
             String routerHostname = dtn.getString("routerHostname", "localrouter.localdomain");
             String routerIp4 = dtn.getString("routerIp4", "127.1.0.1");
 
-            vertx.fileSystem().writeFileBlocking("jDtnConfig.xml", Buffer.buffer("<JDtnConfig version='3'>\n" +
+            JDtnConfig.xml = "<JDtnConfig version='3'>\n" +
                     "  <General\n" +
                     "  >\n" +
                     "  </General>\n" +
@@ -250,7 +251,7 @@ public class JsonConfigShim {
                     "  />\n" +
                     "  <UdpCl\n" +
                     "  />\n" +
-                    "</JDtnConfig>\n"));
+                    "</JDtnConfig>\n";
         }
     }
 
