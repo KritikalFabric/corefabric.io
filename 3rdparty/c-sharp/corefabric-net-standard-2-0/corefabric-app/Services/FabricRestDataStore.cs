@@ -12,7 +12,7 @@ using corefabric_comms;
 
 namespace corefabricapp
 {
-    public class FabricDataStore : IDataStore<Item>
+    public class FabricRestDataStore : IDataStore<Item>
     {
         public static bool is_connected { 
             get {
@@ -22,7 +22,7 @@ namespace corefabricapp
 
         readonly Uri BaseAddress = new Uri($"{App.BackendUrl}/corefabric-app/");
 
-        public FabricDataStore()
+        public FabricRestDataStore()
         {
         }
 

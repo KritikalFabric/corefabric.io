@@ -14,7 +14,7 @@ namespace corefabricapp
             if (UseMockDataStore)
                 ServiceLocator.Instance.Register<IDataStore<Item>, MockDataStore>();
             else
-                ServiceLocator.Instance.Register<IDataStore<Item>, FabricDataStore>();
+                ServiceLocator.Instance.Register<IDataStore<Item>, FabricRestDataStore>();
         }
     }
 }
