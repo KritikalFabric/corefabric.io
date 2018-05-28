@@ -2,7 +2,7 @@ corefabric.io
 =============
 
 ```
-corefabric.io							0.2.0-angular6
+corefabric.io							0.2.1-autoconf
 
 Project for Raspberry Pi 3 model B and Mac OS X, SmartOS & Linux.
 

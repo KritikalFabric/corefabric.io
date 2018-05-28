@@ -43,7 +43,8 @@ public class CoreFabricRoleRegistry {
 
             JsonObject config = array.size() > 0 ? array.getJsonObject(0) : new JsonObject();
             DeploymentOptions deploymentOptions = new DeploymentOptions();
-            deploymentOptions.setWorker(false);
+            deploymentOptions.setWorker(true);
+            deploymentOptions.setInstances(1);
             deploymentOptions.setConfig(config);
             Future future1 = Future.future();
             vertx.deployVerticle("io.corefabric.pi.AppWebServerVerticle", f1 -> {

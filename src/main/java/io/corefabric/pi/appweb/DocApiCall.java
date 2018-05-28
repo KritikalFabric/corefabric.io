@@ -45,7 +45,7 @@ public final class DocApiCall {
     public final UIDocApiWorkerVerticle.Context context;
     public final void publish() {
         try {
-            MqttBrokerVerticle.mqttBroker().apiPublish(topic, VertxHelpers.toString(o, o).getBytes("UTF-8"), 2, true);
+            MqttBrokerVerticle.asyncBroker().apiPublish(topic, VertxHelpers.toString(o, o).getBytes("UTF-8"), 2, true, null);
         } catch (UnsupportedEncodingException ue) {
             logger.warn(ue);
         }

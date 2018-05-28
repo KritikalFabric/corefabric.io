@@ -33,7 +33,7 @@ import java.util.function.Function;
 /**
  * Created by ben on 8/26/14.
  */
-public class MqttBroker implements IMqttServerCallback, IMqttBroker {
+public class SyncMqttBroker implements IMqttServerCallback, ISyncMqttBroker {
 
     final public Vertx vertx;
     final Logger logger;
@@ -42,7 +42,7 @@ public class MqttBroker implements IMqttServerCallback, IMqttBroker {
     final ConcurrentMap<String, PublishMessage> retainedLocal = new ConcurrentHashMap<>();
     final ITopic<PublishMessage> hazelcastTopic = CoreFabric.getHazelcastInstance().getTopic("mqtt.enqueue");
 
-    public MqttBroker(Vertx vertx) {
+    public SyncMqttBroker(Vertx vertx) {
         this.vertx = vertx;
         this.logger = LoggerFactory.getLogger(getClass());
         hazelcastTopic.addMessageListener(m -> {
@@ -53,7 +53,7 @@ public class MqttBroker implements IMqttServerCallback, IMqttBroker {
         vertx.setPeriodic(9997l, l -> {
             // Announce our life; across the cluster...
             final String json = CoreFabric.globalConfig.encode();
-            try { MqttBrokerVerticle.mqttBroker().apiPublish("$cf/"+CoreFabric.ServerConfiguration.hostname + "/|g", json.getBytes("UTF-8"), 2, false, 13997); } catch (UnsupportedEncodingException uee) { logger.fatal("", uee); }
+            try { MqttBrokerVerticle.syncBroker().syncApiPublish("$cf/"+CoreFabric.ServerConfiguration.hostname + "/|g", json.getBytes("UTF-8"), 2, false, 13997); } catch (UnsupportedEncodingException uee) { logger.fatal("", uee); }
         });
         _messageArrivedThread.setPriority(Thread.MAX_PRIORITY);
         _messageArrivedThread.start();
@@ -289,7 +289,7 @@ public class MqttBroker implements IMqttServerCallback, IMqttBroker {
     }
 
     @Override
-    public void apiPurge()
+    public void syncApiPurge()
     {
         if (DEBUG && VERBOSE) {
             logger.debug("(API) purge");
@@ -298,7 +298,7 @@ public class MqttBroker implements IMqttServerCallback, IMqttBroker {
     }
 
     @Override
-    public void apiPublish(String topic, byte[] body, int qos, boolean retained)
+    public void syncApiPublish(String topic, byte[] body, int qos, boolean retained)
     {
         if (DEBUG && VERBOSE) {
             logger.debug("(API) publish " + topic);
@@ -315,7 +315,7 @@ public class MqttBroker implements IMqttServerCallback, IMqttBroker {
     }
 
     @Override
-    public void apiPublish(String topic, byte[] body, int qos, boolean retained, long ttl)
+    public void syncApiPublish(String topic, byte[] body, int qos, boolean retained, long ttl)
     {
         if (DEBUG && VERBOSE) {
             logger.debug("(API) publish " + topic);
@@ -343,7 +343,7 @@ public class MqttBroker implements IMqttServerCallback, IMqttBroker {
     }
 
     @Override
-    public void apiSubscribe(String topic, String endPoint)
+    public void syncApiSubscribe(String topic, String endPoint)
     {
         if (DEBUG) {
             logger.debug("(API) subscribe " + topic + " --> " + endPoint);
@@ -356,7 +356,7 @@ public class MqttBroker implements IMqttServerCallback, IMqttBroker {
     }
 
     @Override
-    public void apiSubscribe(String topic, Consumer<MessageEncapsulation> onMessage)
+    public void syncApiSubscribe(String topic, Consumer<MessageEncapsulation> onMessage)
     {
         if (DEBUG) {
             logger.debug("(API) subscribe " + topic + " --> callback");
@@ -368,7 +368,7 @@ public class MqttBroker implements IMqttServerCallback, IMqttBroker {
     }
 
     @Override
-    public void apiUnsubscribe(String topic, String endPoint)
+    public void syncApiUnsubscribe(String topic, String endPoint)
     {
         if (DEBUG) {
             logger.debug("(API) unsubscribe " + topic + " --> " + endPoint);
@@ -378,7 +378,7 @@ public class MqttBroker implements IMqttServerCallback, IMqttBroker {
     }
 
     @Override
-    public void apiUnsubscribe(String topic, Consumer<MessageEncapsulation> onMessage)
+    public void syncApiUnsubscribe(String topic, Consumer<MessageEncapsulation> onMessage)
     {
         if (DEBUG) {
             logger.debug("(API) unsubscribe " + topic + " --> callback");
@@ -388,7 +388,7 @@ public class MqttBroker implements IMqttServerCallback, IMqttBroker {
     }
 
     @Override
-    public JsonObject apiPeek(String topic)
+    public JsonObject syncApiPeek(String topic)
     {
         if (DEBUG && VERBOSE) {
             logger.debug("(API) peek " + topic);
@@ -420,7 +420,7 @@ public class MqttBroker implements IMqttServerCallback, IMqttBroker {
     }
 
     @Override
-    public void apiBroadcast(String topic, byte[] body, int qos, boolean retained)
+    public void syncApiBroadcast(String topic, byte[] body, int qos, boolean retained)
     {
         if (DEBUG && VERBOSE) {
             logger.debug("(API) broadcast " + topic);
@@ -433,10 +433,10 @@ public class MqttBroker implements IMqttServerCallback, IMqttBroker {
         message.setQos(qos == 2 ? AbstractMessage.QOSType.EXACTLY_ONCE : (qos == 1 ? AbstractMessage.QOSType.MOST_ONE : AbstractMessage.QOSType.LEAST_ONE));
         message.setRetainFlag(retained);
 
-        messageForBroadcast(message);
+        syncMessageForBroadcast(message);
     }
 
-    public void messageForBroadcast(PublishMessage publishMessage) {
+    public void syncMessageForBroadcast(PublishMessage publishMessage) {
         try {
             _messageForBroadcastQ.transfer(publishMessage);
         }
@@ -486,7 +486,7 @@ public class MqttBroker implements IMqttServerCallback, IMqttBroker {
                 if (SLOWER) { try { Thread.sleep(97l); } catch (InterruptedException ie) { } } else Thread.yield();
             }
             catch (Throwable t) {
-                LoggerFactory.getLogger(MqttBroker.class).fatal("", t);
+                LoggerFactory.getLogger(SyncMqttBroker.class).fatal("", t);
             }
         }
     });
@@ -647,7 +647,7 @@ public class MqttBroker implements IMqttServerCallback, IMqttBroker {
                 if (SLOWER) { try { Thread.sleep(97l); } catch (InterruptedException ie) { } } else Thread.yield();
             }
             catch (Throwable t) {
-                LoggerFactory.getLogger(MqttBroker.class).fatal("", t);
+                LoggerFactory.getLogger(SyncMqttBroker.class).fatal("", t);
             }
         }
     });
