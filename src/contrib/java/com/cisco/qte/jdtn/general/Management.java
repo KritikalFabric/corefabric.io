@@ -29,16 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 package com.cisco.qte.jdtn.general;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
-import java.io.Reader;
-import java.io.Writer;
+import java.io.*;
 import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -53,6 +44,7 @@ import com.cisco.qte.jdtn.ltp.LtpManagement;
 import com.cisco.qte.jdtn.tcpcl.TcpClManagement;
 import com.cisco.qte.jdtn.udpcl.UdpClManagement;
 import com.cisco.qte.jdtn.general.XmlRDParser;
+import org.kritikal.fabric.contrib.jdtn.JDtnConfig;
 
 /**
  * Configuration/Management component for JDtn.  Supports configuration properties for
@@ -91,11 +83,11 @@ public class Management extends AbstractStartableComponent {
 	private static Management _instance = new Management();
 	
 	/** Filename of JDTN Config file */
-	public static final String CONFIG_FILENAME = "jDtnConfig.xml";
+	//public static final String CONFIG_FILENAME = "jDtnConfig.xml";
 	/** System Property name of location of JDTN Config File */
-	public static final String CONFIG_FILENAME_SYS_PROP = "com.cisco.qte.jdtn.configFile";
+	//public static final String CONFIG_FILENAME_SYS_PROP = "com.cisco.qte.jdtn.configFile";
 	/** Resource name of default JDTN Config File */
-	public static final String CONFIG_RESOURCE_NAME = "/jDtnConfig.xml";
+	//public static final String CONFIG_RESOURCE_NAME = "/jDtnConfig.xml";
 	
 	private boolean _initialized = false;
 	
@@ -366,6 +358,9 @@ public class Management extends AbstractStartableComponent {
 	 * @return Reader opened on the config file
 	 */
 	public Reader openConfigForReading() {
+		return new StringReader(JDtnConfig.xml);
+	}
+	/* {
 		File file = null;
 		Reader reader = null;
 		
@@ -413,7 +408,7 @@ public class Management extends AbstractStartableComponent {
 	 * Determine the location of the config file and open it for writing
 	 * @return Writer opened on the config file
 	 */
-	public Writer openConfigForWriting() {
+	public Writer openConfigForWriting() { /*
 		File file = null;
 		Writer writer = null;
 		
@@ -444,6 +439,7 @@ public class Management extends AbstractStartableComponent {
 		}
 		
 		// We tried...
+		*/
 		return null;
 	}
 	
@@ -451,7 +447,7 @@ public class Management extends AbstractStartableComponent {
 	 * Remove all writable configuration files in the various places we look
 	 * for them.
 	 */
-	public void removeConfigFile() {
+	public void removeConfigFile() { /*
 		File file;
 		
 		// Look for System property naming config file
@@ -472,7 +468,7 @@ public class Management extends AbstractStartableComponent {
 				_logger.severe("Error deleting config file " + 
 						file.getAbsolutePath());
 			}
-		}
+		} */
 	}
 	
 	/**
