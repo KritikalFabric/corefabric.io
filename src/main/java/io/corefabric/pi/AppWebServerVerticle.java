@@ -7,8 +7,6 @@ import io.netty.handler.codec.http.ServerCookieEncoder;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
-import io.vertx.core.Vertx;
-import io.vertx.core.buffer.Buffer;
 import io.vertx.core.eventbus.Message;
 import io.vertx.core.http.*;
 import io.vertx.core.json.JsonObject;
@@ -17,7 +15,6 @@ import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.web.Router;
 import org.kritikal.fabric.CoreFabric;
 import org.kritikal.fabric.core.ConfigurationManager;
-import org.kritikal.fabric.core.exceptions.FabricError;
 import org.kritikal.fabric.daemon.MqttBrokerVerticle;
 import org.kritikal.fabric.core.VERTXDEFINES;
 import io.corefabric.pi.appweb.json.DtnConfigJson;
@@ -25,17 +22,15 @@ import io.corefabric.pi.appweb.json.NodeMonitorJson;
 import io.corefabric.pi.appweb.json.StatusJson;
 import org.kritikal.fabric.net.http.BinaryBodyHandler;
 import org.kritikal.fabric.net.http.CorsOptionsHandler;
-import org.kritikal.fabric.net.mqtt.MqttBroker;
+import org.kritikal.fabric.net.mqtt.SyncMqttBroker;
 
 import java.io.*;
 import java.util.Enumeration;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.function.Function;
 import java.util.jar.JarFile;
 import java.util.zip.ZipEntry;
-import org.apache.commons.io.FileUtils;
 
 /**
  * Created by ben on 11/3/16.
@@ -228,8 +223,8 @@ public class AppWebServerVerticle extends AbstractVerticle {
             if (corefabric==null) ws.reject();
             if (!"/mqtt".equals(ws.path())) ws.reject();
             else {
-                final MqttBroker mqttBroker = (MqttBroker)MqttBrokerVerticle.mqttBroker();//hack
-                final MqttBroker.MyMqttServerProtocol mqttServerProtocol = new MqttBroker.MyMqttServerProtocol(logger, getVertx(), mqttBroker, ws, corefabric);
+                final SyncMqttBroker mqttBroker = (SyncMqttBroker)MqttBrokerVerticle.syncBroker();//hack
+                final SyncMqttBroker.MyMqttServerProtocol mqttServerProtocol = new SyncMqttBroker.MyMqttServerProtocol(logger, getVertx(), mqttBroker, ws, corefabric);
                 mqttBroker.waitingForConnect.add(mqttServerProtocol);
             }
         });

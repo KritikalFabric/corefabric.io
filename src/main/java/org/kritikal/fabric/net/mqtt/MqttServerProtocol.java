@@ -17,7 +17,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  */
 public class MqttServerProtocol implements Handler<Buffer> {
 
-    final boolean DEBUG  = MqttBroker.DEBUG && MqttBroker.VERBOSE;
+    final boolean DEBUG  = SyncMqttBroker.DEBUG && SyncMqttBroker.VERBOSE;
 
     final Logger logger;
     final ISocket socket;
