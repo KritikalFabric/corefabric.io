@@ -15,7 +15,7 @@ public class ItemRestApi {
         for (int i = 1; i <= 3; ++i) {
             JsonObject o = new JsonObject();
             o.put("id", i);
-            o.put("title", "title " + i);
+            o.put("text", "title " + i);
             o.put("description", "description " + i);
             ary.add(o);
         }
@@ -27,7 +27,7 @@ public class ItemRestApi {
         int id = Integer.parseInt(call.param("id"));
         JsonObject o = new JsonObject();
         o.put("id", id);
-        o.put("title", "title " + id);
+        o.put("text", "title " + id);
         o.put("description", "description " + id);
         return o;
     }

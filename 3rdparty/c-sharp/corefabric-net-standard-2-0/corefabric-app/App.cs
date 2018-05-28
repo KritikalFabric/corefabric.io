@@ -7,7 +7,7 @@ namespace corefabricapp
         public static bool UseMockDataStore = false;
 
         // your TO-DO: point at your local hosted service please or the apps can't talk to core fabric!
-        public static string BackendUrl = "http://joyent-build.test.corefabric.io:1080";
+        public static string BackendUrl = "http://joyent-build.test.clusterfabric.io:1080";
 
         public static void Initialize()
         {
