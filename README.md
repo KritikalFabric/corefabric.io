@@ -97,5 +97,3 @@ Building the software is a two step process.
     
 2.  secondly, build the jar file via ```$ ./gradlew build``` (or embed the a2 content and 
     run via ```$ ./gradlew runShadow```).
-    
-3.  optionally, for correct DTN membership:  ```$ ln -s `pwd`/jDtnConfig.xml ~/jDtnConfig.xml`
