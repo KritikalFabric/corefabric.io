@@ -26,13 +26,30 @@ public class CoreFabricRoleRegistry {
             org.kritikal.fabric.dtn.jdtn.JsonConfigShim.bootstrap();
         }
 
-        RoleRegistry.addRole(new Role(new String[] {"mqtt-broker"}, "app-config-server", (future, array) -> {
+        RoleRegistry.addRole(new Role(new String[] {"mqtt-broker"}, "app-config-db", (future, array) -> {
+
+            JsonObject config = array.size() > 0 ? array.getJsonObject(0) : new JsonObject();
+            DeploymentOptions deploymentOptions = new DeploymentOptions();
+            deploymentOptions.setWorker(true);
+            JsonArray ary = new JsonArray();
+            ary.add("corefabric.app-config-db");
+            config.put("addresses", ary);
+            config.put("db_ref", "config_db");
+            deploymentOptions.setConfig(config);
+            vertx.deployVerticle("io.corefabric.pi.db.AppConfigDbVerticle", deploymentOptions, f1 -> {
+                if (f1.failed()) future.fail("app-config-db");
+                else future.complete();
+            });
+
+        }));
+
+        RoleRegistry.addRole(new Role(new String[] {"mqtt-broker", "app-config-db"}, "app-config-server", (future, array) -> {
 
             JsonObject config = array.size() > 0 ? array.getJsonObject(0) : new JsonObject();
             DeploymentOptions deploymentOptions = new DeploymentOptions();
             deploymentOptions.setWorker(false);
             deploymentOptions.setConfig(config);
-            vertx.deployVerticle("io.corefabric.pi.AppConfigServerVerticle", f1 -> {
+            vertx.deployVerticle("io.corefabric.pi.AppConfigServerVerticle", deploymentOptions, f1 -> {
                 if (f1.failed()) future.fail("app-config-server");
                 else future.complete();
             });
@@ -47,7 +64,7 @@ public class CoreFabricRoleRegistry {
             deploymentOptions.setInstances(1);
             deploymentOptions.setConfig(config);
             Future future1 = Future.future();
-            vertx.deployVerticle("io.corefabric.pi.AppWebServerVerticle", f1 -> {
+            vertx.deployVerticle("io.corefabric.pi.AppWebServerVerticle", deploymentOptions, f1 -> {
                 if (f1.failed()) future1.fail("app-web");
                 else future1.complete();
             });
@@ -78,7 +95,9 @@ public class CoreFabricRoleRegistry {
 
         }));
         RoleRegistry.addRole(new Role(new String[] {}, "dtn-shell", (future, array) -> {
-            vertx.deployVerticle("org.kritikal.fabric.dtn.jdtn.JDTNHTTPShell", f1 -> {
+            DeploymentOptions deploymentOptions = new DeploymentOptions();
+            deploymentOptions.setWorker(true);
+            vertx.deployVerticle("org.kritikal.fabric.dtn.jdtn.JDTNHTTPShell", deploymentOptions, f1 -> {
                 if (f1.failed()) future.fail("dtn-shell");
                 else future.complete();
             });

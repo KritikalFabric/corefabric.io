@@ -51,22 +51,22 @@ public class DbContainer {
                         basicDataSource1.setDefaultReadOnly(readOnly);
                     });
 
-                    if (Factory.needsUpgrade(cfg.instancekey) && !readOnly) {
+                    if (Factory.needsUpgrade("node", cfg.instancekey) && !readOnly) {
                         try {
                             Connection conUpgrade = basicDataSource.getConnection();
                             conUpgrade.setAutoCommit(true);
                             try {
                                 Factory factory = new Factory();
-                                int version = factory.upgradeIfNeeded(cfg.instancekey, conUpgrade, fileSystem);
+                                int version = factory.upgradeIfNeeded("node", cfg.instancekey, conUpgrade, fileSystem);
                                 if (version > 0) {
-                                    logger.info(cfg.instancekey + "\tdb\tUpgraded to version " + version);
+                                    logger.info("node\t" + cfg.instancekey + "\tdb\tUpgraded to version " + version);
                                 }
                             }
                             finally {
                                 conUpgrade.close();
                             }
                         } catch (Throwable t) {
-                            logger.fatal(cfg.instancekey + "\tdb\tDuring upgrade", t);
+                            logger.fatal("node\t" + cfg.instancekey + "\tdb\tDuring upgrade", t);
                         }
                     }
 

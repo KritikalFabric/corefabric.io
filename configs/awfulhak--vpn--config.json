@@ -13,7 +13,8 @@
       "user": "postgres",
       "password": "password"
     },
-    "app_config_uri": "http://joyent-build.dc1.amb1ent.org:8082/",
+    //"app_config_uri": "http://joyent-build.dc1.amb1ent.org:8082/",
+    "app_config_uri": "http://127.0.0.1:8082/",
     "tmp": "/var/tmp"
   },
   "cluster": {
@@ -28,19 +29,20 @@
     "app-web": [{}],
     "dtn-node": [],
     "mqtt-broker":[],
-    "DISABLED--app-config-server": [
+    "app-config-server": [
       {
-        "listenIp4": "127.0.0.1",
-        "listenPort": 8082,
-        "config_db": {
-          "host": "localhost",
-          "port": 54321,
-          "db": "corefabric__config_db",
-          "user": "postgres",
-          "password": "password"
-        }
+        "listenPort": 8082
       }
     ],
+    "app-config-db":[{
+      "config_db": {
+        "host": "localhost",
+        "port": 54321,
+        "db": "corefabric__config_db",
+        "user": "postgres",
+        "password": "password"
+      }
+    }],
     "dtn-mqtt-bridge":[{
       "subscribe":"nodes/development/awfulhak/#",
       "to":"dtn://joyent-build.test.clusterfabric.io/MqttBridge"
