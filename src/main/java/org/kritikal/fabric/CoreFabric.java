@@ -178,6 +178,12 @@ public class CoreFabric {
     }
     public volatile static boolean exit = false;
     public static void main(String args[]) {
+
+        if (args.length > 1) {
+            CoreFabricCLI.process_command(args);
+            return;
+        }
+
         Future<Vertx> ourFutureVertx = clusterVertxInTheFuture();
         ourFutureVertx.setHandler(ar -> {
             if (ar.failed()) { exit = true; return; }
