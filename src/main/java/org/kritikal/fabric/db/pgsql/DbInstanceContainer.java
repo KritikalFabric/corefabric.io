@@ -51,7 +51,7 @@ public class DbInstanceContainer {
                 if (null == dataSource) {
                     String host = configuration.getString("host", "localhost");
                     int port = configuration.getInteger("port", 5432);
-                    String db = configuration.getString("db", "corefabric__config_db");
+                    String db = configuration.getString("db");
                     String user = configuration.getString("user", "postgres");
                     String password = configuration.getString("password", "password");
 
