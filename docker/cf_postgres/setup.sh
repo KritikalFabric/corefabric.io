@@ -59,6 +59,29 @@ CREATE SCHEMA db;
 CREATE SCHEMA cf;
 CREATE SCHEMA config;
 
+CREATE TABLE    config.zonejson (
+  id            bigserial NOT NULL,
+  zone          varchar(64) NOT NULL,
+  object        jsonb NOT NULL,
+  CONSTRAINT config__pk__zonejson PRIMARY KEY (id),
+  CONSTRAINT config__zone__zonejson UNIQUE (zone)
+);
+
+CREATE TABLE    config.instancejson (
+  zone_id       bigint NOT NULL,
+  id            bigserial NOT NULL,
+  instance          varchar(64) NOT NULL,
+  object        jsonb NOT NULL,
+  CONSTRAINT config__pk__instancejson PRIMARY KEY (id),
+  CONSTRAINT config__zone_instance__instancejson UNIQUE (zone_id, instance)
+);
+
+INSERT INTO config.zonejson (zone, object)
+    VALUES ('development', '{"active":true}'::jsonb);
+INSERT INTO config.instancejson (zone_id, instance, object)
+    SELECT z.id, 'demo', '{"active":true}'::jsonb
+        FROM config.zonejson z WHERE z.zone = 'development';
+
 CREATE TABLE db.schema_versions (
     schema_version_id       bigserial       NOT NULL,
     schema_tag              varchar(64)     NOT NULL DEFAULT 'config',

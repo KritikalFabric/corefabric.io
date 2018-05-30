@@ -267,7 +267,7 @@ public class MqttBrokerVerticle extends AbstractVerticle {
             final JsonObject mqttApiCall = new JsonObject();
             mqttApiCall.put("topic", topic);
             mqttApiCall.put("qos", qos);
-            mqttApiCall.put("retained", retained);
+            mqttApiCall.put("retain", retained);
             mqttApiCall.put("body", body);
             if (handler == null) {
                 vertx.eventBus().send("mqtt.publish", mqttApiCall);
@@ -282,7 +282,7 @@ public class MqttBrokerVerticle extends AbstractVerticle {
             final JsonObject mqttApiCall = new JsonObject();
             mqttApiCall.put("topic", topic);
             mqttApiCall.put("qos", qos);
-            mqttApiCall.put("retained", retained);
+            mqttApiCall.put("retain", retained);
             mqttApiCall.put("body", body);
             mqttApiCall.put("ttl", ttl);
             if (handler == null) {

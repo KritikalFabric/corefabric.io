@@ -44,29 +44,33 @@ public class AppConfigServerVerticle extends AbstractVerticle {
             final String zone = path.length > n ? path[n] : ""; // default -- no zone specified
             final String instance = path.length > n + 1 ? path[n+1] : ""; // default -- no instance specified
 
-            JsonObject configuration = new JsonObject();
-            // TODO: fetch configuration from database
-            JsonObject zoneConfiguration = new JsonObject();
-            zoneConfiguration.put("name", zone);
-            JsonObject instanceConfiguration = new JsonObject();
-            instanceConfiguration.put("name", instance);
-            configuration.put("zone", zoneConfiguration);
-            configuration.put("instance", instanceConfiguration);
+            final JsonObject dbQuery = new JsonObject();
+            dbQuery.put("action", "query");
+            dbQuery.put("zone", zone);
+            dbQuery.put("instance", instance);
 
-            try {
-                final String body = configuration.encode();
-                final byte[] bodyBytes = body.getBytes("utf-8");
-                req.response().headers().add("Cache-Control", "public, max-age=5");
-                req.response().headers().add("Content-Type", "application/json; charset=utf-8");
-                req.response().headers().add("Content-Length", Long.toString(bodyBytes.length));
-                req.response().write(Buffer.buffer(bodyBytes)).end();
-                if (CoreFabric.ServerConfiguration.DEBUG) logger.info("app-config-server\t" + zone + "\t" + instance + "\t" + body);
-            }
-            catch (UnsupportedEncodingException uee) {
-                logger.fatal("app-config-server\t" + uee.getMessage());
-                req.response().setStatusCode(500);
-                req.response().end();
-            }
+            vertx.eventBus().send("corefabric.app-config-db", dbQuery, (ar) -> {
+                JsonObject configuration = null;
+                if (ar.succeeded()) {
+                    configuration = (JsonObject)ar.result().body();
+                } else {
+                    configuration = new JsonObject();
+                }
+                try {
+                    final String body = configuration.encode();
+                    final byte[] bodyBytes = body.getBytes("utf-8");
+                    req.response().headers().add("Cache-Control", "public, max-age=5");
+                    req.response().headers().add("Content-Type", "application/json; charset=utf-8");
+                    req.response().headers().add("Content-Length", Long.toString(bodyBytes.length));
+                    req.response().write(Buffer.buffer(bodyBytes)).end();
+                    if (CoreFabric.ServerConfiguration.DEBUG) logger.info("app-config-server\t" + zone + "\t" + instance + "\t" + body);
+                }
+                catch (UnsupportedEncodingException uee) {
+                    logger.fatal("app-config-server\t" + uee.getMessage());
+                    req.response().setStatusCode(500);
+                    req.response().end();
+                }
+            });
         });
         // TODO: post() handler to write configuration to the database
         // TODO: security

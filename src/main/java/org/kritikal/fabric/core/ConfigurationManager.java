@@ -7,6 +7,7 @@ import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import org.kritikal.fabric.CoreFabric;
 import org.kritikal.fabric.daemon.MqttBrokerVerticle;
+import org.kritikal.fabric.db.pgsql.DbInstanceContainer;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -55,7 +56,10 @@ public class ConfigurationManager {
             user = node_db.getString("user", "postgres");
             password = node_db.getString("password", "password");
             tmp = node.getString("tmp", "/var/tmp");
+            dbInstanceContainer = new DbInstanceContainer(2);
+            dbInstanceContainer.initialise(node_db);
         }
+        public static DbInstanceContainer dbInstanceContainer;
         public static String appConfigUri;
         public static String appConfigHost;
         public static int appConfigPort;
@@ -119,9 +123,8 @@ public class ConfigurationManager {
                 c.applyInstanceConfig(jsonClusterConfig);
                 c.state = Configuration.State.LIVE;
                 getJsonLocalConfigurationAsync(vertx, instancekey, c, jsonLocalConfig -> {
-                    c.applyLocalConfig(jsonLocalConfig);
-
                     vertx.executeBlocking(f -> {
+                        c.applyLocalConfig(jsonLocalConfig); // blocking, TODO: use DbInstance for pooling
                         consumer.accept(c);
                         f.complete();
                     }, false, r -> {});
@@ -266,13 +269,12 @@ public class ConfigurationManager {
         return content.toString();
     }
 
+    // TODO: go via an instanceconfigdbverticle like appconfigdbverticle to get this information async via messages
     private static JsonObject getJsonLocalConfiguration(final Configuration originalConfiguration) {
         JsonObject content = new JsonObject();
         if (originalConfiguration.change.exit) return content;
         try {
-            Class.forName("org.postgresql.Driver");
-            Connection con = DriverManager.getConnection(originalConfiguration.getConnectionStringWithUsername());
-            con.setTransactionIsolation(Connection.TRANSACTION_READ_UNCOMMITTED);
+            Connection con = Shim.dbInstanceContainer.connect(null, false);
             con.setAutoCommit(false);
             try {
                 PreparedStatement statement = con.prepareStatement("SELECT key, value FROM node.instance_local_cfg FOR UPDATE;");
@@ -350,7 +352,6 @@ public class ConfigurationManager {
                             }
                             try {
                                 MqttBrokerVerticle.asyncBroker().apiPublish(topic, json.getBytes("UTF-8"), 0, true, TTL, (vo1d) -> {
-                                    clusterRequests.put(instancekey, false);
                                     nextStep(json, q);
                                 });
                             } catch (UnsupportedEncodingException uee) { logger.fatal("", uee); }
