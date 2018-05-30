@@ -13,8 +13,8 @@
       "user": "postgres",
       "password": "password"
     },
-    //"app_config_uri": "http://joyent-build.dc1.amb1ent.org:8082/",
-    "app_config_uri": "http://127.0.0.1:8082/",
+    "app_config_uri": "http://joyent-build.dc1.amb1ent.org:8082/",
+    //"app_config_uri": "http://127.0.0.1:8082/",
     "tmp": "/var/tmp"
   },
   "cluster": {
