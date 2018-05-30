@@ -59,6 +59,23 @@ CREATE SCHEMA db;
 CREATE SCHEMA cf;
 CREATE SCHEMA config;
 
+CREATE TABLE    config.zonejson (
+  id            bigserial NOT NULL,
+  zone          varchar(64) NOT NULL,
+  object        jsonb NOT NULL,
+  CONSTRAINT config__pk__zonejson PRIMARY KEY (id),
+  CONSTRAINT config__zone__zonejson UNIQUE (zone)
+);
+
+CREATE TABLE    config.nodejson (
+  zone_id       bigint NOT NULL,
+  id            bigserial NOT NULL,
+  node          varchar(64) NOT NULL,
+  object        jsonb NOT NULL,
+  CONSTRAINT config__pk__nodejson PRIMARY KEY (id),
+  CONSTRAINT config__zone_node__nodejson UNIQUE (zone_id, node)
+);
+
 CREATE TABLE db.schema_versions (
     schema_version_id       bigserial       NOT NULL,
     schema_tag              varchar(64)     NOT NULL DEFAULT 'config',
