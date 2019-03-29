@@ -9,6 +9,7 @@ import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.dropwizard.DropwizardMetricsOptions;
 import io.vertx.spi.cluster.hazelcast.HazelcastClusterManager;
+import main.java.org.kritikal.fabric.annotations.CFMain;
 import org.kritikal.fabric.core.exceptions.FabricError;
 import org.kritikal.fabric.net.mqtt.entities.PublishMessage;
 import org.kritikal.fabric.net.mqtt.entities.PublishMessageStreamSerializer;
@@ -18,10 +19,12 @@ import io.corefabric.pi.CoreFabricRoleRegistry;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.lang.reflect.InvocationTargetException;
 import java.net.Inet4Address;
 import java.util.ArrayList;
 import java.util.UUID;
 import org.kritikal.fabric.core.BuildConfig;
+import org.reflections.Reflections;
 
 /**
  * Created by ben on 07/03/2016.
@@ -190,7 +193,7 @@ public class CoreFabric {
             final Vertx vertx = ar.result();
             vertx.deployVerticle("io.corefabric.pi.MainVerticle", f -> {
                 if (f.failed()) { exit = true; return; }
-                logger.info("ONLINE, press ^C to exit.");
+                CoreFabric.bootstrap(args, vertx);
             });
         });
 
@@ -233,5 +236,28 @@ public class CoreFabric {
             }
         }
         return gVertx;
+    }
+    private static void bootstrap(String[] args, Vertx vertx) {
+        vertx.executeBlocking(future -> {
+            Reflections reflections = new Reflections();
+            for (Class<?> clazz : reflections.getTypesAnnotatedWith(CFMain.class)) {
+                try {
+                    clazz.getMethod("main", String[].class, Vertx.class).invoke(null, args, vertx);
+                }
+                catch (NoSuchMethodException e1) {
+                    logger.fatal("corefabric.io\t\tUnable to bootstrap " + clazz.getCanonicalName() + " no entrypoint.");
+                }
+                catch (IllegalAccessException e2) {
+                    logger.fatal("corefabric.io\t\tUnable to bootstrap " + clazz.getCanonicalName() + " illegal access.");
+                }
+                catch (InvocationTargetException e3) {
+                    logger.fatal("corefabric.io\t\tUnable to bootstrap " + clazz.getCanonicalName() + " inovocation target.");
+                }
+            }
+            future.complete(true);
+        }, res -> {
+            logger.info("corefabric.io\t\tONLINE, press ^C to exit.");
+        });
+
     }
 }
