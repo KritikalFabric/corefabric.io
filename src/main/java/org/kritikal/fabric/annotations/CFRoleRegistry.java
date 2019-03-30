@@ -1,4 +1,4 @@
 package org.kritikal.fabric.annotations;
 
-public @interface CFMain {
+public @interface CFRoleRegistry {
 }

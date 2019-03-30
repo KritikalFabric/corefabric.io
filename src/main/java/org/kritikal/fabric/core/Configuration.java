@@ -34,6 +34,12 @@ public class Configuration {
             needsReset = true;
         }
     }
-    public void applyInstanceConfig(JsonObject instanceConfig) { /* does nothing by default */ }
-    public void applyLocalConfig(JsonObject localConfiguration) { /* does nothing by default */ }
+    public void applyInstanceConfig(JsonObject instanceConfig) {
+        this.instanceConfig = instanceConfig;
+    }
+    public void applyLocalConfig(JsonObject localConfig) {
+        this.localConfig = localConfig;
+    }
+    public JsonObject instanceConfig = null;
+    public JsonObject localConfig = null;
 }

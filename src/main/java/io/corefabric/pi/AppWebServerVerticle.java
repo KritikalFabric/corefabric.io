@@ -174,7 +174,7 @@ public class AppWebServerVerticle extends AbstractVerticle {
         }
 
         String runningJar = new File(AppWebServerVerticle.class.getProtectionDomain().getCodeSource().getLocation().toURI()).getAbsolutePath();
-        if (CoreFabric.ServerConfiguration.DEBUG) logger.info("app-web-server\tCode running from:\t" + runningJar);
+        //if (CoreFabric.ServerConfiguration.DEBUG) logger.info("app-web-server\tCode running from:\t" + runningJar);
         runningInsideJar = runningJar.endsWith("-fat.jar");
         if (runningInsideJar) {
             JarFile jarFile = null;
