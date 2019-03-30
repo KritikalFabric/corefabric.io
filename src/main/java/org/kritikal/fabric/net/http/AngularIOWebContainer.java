@@ -184,8 +184,6 @@ public class AngularIOWebContainer {
                 if (CoreFabric.ServerConfiguration.DEBUG) logger.info("angular-io\t" + site + "\t" + req.path());
                 AngularIOSiteInstance x = map.get(site);
                 if (x != null) {
-                    if (CoreFabric.ServerConfiguration.DEBUG) logger.info("angular-io\t" + site + "\t" + x.tempdir + "\t" + req.path());
-
                     boolean noGzip = false;
                     String file = null;
                     if (req.path().contains("..")) {
