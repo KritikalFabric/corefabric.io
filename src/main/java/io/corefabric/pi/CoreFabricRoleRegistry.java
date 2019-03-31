@@ -32,7 +32,7 @@ public class CoreFabricRoleRegistry {
             DeploymentOptions deploymentOptions = new DeploymentOptions();
             deploymentOptions.setWorker(true);
             JsonArray ary = new JsonArray();
-            ary.add("corefabric.app-config-db");
+            ary.add("corefabric.app-config-db.demo");
             config.put("addresses", ary);
             config.put("db_ref", "config_db");
             deploymentOptions.setConfig(config);
