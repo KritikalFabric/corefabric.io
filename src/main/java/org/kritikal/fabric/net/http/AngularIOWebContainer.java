@@ -182,64 +182,75 @@ public class AngularIOWebContainer {
             ConfigurationManager.getConfigurationAsync(vertx, instancekey, cfg -> {
                 String site = cfg.instanceConfig.getJsonObject("instance").getString("site");
                 if (CoreFabric.ServerConfiguration.DEBUG) logger.info("angular-io\t" + site + "\t" + req.path());
-                AngularIOSiteInstance x = map.get(site);
-                if (x != null) {
-                    boolean noGzip = false;
-                    String file = null;
-                    if (req.path().contains("..")) {
-                        req.response().setStatusCode(500);
-                        req.response().end();
-                        return;
-                    } else if (req.path().equals("/") || req.path().startsWith("/-/")) {
-                        file = "index.html";
-                        noGzip = true;
-                    } else if (req.path().startsWith("/")) {
-                        file = req.path().substring(1);
-                    } else {
-                        req.response().setStatusCode(404);
-                        req.response().end();
-                        return;
-                    }
-
-                    if (file != null) {
-
-                        cookieCutter(req);
-
-                        boolean gzip = false;
-                        for (Map.Entry<String, String> stringStringEntry : req.headers()) {
-                            if (stringStringEntry.getKey().toLowerCase().equals("accept-encoding") &&
-                                    stringStringEntry.getValue().toLowerCase().contains("gzip")) {
-                                gzip = true;
+                if (site != null) {
+                    try {
+                        AngularIOSiteInstance x = map.get(site);
+                        if (x != null && cfg.instanceConfig.getJsonObject("instance").getBoolean("active")) {
+                            boolean noGzip = false;
+                            String file = null;
+                            if (req.path().contains("..")) {
+                                req.response().setStatusCode(500);
+                                req.response().end();
+                                return;
+                            } else if (req.path().equals("/") || req.path().startsWith("/-/")) {
+                                file = "index.html";
+                                noGzip = true;
+                            } else if (req.path().startsWith("/")) {
+                                file = req.path().substring(1);
+                            } else {
+                                req.response().setStatusCode(404);
+                                req.response().end();
+                                return;
                             }
-                        }
-                        boolean acceptEncodingGzip = gzip && !noGzip;
 
-                        String filesystemLocation = (runningInsideJar ? x.tempdir : (x.localDirSlash)) + file;
-                        vertx.fileSystem().exists(filesystemLocation + (acceptEncodingGzip ? ".gz" : ""), new Handler<AsyncResult<Boolean>>() {
-                            @Override
-                            public void handle(AsyncResult<Boolean> event) {
-                                if (event.succeeded()) {
-                                    if (event.result()) {
-                                        sendFile(req, filesystemLocation, acceptEncodingGzip);
-                                    } else {
-                                        req.response().setStatusCode(404);
-                                        req.response().end("<html><head><title>Server Error</title><meta http-equiv=\"refresh\" content=\"0;URL='/-/not-found/'\" /></head><body></body></html>");
-                                        return;
+                            if (file != null) {
+
+                                cookieCutter(req);
+
+                                boolean gzip = false;
+                                for (Map.Entry<String, String> stringStringEntry : req.headers()) {
+                                    if (stringStringEntry.getKey().toLowerCase().equals("accept-encoding") &&
+                                            stringStringEntry.getValue().toLowerCase().contains("gzip")) {
+                                        gzip = true;
                                     }
-                                } else {
-                                    req.response().setStatusCode(500);
-                                    req.response().end();
-                                    return;
                                 }
+                                boolean acceptEncodingGzip = gzip && !noGzip;
+
+                                String filesystemLocation = (runningInsideJar ? x.tempdir : (x.localDirSlash)) + file;
+                                vertx.fileSystem().exists(filesystemLocation + (acceptEncodingGzip ? ".gz" : ""), new Handler<AsyncResult<Boolean>>() {
+                                    @Override
+                                    public void handle(AsyncResult<Boolean> event) {
+                                        if (event.succeeded()) {
+                                            if (event.result()) {
+                                                sendFile(req, filesystemLocation, acceptEncodingGzip);
+                                            } else {
+                                                req.response().setStatusCode(404).setStatusMessage("Not Found");
+                                                req.response().end("<html><head><title>Server Error</title><meta http-equiv=\"refresh\" content=\"0;URL='/-/not-found/'\" /></head><body></body></html>");
+                                                return;
+                                            }
+                                        } else {
+                                            req.response().setStatusCode(500).setStatusMessage("Server Error");
+                                            req.response().end();
+                                            return;
+                                        }
+                                    }
+                                });
+                            } else {
+                                req.response().setStatusCode(500).setStatusMessage("Server Error");
+                                req.response().end();
                             }
-                        });
+                        } else {
+                            req.response().setStatusCode(500).setStatusMessage("Server Error");
+                            req.response().end();
+                        }
                     }
-                    else {
-                        req.response().setStatusCode(500);
+                    catch (Throwable t) {
+                        logger.error("angular-io\t" + site + "\t" + req.path() + "\t" + t.getMessage());
+                        req.response().setStatusCode(500).setStatusMessage("Server Error");
                         req.response().end();
                     }
                 } else {
-                    req.response().setStatusCode(500);
+                    req.response().setStatusCode(500).setStatusMessage("Server Error");
                     req.response().end();
                 }
             });
