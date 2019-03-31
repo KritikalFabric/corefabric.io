@@ -302,12 +302,13 @@ public class AppWebServerVerticle extends AbstractVerticle {
                     if (stringStringEntry.getKey().toLowerCase().equals("accept-encoding") &&
                             stringStringEntry.getValue().toLowerCase().contains("gzip")) {
                         gzip = true;
+                        break;
                     }
                 }
                 final boolean acceptEncodingGzip = gzip;
 
-                final String filesystemLocation = (runningInsideJar ? tempdir : "a2/dist/a2") + file;
-                final String indexHtmlLocation = (runningInsideJar ? tempdir : "a2/dist/a2") + "index.html";
+                final String filesystemLocation = (runningInsideJar ? tempdir : "a2/dist/a2/") + file;
+                final String indexHtmlLocation = (runningInsideJar ? tempdir : "a2/dist/a2/") + "index.html";
                 vertx.fileSystem().exists(filesystemLocation + (acceptEncodingGzip ? ".gz" : ""), new Handler<AsyncResult<Boolean>>() {
                     @Override
                     public void handle(AsyncResult<Boolean> event) {
