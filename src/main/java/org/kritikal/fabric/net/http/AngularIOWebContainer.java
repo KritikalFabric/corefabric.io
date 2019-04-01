@@ -185,7 +185,9 @@ public class AngularIOWebContainer {
                 if (site != null) {
                     try {
                         AngularIOSiteInstance x = map.get(site);
-                        if (x != null && cfg.instanceConfig.getJsonObject("instance").getBoolean("active")) {
+                        if (x != null
+                                && cfg.instanceConfig.getJsonObject("zone").getBoolean("active")
+                                && cfg.instanceConfig.getJsonObject("instance").getBoolean("active")) {
                             boolean noGzip = false;
                             String file = null;
                             if (req.path().contains("..")) {
