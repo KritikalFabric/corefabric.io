@@ -92,4 +92,8 @@ CREATE TABLE db.schema_versions (
 INSERT INTO db.schema_versions (schema_tag, schema_revision) VALUES ('config', 1);
 PSQL
 
+su - postgres -c psql < /root/nodedb.sql
+
+su - postgres -c psql < /root/configdb.sql
+
 service postgresql stop

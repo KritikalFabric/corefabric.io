@@ -1,7 +1,6 @@
 package org.kritikal.fabric.net;
 
 import io.vertx.core.Handler;
-import io.vertx.core.VoidHandler;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.ServerWebSocket;
 import io.vertx.core.http.WebSocket;
@@ -38,9 +37,9 @@ public class CServerWebSocket implements ISocket {
     @Override
     public void write(Buffer buffer) {
         if (webSocket.writeQueueFull()) {
-            webSocket.drainHandler(new VoidHandler() {
+            webSocket.drainHandler(new Handler<Void>() {
                 @Override
-                protected void handle() {
+                public void handle(Void v) {
                     webSocket.resume();
                 }
             });

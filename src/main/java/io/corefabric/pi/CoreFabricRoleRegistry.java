@@ -28,11 +28,11 @@ public class CoreFabricRoleRegistry {
 
         RoleRegistry.addRole(new Role(new String[] {"mqtt-broker"}, "app-config-db", (future, array) -> {
 
-            JsonObject config = array.size() > 0 ? array.getJsonObject(0) : new JsonObject();
+            JsonObject config = null!=array && array.size() > 0 ? array.getJsonObject(0) : new JsonObject();
             DeploymentOptions deploymentOptions = new DeploymentOptions();
             deploymentOptions.setWorker(true);
             JsonArray ary = new JsonArray();
-            ary.add("corefabric.app-config-db");
+            ary.add("corefabric.app-config-db.demo");
             config.put("addresses", ary);
             config.put("db_ref", "config_db");
             deploymentOptions.setConfig(config);
@@ -45,7 +45,7 @@ public class CoreFabricRoleRegistry {
 
         RoleRegistry.addRole(new Role(new String[] {"mqtt-broker", "app-config-db"}, "app-config-server", (future, array) -> {
 
-            JsonObject config = array.size() > 0 ? array.getJsonObject(0) : new JsonObject();
+            JsonObject config = null!=array && array.size() > 0 ? array.getJsonObject(0) : new JsonObject();
             DeploymentOptions deploymentOptions = new DeploymentOptions();
             deploymentOptions.setWorker(false);
             deploymentOptions.setConfig(config);
@@ -58,7 +58,7 @@ public class CoreFabricRoleRegistry {
 
         RoleRegistry.addRole(new Role(new String[] {"dtn-shell", "mqtt-broker"}, "app-web", (future, array) -> {
 
-            JsonObject config = array.size() > 0 ? array.getJsonObject(0) : new JsonObject();
+            JsonObject config = null!=array && array.size() > 0 ? array.getJsonObject(0) : new JsonObject();
             DeploymentOptions deploymentOptions = new DeploymentOptions();
             deploymentOptions.setWorker(true);
             deploymentOptions.setInstances(1);
@@ -115,7 +115,7 @@ public class CoreFabricRoleRegistry {
         }));
         RoleRegistry.addRole(new Role(new String[] {"dtn-shell", "mqtt-broker"}, "dtn-mqtt-bridge", (future, array) -> {
             List<Future> futures = new LinkedList<Future>();
-            for (int i = 0, l = array.size(); i < l; ++i) {
+            for (int i = 0, l = null!=array?array.size():0; i < l; ++i) {
                 final String label = "dtn-mqtt-bridge-" + i;
                 JsonObject config = array.getJsonObject(i);
                 DeploymentOptions deploymentOptions = new DeploymentOptions();

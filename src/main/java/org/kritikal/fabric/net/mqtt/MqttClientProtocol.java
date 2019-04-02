@@ -4,7 +4,6 @@ import org.kritikal.fabric.net.mqtt.entities.*;
 import org.kritikal.fabric.net.BufferContainer;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
-import io.vertx.core.VoidHandler;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.net.NetSocket;
@@ -313,9 +312,9 @@ public class MqttClientProtocol implements Handler<Buffer> {
     {
         if (netSocket.writeQueueFull()) {
             netSocket.pause(); // pauses input, drain handler above will be called when ready
-            netSocket.drainHandler(new VoidHandler() {
+            netSocket.drainHandler(new Handler<Void>() {
                 @Override
-                protected void handle() {
+                public void handle(Void v) {
                     netSocket.resume();
                 }
             });

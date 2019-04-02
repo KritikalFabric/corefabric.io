@@ -49,7 +49,7 @@ public class AppConfigServerVerticle extends AbstractVerticle {
             dbQuery.put("zone", zone);
             dbQuery.put("instance", instance);
 
-            vertx.eventBus().send("corefabric.app-config-db", dbQuery, (ar) -> {
+            vertx.eventBus().send("corefabric.app-config-db." + zone, dbQuery, (ar) -> {
                 JsonObject configuration = null;
                 if (ar.succeeded()) {
                     configuration = (JsonObject)ar.result().body();

@@ -30,7 +30,7 @@ jar {
 }
 
 version = '0.2.1-autoconf' // our version
-vertxVersion = '3.3.3' // vert.x version
+vertxVersion = '3.6.3' // vert.x version
 
 sourceCompatibility = '1.8'
 
@@ -98,6 +98,7 @@ dependencies {
     compile group: 'commons-io', name: 'commons-io', version: '2.6'
     compile "io.hawt:hawtio-plugin-mbean:1.5-SNAPSHOT"
     compile "javax.servlet:servlet-api:2.5"
+    compile group: 'org.reflections', name: 'reflections', version: '0.9.11'
 }
 
 mainClassName = 'org.kritikal.fabric.CoreFabric'
