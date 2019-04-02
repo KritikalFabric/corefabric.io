@@ -15,6 +15,11 @@ import io.vertx.core.logging.LoggerFactory;
 import io.vertx.core.Vertx;
 import io.vertx.ext.web.Router;
 import org.kritikal.fabric.CoreFabric;
+import org.kritikal.fabric.annotations.CFApi;
+import org.kritikal.fabric.annotations.CFApiBase;
+import org.kritikal.fabric.annotations.CFApiMethod;
+import org.kritikal.fabric.annotations.CFMain;
+import org.kritikal.fabric.core.Configuration;
 import org.kritikal.fabric.core.ConfigurationManager;
 import org.kritikal.fabric.daemon.MqttBrokerVerticle;
 import org.kritikal.fabric.core.VERTXDEFINES;
@@ -25,8 +30,12 @@ import org.kritikal.fabric.net.http.BinaryBodyHandler;
 import org.kritikal.fabric.net.http.CorsOptionsHandler;
 import org.kritikal.fabric.net.http.FabricApiConnector;
 import org.kritikal.fabric.net.mqtt.SyncMqttBroker;
+import org.reflections.Reflections;
 
 import java.io.*;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.net.URISyntaxException;
 import java.util.Enumeration;
 import java.util.Map;
@@ -171,6 +180,7 @@ public class AngularIOWebContainer {
                 mqttBroker.waitingForConnect.add(mqttServerProtocol);
             }
         });
+        wireUpCFApi(zone, vertx, router);
         router.get().handler(rc -> {
             HttpServerRequest req = rc.request();
 
@@ -259,6 +269,54 @@ public class AngularIOWebContainer {
         });
         server.requestHandler(req -> { router.accept(req); });
         return server;
+    }
+
+    private static void wireUpCFApi(String zone, Vertx vertx, Router router) {
+        Reflections reflections = new Reflections();
+        for (Class<?> clazz : reflections.getTypesAnnotatedWith(CFApi.class)) {
+            try {
+                final Constructor ctor = clazz.getConstructor(Configuration.class);
+                for (final Method method : clazz.getMethods()) {
+                    if (method.isAnnotationPresent(CFApiMethod.class)) {
+                        CFApiMethod apiMethod = method.getAnnotation(CFApiMethod.class);
+                        final String url = apiMethod.url();
+                        router.get(url).handler(rc -> {
+                            HttpServerRequest req = rc.request();
+
+                            String hostport = req.host();
+                            int i = hostport.indexOf(':');
+                            if (i >= 0) {
+                                hostport = hostport.substring(0, i);
+                            }
+
+                            String instancekey = zone + "/" + hostport;
+                            ConfigurationManager.getConfigurationAsync(vertx, instancekey, cfg -> {
+                                if (CoreFabric.ServerConfiguration.DEBUG) logger.info("angular-io\tapi\t" + req.path());
+                                try {
+                                    Object o = ctor.newInstance(cfg);
+                                    JsonObject r = (JsonObject) method.invoke(o);
+                                    req.response().setStatusCode(200).setStatusMessage("OK");
+                                    req.response().headers().add("Content-Type", "application/json");
+                                    req.response().end(r.encode());
+                                } catch (Throwable t) {
+                                    logger.error("angular-io\tapi\t" + req.path() + "\t" + t.getMessage());
+                                    req.response().setStatusCode(500).setStatusMessage("Server Error");
+                                    req.response().end();
+                                }
+                            });
+                        });
+                        if (CoreFabric.ServerConfiguration.DEBUG) logger.info("angular-io\t" + apiMethod.url() + "\t" + clazz.getSimpleName() + "\t" + method.getName());
+                    }
+                }
+
+            }
+            catch (ClassCastException cce) {
+                logger.fatal("angular-io\t\tUnable to wireUpCFApi " + clazz.getCanonicalName() + " class cast exception.");
+            }
+            catch (NoSuchMethodException e1) {
+                logger.fatal("angular-io\t\tUnable to wireUpCFApi " + clazz.getCanonicalName() + " no entrypoint.");
+            }
+        }
     }
 
     public static Router initialiseRouter(Vertx vertx) {
