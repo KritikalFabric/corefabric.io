@@ -78,6 +78,16 @@ public class FileUploadHandler implements BodyHandler {
         return this;
     }
 
+    @Override
+    public BodyHandler setHandleFileUploads(boolean handleFileUploads) {
+        return this;
+    }
+
+    @Override
+    public BodyHandler setPreallocateBodyBuffer(boolean isPreallocateBodyBuffer) {
+        return this;
+    }
+
     private class BHandler implements Handler<Buffer> {
 
         RoutingContext context;

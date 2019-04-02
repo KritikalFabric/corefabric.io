@@ -1,7 +1,6 @@
 package org.kritikal.fabric.net;
 
 import io.vertx.core.Handler;
-import io.vertx.core.VoidHandler;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.net.NetSocket;
 
@@ -33,9 +32,9 @@ public class CNetSocket implements ISocket {
     @Override
     public void write(Buffer buffer) {
         if (netSocket.writeQueueFull()) {
-            netSocket.drainHandler(new VoidHandler() {
+            netSocket.drainHandler(new Handler<Void>() {
                 @Override
-                protected void handle() {
+                public void handle(Void v) {
                     netSocket.resume();
                 }
             });

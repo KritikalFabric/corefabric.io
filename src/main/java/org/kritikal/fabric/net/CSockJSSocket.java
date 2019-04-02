@@ -1,7 +1,6 @@
 package org.kritikal.fabric.net;
 
 import io.vertx.core.Handler;
-import io.vertx.core.VoidHandler;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.ext.web.handler.sockjs.SockJSSocket;
 
@@ -35,9 +34,9 @@ public class CSockJSSocket implements ISocket {
     @Override
     public void write(Buffer buffer) {
         if (sockJSSocket.writeQueueFull()) {
-            sockJSSocket.drainHandler(new VoidHandler() {
+            sockJSSocket.drainHandler(new Handler<Void>() {
                 @Override
-                protected void handle() {
+                public void handle(Void v) {
                     sockJSSocket.resume();
                 }
             });
