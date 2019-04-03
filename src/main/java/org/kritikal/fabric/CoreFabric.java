@@ -242,7 +242,7 @@ public class CoreFabric {
     }
     private static void bootstrapMain(String[] args, Vertx vertx) {
         vertx.executeBlocking(future -> {
-            Reflections reflections = new Reflections();
+            Reflections reflections = new Reflections("space.street_stall");
             for (Class<?> clazz : reflections.getTypesAnnotatedWith(CFMain.class)) {
                 try {
                     clazz.getMethod("main", String[].class, Vertx.class).invoke(null, args, vertx);
@@ -264,7 +264,7 @@ public class CoreFabric {
 
     }
     private static void bootstrapRoleRegistries(Vertx vertx) {
-        Reflections reflections = new Reflections();
+        Reflections reflections = new Reflections("space.street_stall");
         for (Class<?> clazz : reflections.getTypesAnnotatedWith(CFRoleRegistry.class)) {
             try {
                 IRoleRegistry roleRegistry = (IRoleRegistry) clazz.getConstructor().newInstance();

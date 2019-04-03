@@ -165,7 +165,7 @@ public class AngularIOWebContainer {
         req.response().sendFile(pathToFile + (acceptEncodingGzip ? ".gz" : ""));
     }
 
-    public static HttpServer initialiseHttpServer(String zone, Vertx vertx, Router router, Consumer<HttpServerOptions> options) {
+    public static HttpServer initialiseHttpServer(String namespace, String zone, Vertx vertx, Router router, Consumer<HttpServerOptions> options) {
         HttpServerOptions httpServerOptions = new HttpServerOptions();
         httpServerOptions.setSoLinger(0);
         httpServerOptions.setTcpKeepAlive(true);
@@ -182,7 +182,7 @@ public class AngularIOWebContainer {
                 mqttBroker.waitingForConnect.add(mqttServerProtocol);
             }
         });
-        wireUpCFApi(zone, vertx, router);
+        wireUpCFApi(namespace, zone, vertx, router);
         router.get().handler(rc -> {
             HttpServerRequest req = rc.request();
 
@@ -308,9 +308,9 @@ public class AngularIOWebContainer {
         return server;
     }
 
-    private static void wireUpCFApi(String zone, Vertx vertx, Router router) {
+    private static void wireUpCFApi(String namespace, String zone, Vertx vertx, Router router) {
         final CorsOptionsHandler corsOptionsHandler = new CorsOptionsHandler();
-        Reflections reflections = new Reflections();
+        Reflections reflections = new Reflections(namespace);
         for (Class<?> clazz : reflections.getTypesAnnotatedWith(CFApi.class)) {
             try {
                 final Constructor ctor = clazz.getConstructor(Configuration.class);
