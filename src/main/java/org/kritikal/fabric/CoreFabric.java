@@ -34,6 +34,8 @@ import org.reflections.Reflections;
 public class CoreFabric {
     public final static Logger logger = LoggerFactory.getLogger(CoreFabric.class);
     public static JsonObject globalConfig = null;
+    private static ArrayList<String> searchNamespaces = new ArrayList<>();
+    public static void addNamespace(String ns) { searchNamespaces.add(ns); }
     static {
         logger.info(BuildConfig.NAME + " - " + BuildConfig.VERSION);
 
@@ -242,19 +244,18 @@ public class CoreFabric {
     }
     private static void bootstrapMain(String[] args, Vertx vertx) {
         vertx.executeBlocking(future -> {
-            Reflections reflections = new Reflections("space.street_stall");
-            for (Class<?> clazz : reflections.getTypesAnnotatedWith(CFMain.class)) {
-                try {
-                    clazz.getMethod("main", String[].class, Vertx.class).invoke(null, args, vertx);
-                }
-                catch (NoSuchMethodException e1) {
-                    logger.fatal("corefabric.io\t\tUnable to bootstrap " + clazz.getCanonicalName() + " no entrypoint.");
-                }
-                catch (IllegalAccessException e2) {
-                    logger.fatal("corefabric.io\t\tUnable to bootstrap " + clazz.getCanonicalName() + " illegal access.");
-                }
-                catch (InvocationTargetException e3) {
-                    logger.fatal("corefabric.io\t\tUnable to bootstrap " + clazz.getCanonicalName() + " inovocation target.");
+            for (String ns : searchNamespaces) {
+                Reflections reflections = new Reflections(ns);
+                for (Class<?> clazz : reflections.getTypesAnnotatedWith(CFMain.class)) {
+                    try {
+                        clazz.getMethod("main", String[].class, Vertx.class).invoke(null, args, vertx);
+                    } catch (NoSuchMethodException e1) {
+                        logger.fatal("corefabric.io\t\tUnable to bootstrap " + clazz.getCanonicalName() + " no entrypoint.");
+                    } catch (IllegalAccessException e2) {
+                        logger.fatal("corefabric.io\t\tUnable to bootstrap " + clazz.getCanonicalName() + " illegal access.");
+                    } catch (InvocationTargetException e3) {
+                        logger.fatal("corefabric.io\t\tUnable to bootstrap " + clazz.getCanonicalName() + " inovocation target.");
+                    }
                 }
             }
             future.complete(true);
@@ -264,23 +265,21 @@ public class CoreFabric {
 
     }
     private static void bootstrapRoleRegistries(Vertx vertx) {
-        Reflections reflections = new Reflections("space.street_stall");
-        for (Class<?> clazz : reflections.getTypesAnnotatedWith(CFRoleRegistry.class)) {
-            try {
-                IRoleRegistry roleRegistry = (IRoleRegistry) clazz.getConstructor().newInstance();
-                roleRegistry.addRoles(vertx);
-            }
-            catch (NoSuchMethodException e1) {
-                logger.fatal("corefabric.io\t\tUnable to bootstrap registry " + clazz.getCanonicalName() + " no entrypoint.");
-            }
-            catch (InstantiationException e2) {
-                logger.fatal("corefabric.io\t\tUnable to bootstrap registry " + clazz.getCanonicalName() + " instantiation.");
-            }
-            catch (IllegalAccessException e2) {
-                logger.fatal("corefabric.io\t\tUnable to bootstrap registry " + clazz.getCanonicalName() + " illegal access.");
-            }
-            catch (InvocationTargetException e3) {
-                logger.fatal("corefabric.io\t\tUnable to bootstrap registry " + clazz.getCanonicalName() + " inovocation target.");
+        for (String ns : searchNamespaces) {
+            Reflections reflections = new Reflections(ns);
+            for (Class<?> clazz : reflections.getTypesAnnotatedWith(CFRoleRegistry.class)) {
+                try {
+                    IRoleRegistry roleRegistry = (IRoleRegistry) clazz.getConstructor().newInstance();
+                    roleRegistry.addRoles(vertx);
+                } catch (NoSuchMethodException e1) {
+                    logger.fatal("corefabric.io\t\tUnable to bootstrap registry " + clazz.getCanonicalName() + " no entrypoint.");
+                } catch (InstantiationException e2) {
+                    logger.fatal("corefabric.io\t\tUnable to bootstrap registry " + clazz.getCanonicalName() + " instantiation.");
+                } catch (IllegalAccessException e2) {
+                    logger.fatal("corefabric.io\t\tUnable to bootstrap registry " + clazz.getCanonicalName() + " illegal access.");
+                } catch (InvocationTargetException e3) {
+                    logger.fatal("corefabric.io\t\tUnable to bootstrap registry " + clazz.getCanonicalName() + " inovocation target.");
+                }
             }
         }
     }
