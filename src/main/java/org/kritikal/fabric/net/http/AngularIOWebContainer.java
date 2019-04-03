@@ -295,6 +295,7 @@ public class AngularIOWebContainer {
                                 try {
                                     Object o = ctor.newInstance(cfg);
                                     JsonObject r = (JsonObject) method.invoke(o);
+                                    cookieCutter(req);
                                     req.response().setStatusCode(200).setStatusMessage("OK");
                                     req.response().headers().add("Content-Type", "application/json");
                                     req.response().end(r.encode());
