@@ -41,6 +41,7 @@ import java.util.Enumeration;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Consumer;
 import java.util.jar.JarFile;
 import java.util.zip.ZipEntry;
 import java.util.concurrent.ConcurrentHashMap;
@@ -164,11 +165,12 @@ public class AngularIOWebContainer {
         req.response().sendFile(pathToFile + (acceptEncodingGzip ? ".gz" : ""));
     }
 
-    public static HttpServer initialiseHttpServer(String zone, Vertx vertx, Router router) {
+    public static HttpServer initialiseHttpServer(String zone, Vertx vertx, Router router, Consumer<HttpServerOptions> options) {
         HttpServerOptions httpServerOptions = new HttpServerOptions();
         httpServerOptions.setSoLinger(0);
         httpServerOptions.setTcpKeepAlive(true);
         httpServerOptions.setHandle100ContinueAutomatically(true);
+        options.accept(httpServerOptions);
         HttpServer server = vertx.createHttpServer(httpServerOptions);
         server.websocketHandler(ws -> {
             String corefabric = cookieCutter(ws);
@@ -249,7 +251,7 @@ public class AngularIOWebContainer {
                                                         } else {
                                                             try {
                                                                 String s = new String(ar.result().getBytes(), "UTF-8");
-                                                                s = s.replaceAll("<!--ssi:canonical-->", "http://" + hostname + ":2080");
+                                                                s = s.replaceAll("<!--ssi:canonical-->", "https://" + hostname + ":1443");
                                                                 req.response().headers().add("Pragma", "no-cache");
                                                                 req.response().headers().add("Cache-Control", "no-cache, no-store, private, must-revalidate");
                                                                 req.response().headers().add("Content-Type", "text/html; charset=utf-8");
