@@ -272,6 +272,7 @@ public class AngularIOWebContainer {
     }
 
     private static void wireUpCFApi(String zone, Vertx vertx, Router router) {
+        final CorsOptionsHandler corsOptionsHandler = new CorsOptionsHandler();
         Reflections reflections = new Reflections();
         for (Class<?> clazz : reflections.getTypesAnnotatedWith(CFApi.class)) {
             try {
@@ -280,6 +281,7 @@ public class AngularIOWebContainer {
                     if (method.isAnnotationPresent(CFApiMethod.class)) {
                         CFApiMethod apiMethod = method.getAnnotation(CFApiMethod.class);
                         final String url = apiMethod.url();
+                        router.options(url).handler(corsOptionsHandler);
                         router.get(url).handler(rc -> {
                             HttpServerRequest req = rc.request();
 
@@ -297,6 +299,7 @@ public class AngularIOWebContainer {
                                     JsonObject r = (JsonObject) method.invoke(o);
                                     cookieCutter(req);
                                     req.response().setStatusCode(200).setStatusMessage("OK");
+                                    corsOptionsHandler.applyResponseHeaders(req);
                                     req.response().headers().add("Content-Type", "application/json");
                                     req.response().end(r.encode());
                                 } catch (Throwable t) {
