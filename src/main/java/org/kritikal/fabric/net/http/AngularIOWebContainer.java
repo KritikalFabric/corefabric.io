@@ -187,6 +187,7 @@ public class AngularIOWebContainer {
             String hostport = req.host();
             int i = hostport.indexOf(':');
             if (i >= 0) { hostport = hostport.substring(0, i); }
+            final String hostname = hostport;
 
             String instancekey = zone + "/" + hostport;
             ConfigurationManager.getConfigurationAsync(vertx, instancekey, cfg -> {
@@ -216,6 +217,7 @@ public class AngularIOWebContainer {
                             }
 
                             if (file != null) {
+                                final boolean isIndexHtml = "index.html".equals(file);
 
                                 cookieCutter(req);
 
@@ -234,10 +236,43 @@ public class AngularIOWebContainer {
                                     public void handle(AsyncResult<Boolean> event) {
                                         if (event.succeeded()) {
                                             if (event.result()) {
-                                                sendFile(req, filesystemLocation, acceptEncodingGzip);
+                                                if (isIndexHtml) {
+                                                    vertx.fileSystem().readFile(filesystemLocation, (ar) -> {
+                                                        if (ar.failed()) {
+                                                            if ("/-/not-found/".equals(req.path())) {
+                                                                req.response().setStatusCode(500).setStatusMessage("Server Error");
+                                                                req.response().end();
+                                                            } else {
+                                                                req.response().setStatusCode(404).setStatusMessage("Not Found");
+                                                                req.response().end("<html><head><title>Server Error</title><meta http-equiv=\"refresh\" content=\"0;URL='/-/not-found/'\" /></head><body></body></html>");
+                                                            }
+                                                        } else {
+                                                            try {
+                                                                String s = new String(ar.result().getBytes(), "UTF-8");
+                                                                s = s.replaceAll("<!--ssi:canonical-->", "http://" + hostname + ":2080");
+                                                                req.response().headers().add("Pragma", "no-cache");
+                                                                req.response().headers().add("Cache-Control", "no-cache, no-store, private, must-revalidate");
+                                                                req.response().headers().add("Content-Type", "text/html; charset=utf-8");
+                                                                req.response().end(s);
+                                                            }
+                                                            catch (Throwable t) {
+                                                                logger.error("angular-io\t" + site + "\t" + req.path() + "\t" + t.getMessage());
+                                                                req.response().setStatusCode(500).setStatusMessage("Server Error");
+                                                                req.response().end();
+                                                            }
+                                                        }
+                                                    });
+                                                } else {
+                                                    sendFile(req, filesystemLocation, acceptEncodingGzip);
+                                                }
                                             } else {
-                                                req.response().setStatusCode(404).setStatusMessage("Not Found");
-                                                req.response().end("<html><head><title>Server Error</title><meta http-equiv=\"refresh\" content=\"0;URL='/-/not-found/'\" /></head><body></body></html>");
+                                                if ("/-/not-found/".equals(req.path())) {
+                                                    req.response().setStatusCode(500).setStatusMessage("Server Error");
+                                                    req.response().end();
+                                                } else {
+                                                    req.response().setStatusCode(404).setStatusMessage("Not Found");
+                                                    req.response().end("<html><head><title>Server Error</title><meta http-equiv=\"refresh\" content=\"0;URL='/-/not-found/'\" /></head><body></body></html>");
+                                                }
                                                 return;
                                             }
                                         } else {
@@ -282,33 +317,67 @@ public class AngularIOWebContainer {
                         CFApiMethod apiMethod = method.getAnnotation(CFApiMethod.class);
                         final String url = apiMethod.url();
                         router.options(url).handler(corsOptionsHandler);
-                        router.get(url).handler(rc -> {
-                            HttpServerRequest req = rc.request();
+                        if (apiMethod.javascript()) {
+                            // javascript handler
+                            router.get(url).handler(rc -> {
+                                HttpServerRequest req = rc.request();
 
-                            String hostport = req.host();
-                            int i = hostport.indexOf(':');
-                            if (i >= 0) {
-                                hostport = hostport.substring(0, i);
-                            }
-
-                            String instancekey = zone + "/" + hostport;
-                            ConfigurationManager.getConfigurationAsync(vertx, instancekey, cfg -> {
-                                if (CoreFabric.ServerConfiguration.DEBUG) logger.info("angular-io\tapi\t" + req.path());
-                                try {
-                                    Object o = ctor.newInstance(cfg);
-                                    JsonObject r = (JsonObject) method.invoke(o);
-                                    cookieCutter(req);
-                                    req.response().setStatusCode(200).setStatusMessage("OK");
-                                    corsOptionsHandler.applyResponseHeaders(req);
-                                    req.response().headers().add("Content-Type", "application/json");
-                                    req.response().end(r.encode());
-                                } catch (Throwable t) {
-                                    logger.error("angular-io\tapi\t" + req.path() + "\t" + t.getMessage());
-                                    req.response().setStatusCode(500).setStatusMessage("Server Error");
-                                    req.response().end();
+                                String hostport = req.host();
+                                int i = hostport.indexOf(':');
+                                if (i >= 0) {
+                                    hostport = hostport.substring(0, i);
                                 }
+
+                                String instancekey = zone + "/" + hostport;
+                                ConfigurationManager.getConfigurationAsync(vertx, instancekey, cfg -> {
+                                    if (CoreFabric.ServerConfiguration.DEBUG)
+                                        logger.info("angular-io\tapi\t" + req.path());
+                                    try {
+                                        Object o = ctor.newInstance(cfg);
+                                        String r = (String) method.invoke(o);
+                                        cookieCutter(req);
+                                        req.response().setStatusCode(200).setStatusMessage("OK");
+                                        corsOptionsHandler.applyResponseHeaders(req);
+                                        req.response().headers().add("Content-Type", "text/javascript; charset=utf-8");
+                                        req.response().end(r);
+                                    } catch (Throwable t) {
+                                        logger.error("angular-io\tapi\t" + req.path() + "\t" + t.getMessage());
+                                        req.response().setStatusCode(500).setStatusMessage("Server Error");
+                                        req.response().end();
+                                    }
+                                });
                             });
-                        });
+                        } else {
+                            // json handler
+                            router.get(url).handler(rc -> {
+                                HttpServerRequest req = rc.request();
+
+                                String hostport = req.host();
+                                int i = hostport.indexOf(':');
+                                if (i >= 0) {
+                                    hostport = hostport.substring(0, i);
+                                }
+
+                                String instancekey = zone + "/" + hostport;
+                                ConfigurationManager.getConfigurationAsync(vertx, instancekey, cfg -> {
+                                    if (CoreFabric.ServerConfiguration.DEBUG)
+                                        logger.info("angular-io\tapi\t" + req.path());
+                                    try {
+                                        Object o = ctor.newInstance(cfg);
+                                        JsonObject r = (JsonObject) method.invoke(o);
+                                        cookieCutter(req);
+                                        req.response().setStatusCode(200).setStatusMessage("OK");
+                                        corsOptionsHandler.applyResponseHeaders(req);
+                                        req.response().headers().add("Content-Type", "application/json; charset=utf-8");
+                                        req.response().end(r.encode());
+                                    } catch (Throwable t) {
+                                        logger.error("angular-io\tapi\t" + req.path() + "\t" + t.getMessage());
+                                        req.response().setStatusCode(500).setStatusMessage("Server Error");
+                                        req.response().end();
+                                    }
+                                });
+                            });
+                        }
                         if (CoreFabric.ServerConfiguration.DEBUG) logger.info("angular-io\t" + apiMethod.url() + "\t" + clazz.getSimpleName() + "\t" + method.getName());
                     }
                 }
