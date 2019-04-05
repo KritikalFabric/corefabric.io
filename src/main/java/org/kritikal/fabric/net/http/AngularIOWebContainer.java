@@ -141,7 +141,7 @@ public class AngularIOWebContainer {
             req.response().headers().add("Pragma", "no-cache");
             req.response().headers().add("Cache-Control", "no-cache, no-store, private, must-revalidate");
         } else {
-            req.response().headers().add("Cache-Control", "public, max-age=7200");
+            req.response().headers().add("Cache-Control", "public, max-age=63072000"); // 2 years
         }
 
         if (pathToFile.endsWith(".html")) {
