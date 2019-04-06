@@ -9,7 +9,7 @@ import java.lang.annotation.Target;
 @Target(ElementType.METHOD)
 public @interface CFApiMethod {
     String url();
-    enum TYPE { GET }
+    enum TYPE { GET, POST, GENERIC_GET }
     TYPE type() default TYPE.GET;
-    boolean javascript() default false;
+    boolean cors() default false;
 }

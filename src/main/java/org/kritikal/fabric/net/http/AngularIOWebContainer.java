@@ -318,67 +318,109 @@ public class AngularIOWebContainer {
                     if (method.isAnnotationPresent(CFApiMethod.class)) {
                         CFApiMethod apiMethod = method.getAnnotation(CFApiMethod.class);
                         final String url = apiMethod.url();
-                        router.options(url).handler(corsOptionsHandler);
-                        if (apiMethod.javascript()) {
-                            // javascript handler
-                            router.get(url).handler(rc -> {
-                                HttpServerRequest req = rc.request();
+                        if (apiMethod.cors()) router.options(url).handler(corsOptionsHandler);
+                        switch (apiMethod.type()) {
+                            case GET:
+                                // json handler
+                                router.get(url).handler(rc -> {
+                                    HttpServerRequest req = rc.request();
 
-                                String hostport = req.host();
-                                int i = hostport.indexOf(':');
-                                if (i >= 0) {
-                                    hostport = hostport.substring(0, i);
-                                }
-
-                                String instancekey = zone + "/" + hostport;
-                                ConfigurationManager.getConfigurationAsync(vertx, instancekey, cfg -> {
-                                    if (CoreFabric.ServerConfiguration.DEBUG)
-                                        logger.info("angular-io\tapi\t" + req.path());
-                                    try {
-                                        Object o = ctor.newInstance(cfg);
-                                        String r = (String) method.invoke(o);
-                                        cookieCutter(req);
-                                        req.response().setStatusCode(200).setStatusMessage("OK");
-                                        corsOptionsHandler.applyResponseHeaders(req);
-                                        req.response().headers().add("Content-Type", "text/javascript; charset=utf-8");
-                                        req.response().end(r);
-                                    } catch (Throwable t) {
-                                        logger.error("angular-io\tapi\t" + req.path() + "\t" + t.getMessage());
-                                        req.response().setStatusCode(500).setStatusMessage("Server Error");
-                                        req.response().end();
+                                    String hostport = req.host();
+                                    int i = hostport.indexOf(':');
+                                    if (i >= 0) {
+                                        hostport = hostport.substring(0, i);
                                     }
+
+                                    String instancekey = zone + "/" + hostport;
+                                    ConfigurationManager.getConfigurationAsync(vertx, instancekey, cfg -> {
+                                        if (CoreFabric.ServerConfiguration.DEBUG)
+                                            logger.info("angular-io\tapi\t" + req.path());
+                                        try {
+                                            Object o = ctor.newInstance(cfg);
+                                            JsonObject r = (JsonObject) method.invoke(o);
+                                            cookieCutter(req);
+                                            req.response().setStatusCode(200).setStatusMessage("OK");
+                                            corsOptionsHandler.applyResponseHeaders(req);
+                                            req.response().headers().add("Content-Type", "application/json; charset=utf-8");
+                                            req.response().end(r.encode());
+                                        } catch (Throwable t) {
+                                            logger.error("angular-io\tapi\t" + req.path() + "\t" + t.getMessage());
+                                            req.response().setStatusCode(500).setStatusMessage("Server Error");
+                                            req.response().end();
+                                        }
+                                    });
                                 });
-                            });
-                        } else {
-                            // json handler
-                            router.get(url).handler(rc -> {
-                                HttpServerRequest req = rc.request();
+                                break;
 
-                                String hostport = req.host();
-                                int i = hostport.indexOf(':');
-                                if (i >= 0) {
-                                    hostport = hostport.substring(0, i);
-                                }
+                            case POST:
+                                // json handler
+                                router.post(url).handler(rc -> {
+                                    HttpServerRequest req = rc.request();
 
-                                String instancekey = zone + "/" + hostport;
-                                ConfigurationManager.getConfigurationAsync(vertx, instancekey, cfg -> {
-                                    if (CoreFabric.ServerConfiguration.DEBUG)
-                                        logger.info("angular-io\tapi\t" + req.path());
-                                    try {
-                                        Object o = ctor.newInstance(cfg);
-                                        JsonObject r = (JsonObject) method.invoke(o);
-                                        cookieCutter(req);
-                                        req.response().setStatusCode(200).setStatusMessage("OK");
-                                        corsOptionsHandler.applyResponseHeaders(req);
-                                        req.response().headers().add("Content-Type", "application/json; charset=utf-8");
-                                        req.response().end(r.encode());
-                                    } catch (Throwable t) {
-                                        logger.error("angular-io\tapi\t" + req.path() + "\t" + t.getMessage());
-                                        req.response().setStatusCode(500).setStatusMessage("Server Error");
-                                        req.response().end();
+                                    String hostport = req.host();
+                                    int i = hostport.indexOf(':');
+                                    if (i >= 0) {
+                                        hostport = hostport.substring(0, i);
                                     }
+
+                                    String instancekey = zone + "/" + hostport;
+                                    ConfigurationManager.getConfigurationAsync(vertx, instancekey, cfg -> {
+                                        if (CoreFabric.ServerConfiguration.DEBUG)
+                                            logger.info("angular-io\tapi\t" + req.path());
+                                        try {
+                                            Object o = ctor.newInstance(cfg);
+
+                                            final byte[] body = rc.getBody().getBytes();
+                                            final JsonObject _object;
+                                            try {
+                                                final String string = new String(body, "utf-8");
+                                                _object = new JsonObject(string);
+                                            }
+                                            catch (Exception e) {
+                                                throw new RuntimeException(e);
+                                            }
+                                            JsonObject r = (JsonObject) method.invoke(o, _object);
+                                            cookieCutter(req);
+                                            req.response().setStatusCode(200).setStatusMessage("OK");
+                                            corsOptionsHandler.applyResponseHeaders(req);
+                                            req.response().headers().add("Content-Type", "application/json; charset=utf-8");
+                                            req.response().end(r.encode());
+                                        } catch (Throwable t) {
+                                            logger.error("angular-io\tapi\t" + req.path() + "\t" + t.getMessage());
+                                            req.response().setStatusCode(500).setStatusMessage("Server Error");
+                                            req.response().end();
+                                        }
+                                    });
                                 });
-                            });
+                                break;
+
+                            default:
+                            case GENERIC_GET:
+                                // json handler
+                                router.get(url).handler(rc -> {
+                                    HttpServerRequest req = rc.request();
+
+                                    String hostport = req.host();
+                                    int i = hostport.indexOf(':');
+                                    if (i >= 0) {
+                                        hostport = hostport.substring(0, i);
+                                    }
+
+                                    String instancekey = zone + "/" + hostport;
+                                    ConfigurationManager.getConfigurationAsync(vertx, instancekey, cfg -> {
+                                        if (CoreFabric.ServerConfiguration.DEBUG)
+                                            logger.info("angular-io\tapi\t" + req.path());
+                                        try {
+                                            cookieCutter(req);
+                                            Object o = ctor.newInstance(cfg);
+                                            method.invoke(o, req);
+                                        } catch (Throwable t) {
+                                            logger.error("angular-io\tapi\t" + req.path() + "\t" + t.getMessage());
+                                            req.response().setStatusCode(500).setStatusMessage("Server Error");
+                                            req.response().end();
+                                        }
+                                    });
+                                });
                         }
                         if (CoreFabric.ServerConfiguration.DEBUG) logger.info("angular-io\t" + apiMethod.url() + "\t" + clazz.getSimpleName() + "\t" + method.getName());
                     }

@@ -25,7 +25,7 @@ public class CorsOptionsHandler implements Handler<RoutingContext> {
             req.response().headers().add("Access-Control-Allow-Origin", "*");
         }
         req.response().headers().add("Access-Control-Allow-Methods", "GET, POST");
-        req.response().headers().add("Access-Control-Allow-Headers", "X-Preflight");
+        req.response().headers().add("Access-Control-Allow-Headers", "X-Preflight, Content-Type");
         req.response().headers().add("Access-Control-Max-Age", "60");
         req.response().headers().add("Vary", "Accept-Encoding, Origin");
         req.response().end();
