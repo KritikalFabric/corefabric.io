@@ -23,8 +23,11 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.lang.reflect.InvocationTargetException;
 import java.net.Inet4Address;
-import java.util.ArrayList;
-import java.util.UUID;
+import java.net.InetAddress;
+import java.net.NetworkInterface;
+import java.net.SocketException;
+import java.util.*;
+
 import org.kritikal.fabric.core.BuildConfig;
 import org.reflections.Reflections;
 
@@ -35,44 +38,6 @@ public class CoreFabric {
     public final static Logger logger = LoggerFactory.getLogger(CoreFabric.class);
     public static JsonObject globalConfig = null;
     private static ArrayList<String> searchNamespaces = new ArrayList<>();
-    public static void addNamespace(String ns) { searchNamespaces.add(ns); }
-    static {
-        logger.info(BuildConfig.NAME + " - " + BuildConfig.VERSION);
-
-        {
-            ArrayList<String> files = new ArrayList<>();
-            files.add("/deploy/config.json");
-            files.add("config.json");
-            files.add("config.json.example"); // defaults for developers ;)
-            for (String file : files) {
-                StringBuilder sb = new StringBuilder();
-                InputStreamReader reader = null;
-                try {
-                    reader = new InputStreamReader(new FileInputStream(file));
-                    char[] buffer = new char[1024];
-                    int n = 0;
-                    while ((n = reader.read(buffer)) > 0) {
-                        String s = String.copyValueOf(buffer, 0, n);
-                        sb.append(s);
-                    }
-                    globalConfig = new JsonObject(sb.toString());
-                    LoggerFactory.getLogger(CoreFabric.class).info("Loaded " + file);
-                    break;
-                } catch (IOException ioe) {
-                    continue;
-                } finally {
-                    try {
-                        if (reader != null) reader.close();
-                    } catch (IOException ioe) {
-                    }
-                }
-            }
-        }
-
-        if (globalConfig == null) {
-            logger.fatal("Unable to locate config.json");
-        }
-    }
     public static class ServerConfiguration {
         public static final UUID instance = UUID.randomUUID();
         public static boolean PRODUCTION = false;
@@ -116,6 +81,79 @@ public class CoreFabric {
                         }
                     }
                 }
+            }
+        }
+    }
+    public static void addNamespace(String ns) { searchNamespaces.add(ns); }
+    static String readFile(String file) {
+        StringBuilder sb = new StringBuilder();
+        InputStreamReader reader = null;
+        try {
+            reader = new InputStreamReader(new FileInputStream(file));
+            char[] buffer = new char[1024];
+            int n = 0;
+            while ((n = reader.read(buffer)) > 0) {
+                String s = String.copyValueOf(buffer, 0, n);
+                sb.append(s);
+            }
+            return sb.toString();
+        } catch (IOException ioe) {
+            return null;
+        } finally {
+            try {
+                if (reader != null) reader.close();
+            } catch (IOException ioe) {
+            }
+        }
+    }
+    static {
+        logger.info(BuildConfig.NAME + " - " + BuildConfig.VERSION);
+
+        {
+            ArrayList<String> files = new ArrayList<>();
+            files.add("/deploy/config.json");
+            files.add("config.json");
+            files.add("config.json.example"); // defaults for developers ;)
+            for (String file : files) {
+                String config_json = readFile(file);
+                if (config_json == null) continue;
+
+                // foreach <<interface>> -> 1.2.3.4 ip address
+                HashMap<String, String> replacements = new HashMap<>();
+                try {
+                    for (NetworkInterface networkInterface : Collections.list(NetworkInterface.getNetworkInterfaces())) {
+                        String ipv4 = "127.0.0.1";
+                        for (InetAddress inetAddress : Collections.list(networkInterface.getInetAddresses())) {
+                            if (inetAddress instanceof Inet4Address) {
+                                ipv4 = inetAddress.getHostAddress();
+                                break;
+                            }
+                        }
+                        replacements.put("<<" + networkInterface.getName() + ">>", ipv4);
+                    }
+                } catch (SocketException se) {
+                    logger.warn("Unable to enumerate network interfaces while loading config.json, continuing...");
+                }
+                String hostname = readFile("/deploy/hostname");
+                if (null != hostname) {
+                    replacements.put("<<hostname>>", hostname.trim());
+                    String ipv4 = readFile("/deploy/ipv4");
+                    if (null != ipv4) {
+                        replacements.put("<<ipv4>>", ipv4.trim());
+                    }
+
+                    for (Map.Entry<String, String> replacement : replacements.entrySet()) {
+                        config_json = config_json.replaceAll(replacement.getKey(), replacement.getValue());
+                    }
+
+                    globalConfig = new JsonObject(config_json);
+                    LoggerFactory.getLogger(CoreFabric.class).info("Loaded " + file + "\n" + config_json);
+                    break;
+                }
+            }
+
+            if (globalConfig == null) {
+                logger.fatal("Unable to locate config.json");
             }
         }
     }
