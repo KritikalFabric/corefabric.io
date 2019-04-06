@@ -252,6 +252,7 @@ public class AngularIOWebContainer {
                                                             try {
                                                                 String s = new String(ar.result().getBytes(), "UTF-8");
                                                                 s = s.replaceAll("<!--ssi:canonical-->", "https://" + hostname + ":1443");
+                                                                cookieCutter(req);
                                                                 req.response().headers().add("Pragma", "no-cache");
                                                                 req.response().headers().add("Cache-Control", "no-cache, no-store, private, must-revalidate");
                                                                 req.response().headers().add("Content-Type", "text/html; charset=utf-8");
