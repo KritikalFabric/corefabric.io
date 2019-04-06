@@ -84,8 +84,10 @@ public class AngularIOWebContainer {
         }
         if (corefabric == null) {
             corefabric = UUID.randomUUID().toString();
-            Cookie cookie = new DefaultCookie("corefabric", corefabric);
-            req.response().headers().add("Set-Cookie", ServerCookieEncoder.encode(cookie));
+            String cfcookie = "corefabric=" + corefabric + "; Path=/";
+            if (req.isSSL())
+                cfcookie = cfcookie + "; Secure";
+            req.response().headers().add("Set-Cookie", cfcookie);
         }
         return corefabric;
     }

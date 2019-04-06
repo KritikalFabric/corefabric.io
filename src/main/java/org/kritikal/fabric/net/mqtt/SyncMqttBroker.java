@@ -209,11 +209,13 @@ public class SyncMqttBroker implements IMqttServerCallback, ISyncMqttBroker {
         final MyMqttServerProtocol current = ((MyMqttServerProtocol)protocol);
         current.clientID = connectMessage.getClientID();
 
-        // basic security
-        if (current.socket instanceof CServerWebSocket) {
-            final CServerWebSocket socket = (CServerWebSocket)current.socket;
-            if (!current.clientID.startsWith("corefabric--"+socket.corefabric+"--")) {
-                throw new KillConnectionError();
+        // basic security, disabled on development, ensure the clientID contains the cookie
+        if (!CoreFabric.ServerConfiguration.nodejsDev) {
+            if (current.socket instanceof CServerWebSocket) {
+                final CServerWebSocket socket = (CServerWebSocket) current.socket;
+                if (!current.clientID.startsWith("corefabric--" + socket.corefabric + "--")) {
+                    throw new KillConnectionError();
+                }
             }
         }
 
