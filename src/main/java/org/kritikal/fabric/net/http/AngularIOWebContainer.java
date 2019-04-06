@@ -265,6 +265,7 @@ public class AngularIOWebContainer {
                                                         }
                                                     });
                                                 } else {
+                                                    cookieCutter(req);
                                                     sendFile(req, filesystemLocation, acceptEncodingGzip);
                                                 }
                                             } else {
