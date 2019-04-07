@@ -340,9 +340,10 @@ public class AngularIOWebContainer {
                                         if (CoreFabric.ServerConfiguration.DEBUG)
                                             logger.info("angular-io\tapi\t" + req.path());
                                         try {
+                                            String corefabric = cookieCutter(req);
                                             Object o = ctor.newInstance(cfg);
+                                            ((CFApiBase)o).setCookie(corefabric);
                                             JsonObject r = (JsonObject) method.invoke(o);
-                                            cookieCutter(req);
                                             req.response().setStatusCode(200).setStatusMessage("OK");
                                             corsOptionsHandler.applyResponseHeaders(req);
                                             req.response().headers().add("Content-Type", "application/json; charset=utf-8");
@@ -372,7 +373,9 @@ public class AngularIOWebContainer {
                                         if (CoreFabric.ServerConfiguration.DEBUG)
                                             logger.info("angular-io\tapi\t" + req.path());
                                         try {
+                                            String corefabric = cookieCutter(req);
                                             Object o = ctor.newInstance(cfg);
+                                            ((CFApiBase)o).setCookie(corefabric);
 
                                             final byte[] body = rc.getBody().getBytes();
                                             final JsonObject _object;
@@ -384,7 +387,6 @@ public class AngularIOWebContainer {
                                                 throw new RuntimeException(e);
                                             }
                                             JsonObject r = (JsonObject) method.invoke(o, _object);
-                                            cookieCutter(req);
                                             req.response().setStatusCode(200).setStatusMessage("OK");
                                             corsOptionsHandler.applyResponseHeaders(req);
                                             req.response().headers().add("Content-Type", "application/json; charset=utf-8");
@@ -415,8 +417,9 @@ public class AngularIOWebContainer {
                                         if (CoreFabric.ServerConfiguration.DEBUG)
                                             logger.info("angular-io\tapi\t" + req.path());
                                         try {
-                                            cookieCutter(req);
+                                            String corefabric = cookieCutter(req);
                                             Object o = ctor.newInstance(cfg);
+                                            ((CFApiBase)o).setCookie(corefabric);
                                             method.invoke(o, req);
                                         } catch (Throwable t) {
                                             logger.error("angular-io\tapi\t" + req.path() + "\t" + t.getMessage());
