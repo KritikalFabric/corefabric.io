@@ -65,6 +65,8 @@ public class AngularIOWebContainer {
     final static ConcurrentHashMap<String, AngularIOSiteInstance> map = new ConcurrentHashMap<>();
 
     private static String cookieCutter(HttpServerRequest req) {
+        boolean found = false;
+        boolean set = false;
         String corefabric = null;
         try {
             String cookies = req.headers().get("Cookie");
@@ -79,16 +81,22 @@ public class AngularIOWebContainer {
                 corefabric = null;
             }
             UUID.fromString(corefabric); // does it parse?
+            found = true;
         } catch (Throwable t) {
             corefabric = null;
         }
         if (corefabric == null) {
             corefabric = UUID.randomUUID().toString();
             String cfcookie = "corefabric=" + corefabric + "; Path=/";
+            /*
             if (req.isSSL())
                 cfcookie = cfcookie + "; Secure";
+            */
             req.response().headers().add("Set-Cookie", cfcookie);
+            set = true;
         }
+
+        //logger.warn("cookie-cutter\tssl=" + req.isSSL() + "\t" + req.host() + "\t" + req.path() + "\tf=" + found + "\ts=" + set + "\t" + corefabric);
         return corefabric;
     }
 
@@ -343,11 +351,14 @@ public class AngularIOWebContainer {
                                             String corefabric = cookieCutter(req);
                                             Object o = ctor.newInstance(cfg);
                                             ((CFApiBase)o).setCookie(corefabric);
-                                            JsonObject r = (JsonObject) method.invoke(o);
-                                            req.response().setStatusCode(200).setStatusMessage("OK");
-                                            corsOptionsHandler.applyResponseHeaders(req);
-                                            req.response().headers().add("Content-Type", "application/json; charset=utf-8");
-                                            req.response().end(r.encode());
+                                            Consumer<JsonObject> next = (r)->{
+                                                req.response().setStatusCode(200).setStatusMessage("OK");
+                                                corsOptionsHandler.applyResponseHeaders(req);
+                                                req.response().headers().add("Content-Type", "application/json; charset=utf-8");
+                                                req.response().end(r.encode());
+                                            };
+                                            method.invoke(o, next);
+
                                         } catch (Throwable t) {
                                             logger.error("angular-io\tapi\t" + req.path() + "\t" + t.getMessage());
                                             req.response().setStatusCode(500).setStatusMessage("Server Error");
@@ -386,11 +397,13 @@ public class AngularIOWebContainer {
                                             catch (Exception e) {
                                                 throw new RuntimeException(e);
                                             }
-                                            JsonObject r = (JsonObject) method.invoke(o, _object);
-                                            req.response().setStatusCode(200).setStatusMessage("OK");
-                                            corsOptionsHandler.applyResponseHeaders(req);
-                                            req.response().headers().add("Content-Type", "application/json; charset=utf-8");
-                                            req.response().end(r.encode());
+                                            Consumer<JsonObject> next = (r)->{
+                                                req.response().setStatusCode(200).setStatusMessage("OK");
+                                                corsOptionsHandler.applyResponseHeaders(req);
+                                                req.response().headers().add("Content-Type", "application/json; charset=utf-8");
+                                                req.response().end(r.encode());
+                                            };
+                                            method.invoke(o, _object, next);
                                         } catch (Throwable t) {
                                             logger.error("angular-io\tapi\t" + req.path() + "\t" + t.getMessage());
                                             req.response().setStatusCode(500).setStatusMessage("Server Error");
