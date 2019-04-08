@@ -1,10 +1,10 @@
 package org.kritikal.fabric.db.pgsql;
 
 import com.google.protobuf.ByteString;
+import io.vertx.core.json.JsonArray;
 import org.kritikal.fabric.core.FormatHelpers;
 
-import java.sql.SQLException;
-import java.sql.Timestamp;
+import java.sql.*;
 import java.util.GregorianCalendar;
 import java.util.UUID;
 
@@ -180,4 +180,43 @@ public class PgDbHelper {
         if (rs.wasNull()) return null;
         return result;
     }
+
+    public static JsonArray jsonQuery(Connection con, String sql) throws SQLException
+    {
+        JsonArray ary = new JsonArray();
+        // "SET SESSION CHARACTERISTICS AS TRANSACTION ISOLATION LEVEL READ UNCOMMITTED READ ONLY DEFERRABLE;"
+        PreparedStatement stmt = con.prepareStatement(sql);
+        try {
+            if (stmt.execute()) {
+                ResultSet rs = stmt.getResultSet();
+                try {
+                    int l = rs.getMetaData().getColumnCount();
+                    while (rs.next()) {
+                        JsonArray row = new JsonArray();
+                        for (int i = 1; i <= l; ++i) {
+                            Object o = rs.getObject(i);
+                            if (o == null) {
+                                row.add(""); // empty string instead of null
+                            } else {
+                                if (o instanceof UUID)
+                                    row.add(((UUID) o).toString());
+                                else if (o instanceof Timestamp)
+                                    row.add(((Timestamp) o).toString());
+                                else
+                                    row.add(o.toString());
+                            }
+                        }
+                        ary.add(row);
+                    }
+                } finally {
+                    rs.close();
+                }
+            }
+        }
+        finally {
+            stmt.close();
+        }
+        return ary;
+    }
+
 }
