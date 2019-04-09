@@ -24,7 +24,7 @@ public abstract class CFApiBase {
                 String k = part.substring(0, i);
                 String v = part.substring(i + 1);
                 args.put(k, v);
-                logger.warn("args " + k + " " + v);
+                //logger.warn("args " + k + " " + v);
             } else {
                 args.put(part, "");
             }
