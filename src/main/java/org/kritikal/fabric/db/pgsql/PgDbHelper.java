@@ -166,7 +166,8 @@ public class PgDbHelper {
     public static String varcharTrim(String string, int length) {
         if (null == string) return null;
         if (string.length() < length) return string;
-        return string.substring(0, length-1);
+        throw new RuntimeException("TODO: varcharTrim(\"" + string + "\", " + length + ")");
+        //return string.substring(0, length-1);
     }
 
     public static Integer getInteger(java.sql.ResultSet rs, int n) throws SQLException {
