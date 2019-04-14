@@ -322,6 +322,27 @@ public class AngularIOWebContainer {
         return server;
     }
 
+    private static void cfApi(CFApiMethod cfApiMethod, Configuration cfg, Consumer<AngularIOSiteInstance> next, Consumer<Void> fail) {
+        String site = cfg.instanceConfig.getJsonObject("instance").getString("site");
+        AngularIOSiteInstance x = map.get(site);
+        if (x != null
+                && cfg.instanceConfig.getJsonObject("zone").getBoolean("active")
+                && cfg.instanceConfig.getJsonObject("instance").getBoolean("active")) {
+            boolean found = false;
+            for (String s : cfApiMethod.sites()) {
+                if (s.equals(site)) { found = true; break; }
+            }
+            if (found) {
+                next.accept(x);
+            }
+            else {
+                fail.accept(null);
+            }
+        } else {
+            fail.accept(null);
+        }
+    }
+
     private static void wireUpCFApi(String namespace, String zone, Vertx vertx, Router router) {
         final CorsOptionsHandler corsOptionsHandler = new CorsOptionsHandler();
         Reflections reflections = new Reflections(namespace);
@@ -347,25 +368,31 @@ public class AngularIOWebContainer {
 
                                     String instancekey = zone + "/" + hostport;
                                     ConfigurationManager.getConfigurationAsync(vertx, instancekey, cfg -> {
-                                        if (CoreFabric.ServerConfiguration.DEBUG)
-                                            logger.info("angular-io\tapi\t" + req.path());
-                                        try {
-                                            String corefabric = cookieCutter(req);
-                                            Object o = ctor.newInstance(cfg);
-                                            ((CFApiBase)o).setCookie(corefabric);
-                                            Consumer<JsonObject> next = (r)->{
-                                                req.response().setStatusCode(200).setStatusMessage("OK");
-                                                corsOptionsHandler.applyResponseHeaders(req);
-                                                req.response().headers().add("Content-Type", "application/json; charset=utf-8");
-                                                req.response().end(r.encode());
-                                            };
-                                            method.invoke(o, next);
+                                        cfApi(apiMethod, cfg, (x)->{
+                                            if (CoreFabric.ServerConfiguration.DEBUG)
+                                                logger.info("angular-io\tapi\t" + req.path());
+                                            try {
+                                                String corefabric = cookieCutter(req);
+                                                Object o = ctor.newInstance(cfg);
+                                                ((CFApiBase)o).setCookie(corefabric);
+                                                Consumer<JsonObject> next = (r)->{
+                                                    req.response().setStatusCode(200).setStatusMessage("OK");
+                                                    corsOptionsHandler.applyResponseHeaders(req);
+                                                    req.response().headers().add("Content-Type", "application/json; charset=utf-8");
+                                                    req.response().end(r.encode());
+                                                };
+                                                method.invoke(o, next);
 
-                                        } catch (Throwable t) {
-                                            logger.error("angular-io\tapi\t" + req.path() + "\t" + t.getMessage());
+                                            } catch (Throwable t) {
+                                                logger.error("angular-io\tapi\t" + req.path() + "\t" + t.getMessage());
+                                                req.response().setStatusCode(500).setStatusMessage("Server Error");
+                                                req.response().end();
+                                            }
+                                        }, (fail1)->{
+                                            logger.error("angular-io\tapi\t" + req.path() + "\tNot Available");
                                             req.response().setStatusCode(500).setStatusMessage("Server Error");
                                             req.response().end();
-                                        }
+                                        });
                                     });
                                 });
                                 break;
@@ -383,34 +410,40 @@ public class AngularIOWebContainer {
 
                                     String instancekey = zone + "/" + hostport;
                                     ConfigurationManager.getConfigurationAsync(vertx, instancekey, cfg -> {
-                                        if (CoreFabric.ServerConfiguration.DEBUG)
-                                            logger.info("angular-io\tapi\t" + req.path());
-                                        try {
-                                            String corefabric = cookieCutter(req);
-                                            Object o = ctor.newInstance(cfg);
-                                            ((CFApiBase)o).setCookie(corefabric);
-
-                                            final byte[] body = rc.getBody().getBytes();
-                                            final JsonObject _object;
+                                        cfApi(apiMethod, cfg, (x)->{
+                                            if (CoreFabric.ServerConfiguration.DEBUG)
+                                                logger.info("angular-io\tapi\t" + req.path());
                                             try {
-                                                final String string = new String(body, "utf-8");
-                                                _object = new JsonObject(string);
+                                                String corefabric = cookieCutter(req);
+                                                Object o = ctor.newInstance(cfg);
+                                                ((CFApiBase)o).setCookie(corefabric);
+
+                                                final byte[] body = rc.getBody().getBytes();
+                                                final JsonObject _object;
+                                                try {
+                                                    final String string = new String(body, "utf-8");
+                                                    _object = new JsonObject(string);
+                                                }
+                                                catch (Exception e) {
+                                                    throw new RuntimeException(e);
+                                                }
+                                                Consumer<JsonObject> next = (r)->{
+                                                    req.response().setStatusCode(200).setStatusMessage("OK");
+                                                    corsOptionsHandler.applyResponseHeaders(req);
+                                                    req.response().headers().add("Content-Type", "application/json; charset=utf-8");
+                                                    req.response().end(r.encode());
+                                                };
+                                                method.invoke(o, _object, next);
+                                            } catch (Throwable t) {
+                                                logger.error("angular-io\tapi\t" + req.path() + "\t" + t.getMessage());
+                                                req.response().setStatusCode(500).setStatusMessage("Server Error");
+                                                req.response().end();
                                             }
-                                            catch (Exception e) {
-                                                throw new RuntimeException(e);
-                                            }
-                                            Consumer<JsonObject> next = (r)->{
-                                                req.response().setStatusCode(200).setStatusMessage("OK");
-                                                corsOptionsHandler.applyResponseHeaders(req);
-                                                req.response().headers().add("Content-Type", "application/json; charset=utf-8");
-                                                req.response().end(r.encode());
-                                            };
-                                            method.invoke(o, _object, next);
-                                        } catch (Throwable t) {
-                                            logger.error("angular-io\tapi\t" + req.path() + "\t" + t.getMessage());
+                                        }, (fail1)->{
+                                            logger.error("angular-io\tapi\t" + req.path() + "\tNot Available");
                                             req.response().setStatusCode(500).setStatusMessage("Server Error");
                                             req.response().end();
-                                        }
+                                        });
                                     });
                                 });
                                 break;
@@ -429,18 +462,24 @@ public class AngularIOWebContainer {
 
                                     String instancekey = zone + "/" + hostport;
                                     ConfigurationManager.getConfigurationAsync(vertx, instancekey, cfg -> {
-                                        if (CoreFabric.ServerConfiguration.DEBUG)
-                                            logger.info("angular-io\tapi\t" + req.path());
-                                        try {
-                                            String corefabric = cookieCutter(req);
-                                            Object o = ctor.newInstance(cfg);
-                                            ((CFApiBase)o).setCookie(corefabric);
-                                            method.invoke(o, req);
-                                        } catch (Throwable t) {
-                                            logger.error("angular-io\tapi\t" + req.path() + "\t" + t.getMessage());
+                                        cfApi(apiMethod, cfg, (x)->{
+                                            if (CoreFabric.ServerConfiguration.DEBUG)
+                                                logger.info("angular-io\tapi\t" + req.path());
+                                            try {
+                                                String corefabric = cookieCutter(req);
+                                                Object o = ctor.newInstance(cfg);
+                                                ((CFApiBase)o).setCookie(corefabric);
+                                                method.invoke(o, req);
+                                            } catch (Throwable t) {
+                                                logger.error("angular-io\tapi\t" + req.path() + "\t" + t.getMessage());
+                                                req.response().setStatusCode(500).setStatusMessage("Server Error");
+                                                req.response().end();
+                                            }
+                                        }, (fail1)->{
+                                            logger.error("angular-io\tapi\t" + req.path() + "\tNot Available");
                                             req.response().setStatusCode(500).setStatusMessage("Server Error");
                                             req.response().end();
-                                        }
+                                        });
                                     });
                                 });
                         }

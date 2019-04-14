@@ -4,7 +4,6 @@ import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import org.kritikal.fabric.core.Configuration;
-import space.street_stall.api.oauth.GoogleReturn;
 
 import java.util.HashMap;
 import java.util.regex.Pattern;
