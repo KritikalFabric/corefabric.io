@@ -37,6 +37,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URISyntaxException;
+import java.net.URLDecoder;
 import java.util.Enumeration;
 import java.util.Map;
 import java.util.Set;
@@ -63,8 +64,9 @@ public class AngularIOWebContainer {
     }
 
     final static ConcurrentHashMap<String, AngularIOSiteInstance> map = new ConcurrentHashMap<>();
+    final public static ConcurrentHashMap<String, AngularIOSiteInstance> map() { return map; }
 
-    private static String cookieCutter(HttpServerRequest req) {
+    public static String cookieCutter(HttpServerRequest req) {
         boolean found = false;
         boolean set = false;
         String corefabric = null;
@@ -146,7 +148,7 @@ public class AngularIOWebContainer {
         }
     }
 
-    private static void sendFile(HttpServerRequest req, String pathToFile, boolean acceptEncodingGzip) {
+    public static void sendFile(HttpServerRequest req, String pathToFile, boolean acceptEncodingGzip) {
         if (pathToFile.endsWith(".html")) {
             req.response().headers().add("Pragma", "no-cache");
             req.response().headers().add("Cache-Control", "no-cache, no-store, private, must-revalidate");
@@ -213,7 +215,7 @@ public class AngularIOWebContainer {
                                 && cfg.instanceConfig.getJsonObject("instance").getBoolean("active")) {
                             boolean noGzip = false;
                             String file = null;
-                            if (req.path().contains("..")) {
+                            if (req.path().contains("..") || req.path().contains("%2e") || req.path().contains("%2E")) {
                                 req.response().setStatusCode(500);
                                 req.response().end();
                                 return;
