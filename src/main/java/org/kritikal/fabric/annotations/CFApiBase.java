@@ -3,9 +3,15 @@ package org.kritikal.fabric.annotations;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
+import org.kritikal.fabric.CoreFabric;
 import org.kritikal.fabric.core.Configuration;
 
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.HashMap;
+import java.util.UUID;
+import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.regex.Pattern;
 
 public abstract class CFApiBase {
@@ -36,5 +42,29 @@ public abstract class CFApiBase {
     }
     public String getCookie() {
         return corefabric;
+    }
+
+    public void proceedIfCookie(Consumer<UUID> ifCookie, Consumer<Void> ifNoCookie) {
+        boolean preAuthFailure = false;
+        String corefabric = getCookie();
+        UUID cfuuid = null;
+        if (null!=corefabric) {
+            try {
+                cfuuid = UUID.fromString(corefabric);
+            }
+            catch (Exception e) {
+                preAuthFailure = true;
+            }
+        } else {
+            preAuthFailure = true;
+        }
+
+        if (preAuthFailure || null == cfuuid) {
+            logger.warn("Pre-auth failure"); //FIXME
+            ifNoCookie.accept(null);
+        } else {
+            final UUID x = cfuuid;
+            ifCookie.accept(x);
+        }
     }
 }
