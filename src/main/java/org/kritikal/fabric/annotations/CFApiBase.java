@@ -1,11 +1,14 @@
 package org.kritikal.fabric.annotations;
 
 import io.vertx.core.http.HttpServerRequest;
+import io.vertx.core.json.JsonObject;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import org.kritikal.fabric.CoreFabric;
 import org.kritikal.fabric.core.Configuration;
+import space.street_stall.core.ProductLookup;
 
+import java.net.URLDecoder;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.HashMap;
@@ -66,5 +69,37 @@ public abstract class CFApiBase {
             final UUID x = cfuuid;
             ifCookie.accept(x);
         }
+    }
+
+    private HttpServerRequest r = null;
+    public void setRequest(HttpServerRequest request) {
+        this.r = request;
+    }
+    public HttpServerRequest request() {
+        return this.r;
+    }
+    public void withConfigFor(final String short_name, Consumer<Configuration> withConfig) {
+        final String zone = "street-stall.space";
+
+        // Fake a config ping for the trader
+        final JsonObject dbQuery = new JsonObject();
+        dbQuery.put("action", "by_short_name");
+        dbQuery.put("zone", zone);
+        dbQuery.put("short_name", short_name);
+
+        CoreFabric.getVertx().eventBus().send("corefabric.app-config-db." + zone, dbQuery, (ar) -> {
+            JsonObject configuration = null;
+            if (ar.succeeded()) {
+                configuration = (JsonObject) ar.result().body();
+            } else {
+                configuration = new JsonObject();
+            }
+
+            final Configuration c = new Configuration(short_name); // lie about instance name
+            c.applyInstanceConfig(configuration);
+            // we ignore local config
+
+            withConfig.accept(c);
+        });
     }
 }

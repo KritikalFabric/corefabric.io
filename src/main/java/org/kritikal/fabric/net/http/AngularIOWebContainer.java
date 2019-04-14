@@ -375,6 +375,7 @@ public class AngularIOWebContainer {
                                                 String corefabric = cookieCutter(req);
                                                 Object o = ctor.newInstance(cfg);
                                                 ((CFApiBase)o).setCookie(corefabric);
+                                                ((CFApiBase)o).setRequest(req);
                                                 Consumer<JsonObject> next = (r)->{
                                                     req.response().setStatusCode(200).setStatusMessage("OK");
                                                     corsOptionsHandler.applyResponseHeaders(req);
@@ -417,7 +418,7 @@ public class AngularIOWebContainer {
                                                 String corefabric = cookieCutter(req);
                                                 Object o = ctor.newInstance(cfg);
                                                 ((CFApiBase)o).setCookie(corefabric);
-
+                                                ((CFApiBase)o).setRequest(req);
                                                 final byte[] body = rc.getBody().getBytes();
                                                 final JsonObject _object;
                                                 try {
@@ -469,6 +470,7 @@ public class AngularIOWebContainer {
                                                 String corefabric = cookieCutter(req);
                                                 Object o = ctor.newInstance(cfg);
                                                 ((CFApiBase)o).setCookie(corefabric);
+                                                ((CFApiBase)o).setRequest(req);
                                                 method.invoke(o, req);
                                             } catch (Throwable t) {
                                                 logger.error("angular-io\tapi\t" + req.path() + "\t" + t.getMessage());
