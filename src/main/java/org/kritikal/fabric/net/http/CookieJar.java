@@ -6,6 +6,7 @@ import io.vertx.core.http.HttpServerResponse;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.BiConsumer;
 import java.util.regex.Pattern;
 
 /**
@@ -59,5 +60,9 @@ public class CookieJar {
     }
 
     public String get(String cookie) { return cookies.get(cookie); }
+
+    public void forEach(BiConsumer<String, String> biConsumer) {
+        cookies.forEach(biConsumer);
+    }
 
 }
