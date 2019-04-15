@@ -49,6 +49,25 @@ public class PgDbHelper {
         sb.append('\"');
         return sb.toString();
     }
+    public static String quote_arrayliteral(String toQuote, String ifNull)
+    {
+        if (toQuote == null)
+            toQuote = ifNull;
+        StringBuilder sb = new StringBuilder();
+        sb.append('\"');
+        for (char c : toQuote.toCharArray()) {
+            if (c == '\"')
+                sb.append("\\\"");
+            else if (c == ',')
+                sb.append("\\,");
+            else if (c == '\\')
+                sb.append("\\\\");
+            else
+                sb.append(c);
+        }
+        sb.append('\"');
+        return sb.toString();
+    }
 
     public static String quote_for_like(String toQuote) {
         if (toQuote == null) return "";
