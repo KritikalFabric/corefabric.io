@@ -6,15 +6,10 @@ import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import org.kritikal.fabric.CoreFabric;
 import org.kritikal.fabric.core.Configuration;
-import space.street_stall.core.ProductLookup;
 
-import java.net.URLDecoder;
-import java.sql.Connection;
-import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.UUID;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.regex.Pattern;
 
 public abstract class CFApiBase {
