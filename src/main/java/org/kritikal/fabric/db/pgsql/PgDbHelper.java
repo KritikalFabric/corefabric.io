@@ -58,6 +58,8 @@ public class PgDbHelper {
         for (char c : toQuote.toCharArray()) {
             if (c == '\"')
                 sb.append("\\\"");
+            else if (c == '\'')
+                sb.append("''");
             else if (c == ',')
                 sb.append("\\,");
             else if (c == '\\')
