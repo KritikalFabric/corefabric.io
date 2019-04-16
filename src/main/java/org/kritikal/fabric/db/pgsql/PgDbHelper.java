@@ -2,6 +2,7 @@ package org.kritikal.fabric.db.pgsql;
 
 import com.google.protobuf.ByteString;
 import io.vertx.core.json.JsonArray;
+import io.vertx.core.json.JsonObject;
 import org.kritikal.fabric.core.FormatHelpers;
 
 import java.sql.*;
@@ -39,6 +40,8 @@ public class PgDbHelper {
         for (char c : toQuote.toCharArray()) {
             if (c == '\"')
                 sb.append("\\\"");
+            else if (c == '\'')
+                sb.append("''");
             else if (c == ',')
                 sb.append("\\,");
             else if (c == '\\')
@@ -47,6 +50,27 @@ public class PgDbHelper {
                 sb.append(c);
         }
         sb.append('\"');
+        return sb.toString();
+    }
+    public static String quote_arrayliteral(JsonObject objectToQuote) // TODO: test
+    {
+        if (null == objectToQuote) { return "NULL"; }
+        String toQuote = objectToQuote.encode();
+        StringBuilder sb = new StringBuilder();
+        sb.append('\'');
+        for (char c : toQuote.toCharArray()) {
+            if (c == '\"')
+                sb.append("\\\"");
+            else if (c == '\'')
+                sb.append("''");
+            else if (c == ',')
+                sb.append("\\,");
+            else if (c == '\\')
+                sb.append("\\\\");
+            else
+                sb.append(c);
+        }
+        sb.append('\'');
         return sb.toString();
     }
     public static String quote_arrayliteral(String toQuote, String ifNull)
@@ -68,6 +92,27 @@ public class PgDbHelper {
                 sb.append(c);
         }
         sb.append('\"');
+        return sb.toString();
+    }
+    public static String quote_arrayliteral(JsonObject objectToQuote, String ifNull) // TODO: test
+    {
+        if (null == objectToQuote) { return quote_arrayliteral(ifNull); }
+        String toQuote = objectToQuote.encode();
+        StringBuilder sb = new StringBuilder();
+        sb.append('\'');
+        for (char c : toQuote.toCharArray()) {
+            if (c == '\"')
+                sb.append("\\\"");
+            else if (c == '\'')
+                sb.append("''");
+            else if (c == ',')
+                sb.append("\\,");
+            else if (c == '\\')
+                sb.append("\\\\");
+            else
+                sb.append(c);
+        }
+        sb.append('\'');
         return sb.toString();
     }
 
