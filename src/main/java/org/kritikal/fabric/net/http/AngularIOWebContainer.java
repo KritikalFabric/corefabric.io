@@ -2,42 +2,29 @@ package org.kritikal.fabric.net.http;
 
 import io.netty.handler.codec.http.Cookie;
 import io.netty.handler.codec.http.CookieDecoder;
-import io.netty.handler.codec.http.DefaultCookie;
-import io.netty.handler.codec.http.ServerCookieEncoder;
-import io.vertx.core.AbstractVerticle;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
-import io.vertx.core.eventbus.Message;
 import io.vertx.core.http.*;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import io.vertx.core.Vertx;
 import io.vertx.ext.web.Router;
+import io.vertx.ext.web.handler.BodyHandler;
 import org.kritikal.fabric.CoreFabric;
 import org.kritikal.fabric.annotations.CFApi;
 import org.kritikal.fabric.annotations.CFApiBase;
 import org.kritikal.fabric.annotations.CFApiMethod;
-import org.kritikal.fabric.annotations.CFMain;
 import org.kritikal.fabric.core.Configuration;
 import org.kritikal.fabric.core.ConfigurationManager;
 import org.kritikal.fabric.daemon.MqttBrokerVerticle;
-import org.kritikal.fabric.core.VERTXDEFINES;
-import io.corefabric.pi.appweb.json.DtnConfigJson;
-import io.corefabric.pi.appweb.json.NodeMonitorJson;
-import io.corefabric.pi.appweb.json.StatusJson;
-import org.kritikal.fabric.net.http.BinaryBodyHandler;
-import org.kritikal.fabric.net.http.CorsOptionsHandler;
-import org.kritikal.fabric.net.http.FabricApiConnector;
 import org.kritikal.fabric.net.mqtt.SyncMqttBroker;
 import org.reflections.Reflections;
 
 import java.io.*;
 import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URISyntaxException;
-import java.net.URLDecoder;
 import java.util.Enumeration;
 import java.util.Map;
 import java.util.Set;
@@ -355,7 +342,7 @@ public class AngularIOWebContainer {
                         final String url = apiMethod.url();
                         if (apiMethod.cors()) router.options(url).handler(corsOptionsHandler);
                         switch (apiMethod.type()) {
-                            case GET:
+                            case JSON_GET:
                                 // json handler
                                 router.get(url).handler(rc -> {
                                     HttpServerRequest req = rc.request();
@@ -375,7 +362,7 @@ public class AngularIOWebContainer {
                                                 String corefabric = cookieCutter(req);
                                                 Object o = ctor.newInstance(cfg);
                                                 ((CFApiBase)o).setCookie(corefabric);
-                                                ((CFApiBase)o).setRequest(req);
+                                                ((CFApiBase)o).setRoutingContext(rc);
                                                 Consumer<JsonObject> next = (r)->{
                                                     req.response().setStatusCode(200).setStatusMessage("OK");
                                                     corsOptionsHandler.applyResponseHeaders(req);
@@ -398,7 +385,7 @@ public class AngularIOWebContainer {
                                 });
                                 break;
 
-                            case POST:
+                            case JSON_POST:
                                 // json handler
                                 router.post(url).handler(rc -> {
                                     HttpServerRequest req = rc.request();
@@ -418,7 +405,7 @@ public class AngularIOWebContainer {
                                                 String corefabric = cookieCutter(req);
                                                 Object o = ctor.newInstance(cfg);
                                                 ((CFApiBase)o).setCookie(corefabric);
-                                                ((CFApiBase)o).setRequest(req);
+                                                ((CFApiBase)o).setRoutingContext(rc);
                                                 final byte[] body = rc.getBody().getBytes();
                                                 final JsonObject _object;
                                                 try {
@@ -449,9 +436,45 @@ public class AngularIOWebContainer {
                                 });
                                 break;
 
+                            case GENERIC_POST:
+                                // generic get handler
+                                router.post(url).handler(rc -> {
+                                    HttpServerRequest req = rc.request();
+
+                                    String hostport = req.host();
+                                    int i = hostport.indexOf(':');
+                                    if (i >= 0) {
+                                        hostport = hostport.substring(0, i);
+                                    }
+
+                                    String instancekey = zone + "/" + hostport;
+                                    ConfigurationManager.getConfigurationAsync(vertx, instancekey, cfg -> {
+                                        cfApi(apiMethod, cfg, (x)->{
+                                            if (CoreFabric.ServerConfiguration.DEBUG)
+                                                logger.info("angular-io\tapi\t" + req.path());
+                                            try {
+                                                String corefabric = cookieCutter(req);
+                                                Object o = ctor.newInstance(cfg);
+                                                ((CFApiBase)o).setCookie(corefabric);
+                                                ((CFApiBase)o).setRoutingContext(rc);
+                                                method.invoke(o);
+                                            } catch (Throwable t) {
+                                                logger.error("angular-io\tapi\t" + req.path() + "\t" + t.getMessage());
+                                                req.response().setStatusCode(500).setStatusMessage("Server Error");
+                                                req.response().end();
+                                            }
+                                        }, (fail1)->{
+                                            logger.error("angular-io\tapi\t" + req.path() + "\tNot Available");
+                                            req.response().setStatusCode(500).setStatusMessage("Server Error");
+                                            req.response().end();
+                                        });
+                                    });
+                                });
+                                break;
+
                             default:
                             case GENERIC_GET:
-                                // json handler
+                                // generic get handler
                                 router.get(url).handler(rc -> {
                                     HttpServerRequest req = rc.request();
 
@@ -470,8 +493,8 @@ public class AngularIOWebContainer {
                                                 String corefabric = cookieCutter(req);
                                                 Object o = ctor.newInstance(cfg);
                                                 ((CFApiBase)o).setCookie(corefabric);
-                                                ((CFApiBase)o).setRequest(req);
-                                                method.invoke(o, req);
+                                                ((CFApiBase)o).setRoutingContext(rc);
+                                                method.invoke(o);
                                             } catch (Throwable t) {
                                                 logger.error("angular-io\tapi\t" + req.path() + "\t" + t.getMessage());
                                                 req.response().setStatusCode(500).setStatusMessage("Server Error");
@@ -501,7 +524,7 @@ public class AngularIOWebContainer {
 
     public static Router initialiseRouter(Vertx vertx) {
         Router router = Router.router(vertx);
-        router.route().handler(new BinaryBodyHandler());
+        router.route().handler(BodyHandler.create().setUploadsDirectory(CoreFabric.ServerConfiguration.tmp));
         return router;
     }
 

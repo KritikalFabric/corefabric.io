@@ -4,6 +4,7 @@ import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
+import io.vertx.ext.web.RoutingContext;
 import org.kritikal.fabric.CoreFabric;
 import org.kritikal.fabric.core.Configuration;
 
@@ -66,12 +67,13 @@ public abstract class CFApiBase {
         }
     }
 
-    private HttpServerRequest r = null;
-    public void setRequest(HttpServerRequest request) {
-        this.r = request;
+    private RoutingContext r = null;
+    public void setRoutingContext(RoutingContext ctx) {
+        this.r = ctx;
     }
+    public RoutingContext ctx() { return this.r; }
     public HttpServerRequest request() {
-        return this.r;
+        return this.r.request();
     }
     public void withConfigFor(final String short_name, Consumer<Configuration> withConfig) {
         final String zone = "street-stall.space";

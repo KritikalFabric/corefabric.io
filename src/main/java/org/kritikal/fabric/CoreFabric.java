@@ -49,6 +49,7 @@ public class CoreFabric {
         public static String name = "localhost";
         public static String zone = "localzone";
         public static String ip4 = null;
+        public static String tmp = "/var/tmp";
         public static boolean nodejsDev = false;
         public static class ClusterPeer {
             public ClusterPeer(String host, int port) {
@@ -69,6 +70,7 @@ public class CoreFabric {
                 zone = node.getString("zone", "localzone");
                 ip4 = node.getString("ip4", "127.0.0.1");
                 nodejsDev = node.getBoolean("nodejs_dev", false);
+                tmp = node.getString("tmp", "/var/tmp");
             }
             JsonObject cluster = globalConfig.getJsonObject("cluster");
             if (cluster != null) {

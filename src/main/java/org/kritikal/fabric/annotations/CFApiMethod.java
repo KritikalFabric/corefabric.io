@@ -10,7 +10,7 @@ import java.lang.annotation.Target;
 public @interface CFApiMethod {
     String url();
     String[] sites();
-    enum TYPE { GET, POST, GENERIC_GET }
-    TYPE type() default TYPE.GET;
+    enum TYPE {JSON_GET, JSON_POST, GENERIC_GET, GENERIC_POST }
+    TYPE type() default TYPE.JSON_GET;
     boolean cors() default false;
 }
