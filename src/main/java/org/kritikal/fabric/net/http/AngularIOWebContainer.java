@@ -153,6 +153,14 @@ public class AngularIOWebContainer {
             req.response().headers().add("Content-Type", "text/css; charset=utf-8");
         } else if (pathToFile.endsWith(".txt")) {
             req.response().headers().add("Content-Type", "text/plain; charset=utf-8");
+        } else if (pathToFile.endsWith(".png")) {
+            req.response().headers().add("Content-Type", "image/png");
+        } else if (pathToFile.endsWith(".gif")) {
+            req.response().headers().add("Content-Type", "image/gif");
+        } else if (pathToFile.endsWith(".jpg") || pathToFile.endsWith(".jpeg")) {
+            req.response().headers().add("Content-Type", "image/jpeg");
+        } else if (pathToFile.endsWith(".tif") || pathToFile.endsWith(".tiff")) {
+            req.response().headers().add("Content-Type", "image/tiff");
         } else {
             req.response().headers().add("Content-Type", "application/octet-stream");
         }
