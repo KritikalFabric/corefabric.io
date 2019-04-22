@@ -91,6 +91,14 @@ public class AngularIOWebContainer {
         return corefabric;
     }
 
+    public static String hostCutter(HttpServerRequest request) {
+        String host = request.host();
+        if (null == host || "".equals(host)) return ".";
+        int i = host.indexOf(':');
+        if (i >= 0) { host = host.substring(0, i); }
+        return host;
+    }
+
     private static String cookieCutter(ServerWebSocket webSocket) {
         String corefabric = null;
         try {
@@ -195,12 +203,9 @@ public class AngularIOWebContainer {
         router.get().handler(rc -> {
             HttpServerRequest req = rc.request();
 
-            String hostport = req.host();
-            int i = hostport.indexOf(':');
-            if (i >= 0) { hostport = hostport.substring(0, i); }
-            final String hostname = hostport;
+            final String hostname = hostCutter(req);
+            final String instancekey = zone + "/" + hostname;
 
-            String instancekey = zone + "/" + hostport;
             ConfigurationManager.getConfigurationAsync(vertx, instancekey, cfg -> {
                 String site = cfg.instanceConfig.getJsonObject("instance").getString("site");
                 if (CoreFabric.ServerConfiguration.DEBUG) logger.info("angular-io\t" + site + "\t" + req.path());
@@ -358,13 +363,9 @@ public class AngularIOWebContainer {
                                 router.get(url).handler(rc -> {
                                     HttpServerRequest req = rc.request();
 
-                                    String hostport = req.host();
-                                    int i = hostport.indexOf(':');
-                                    if (i >= 0) {
-                                        hostport = hostport.substring(0, i);
-                                    }
+                                    final String hostname = hostCutter(req);
+                                    final String instancekey = zone + "/" + hostname;
 
-                                    String instancekey = zone + "/" + hostport;
                                     ConfigurationManager.getConfigurationAsync(vertx, instancekey, cfg -> {
                                         cfApi(apiMethod, cfg, (x)->{
                                             if (CoreFabric.ServerConfiguration.DEBUG)
@@ -401,13 +402,9 @@ public class AngularIOWebContainer {
                                 router.post(url).handler(rc -> {
                                     HttpServerRequest req = rc.request();
 
-                                    String hostport = req.host();
-                                    int i = hostport.indexOf(':');
-                                    if (i >= 0) {
-                                        hostport = hostport.substring(0, i);
-                                    }
+                                    final String hostname = hostCutter(req);
+                                    final String instancekey = zone + "/" + hostname;
 
-                                    String instancekey = zone + "/" + hostport;
                                     ConfigurationManager.getConfigurationAsync(vertx, instancekey, cfg -> {
                                         cfApi(apiMethod, cfg, (x)->{
                                             if (CoreFabric.ServerConfiguration.DEBUG)
@@ -452,13 +449,9 @@ public class AngularIOWebContainer {
                                 router.post(url).handler(rc -> {
                                     HttpServerRequest req = rc.request();
 
-                                    String hostport = req.host();
-                                    int i = hostport.indexOf(':');
-                                    if (i >= 0) {
-                                        hostport = hostport.substring(0, i);
-                                    }
+                                    final String hostname = hostCutter(req);
+                                    final String instancekey = zone + "/" + hostname;
 
-                                    String instancekey = zone + "/" + hostport;
                                     ConfigurationManager.getConfigurationAsync(vertx, instancekey, cfg -> {
                                         cfApi(apiMethod, cfg, (x)->{
                                             if (CoreFabric.ServerConfiguration.DEBUG)
@@ -489,13 +482,9 @@ public class AngularIOWebContainer {
                                 router.get(url).handler(rc -> {
                                     HttpServerRequest req = rc.request();
 
-                                    String hostport = req.host();
-                                    int i = hostport.indexOf(':');
-                                    if (i >= 0) {
-                                        hostport = hostport.substring(0, i);
-                                    }
+                                    final String hostname = hostCutter(req);
+                                    final String instancekey = zone + "/" + hostname;
 
-                                    String instancekey = zone + "/" + hostport;
                                     ConfigurationManager.getConfigurationAsync(vertx, instancekey, cfg -> {
                                         cfApi(apiMethod, cfg, (x)->{
                                             if (CoreFabric.ServerConfiguration.DEBUG)
