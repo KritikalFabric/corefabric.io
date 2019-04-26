@@ -182,6 +182,30 @@ public class AngularIOWebContainer {
         req.response().sendFile(pathToFile + (acceptEncodingGzip ? ".gz" : ""));
     }
 
+    public static HttpServer initialiseHttpToHttpsRedirect(Vertx vertx, String defaultHost) {
+        HttpServerOptions httpServerOptions = new HttpServerOptions();
+        httpServerOptions.setSoLinger(0);
+        httpServerOptions.setTcpKeepAlive(true);
+        httpServerOptions.setHandle100ContinueAutomatically(true);
+        Router router = initialiseRouter(vertx);
+        router.get().handler(rc->{
+            String host = rc.request().host();
+            if (null == host || "".equals(host)) host = defaultHost;
+            String path = rc.request().path();
+            String query = rc.request().query();
+            int x = null == host ? -1 : host.indexOf(':');
+            if (x>=0) host = host.substring(0, x);
+            if (null == path || "".equals(path)) path = "/";
+            String redirect = "https://" + host + path + (null == query || "".equals(query) ? "" : ("?" + query));
+            rc.response().setStatusCode(301).setStatusMessage("Moved Permanently");
+            rc.response().headers().add("Location", redirect);
+            rc.response().end();
+        });
+        HttpServer httpServer = vertx.createHttpServer(httpServerOptions);
+        httpServer.requestHandler(req -> { router.accept(req); });
+        return httpServer;
+    }
+
     public static HttpServer initialiseHttpServer(String namespace, String zone, Vertx vertx, Router router, Consumer<HttpServerOptions> options, BiFunction<Configuration, String, String> ssi) {
         HttpServerOptions httpServerOptions = new HttpServerOptions();
         httpServerOptions.setSoLinger(0);
