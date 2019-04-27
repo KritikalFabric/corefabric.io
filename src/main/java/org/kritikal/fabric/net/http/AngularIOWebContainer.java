@@ -206,7 +206,16 @@ public class AngularIOWebContainer {
         return httpServer;
     }
 
-    public static HttpServer initialiseHttpServer(String namespace, String zone, Vertx vertx, Router router, Consumer<HttpServerOptions> options, BiFunction<Configuration, String, String> ssi) {
+    public static class SsiParams {
+        public SsiParams(final Configuration cfg, final HttpServerRequest request) {
+            this.cfg = cfg;
+            this.request = request;
+        }
+        public final Configuration cfg;
+        public final HttpServerRequest request;
+    }
+
+    public static HttpServer initialiseHttpServer(String namespace, String zone, Vertx vertx, Router router, Consumer<HttpServerOptions> options, BiFunction<SsiParams, String, String> ssi) {
         HttpServerOptions httpServerOptions = new HttpServerOptions();
         httpServerOptions.setSoLinger(0);
         httpServerOptions.setTcpKeepAlive(true);
@@ -289,8 +298,8 @@ public class AngularIOWebContainer {
                                                         } else {
                                                             try {
                                                                 String s = new String(ar.result().getBytes(), "UTF-8");
-                                                                s = s.replaceAll("<!--ssi:canonical-->", "https://" + hostname + ":1443");
-                                                                s = ssi.apply(cfg, s);
+                                                                SsiParams ssiParams = new SsiParams(cfg, req);
+                                                                s = ssi.apply(ssiParams, s);
                                                                 cookieCutter(req);
                                                                 req.response().headers().add("Pragma", "no-cache");
                                                                 req.response().headers().add("Cache-Control", "no-cache, no-store, private, must-revalidate");
