@@ -30,7 +30,7 @@ jar {
 }
 
 version = '0.2.1-autoconf' // our version
-vertxVersion = '3.6.3' // vert.x version
+vertxVersion = '3.7.0' // vert.x version
 
 sourceCompatibility = '1.8'
 
