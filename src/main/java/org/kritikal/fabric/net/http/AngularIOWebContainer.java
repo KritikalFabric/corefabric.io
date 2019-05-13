@@ -15,6 +15,7 @@ import org.kritikal.fabric.CoreFabric;
 import org.kritikal.fabric.annotations.CFApi;
 import org.kritikal.fabric.annotations.CFApiBase;
 import org.kritikal.fabric.annotations.CFApiMethod;
+import org.kritikal.fabric.core.BuildConfig;
 import org.kritikal.fabric.core.Configuration;
 import org.kritikal.fabric.core.ConfigurationManager;
 import org.kritikal.fabric.daemon.MqttBrokerVerticle;
@@ -25,10 +26,9 @@ import java.io.*;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.net.URISyntaxException;
-import java.util.Enumeration;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.*;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -145,7 +145,10 @@ public class AngularIOWebContainer {
         }
     }
 
-    public static void sendFile(HttpServerRequest req, String pathToFile, boolean acceptEncodingGzip) {
+    public static final String PATTERN_RFC1123 = "EEE, dd MMM yyyy HH:mm:ss zzz";
+    public static final DateFormat DATE_FORMAT_RFC1123 = new SimpleDateFormat(PATTERN_RFC1123, Locale.US);
+
+    public static void sendFile(HttpServerRequest req, String pathToFile, boolean acceptEncodingGzip, boolean lastModified) {
         if (pathToFile.endsWith(".html")) {
             req.response().headers().add("Pragma", "no-cache");
             req.response().headers().add("Cache-Control", "no-cache, no-store, private, must-revalidate");
@@ -177,6 +180,11 @@ public class AngularIOWebContainer {
 
         if (acceptEncodingGzip) {
             req.response().headers().add("Content-Encoding", "gzip");
+        }
+
+        if (lastModified) {
+            java.util.Date t = new java.util.Date(BuildConfig.BUILD_UNIXTIME);
+            req.response().headers().add("Last-Modified", DATE_FORMAT_RFC1123.format(t));
         }
 
         req.response().sendFile(pathToFile + (acceptEncodingGzip ? ".gz" : ""));
@@ -315,7 +323,7 @@ public class AngularIOWebContainer {
                                                     });
                                                 } else {
                                                     cookieCutter(req);
-                                                    sendFile(req, filesystemLocation, acceptEncodingGzip);
+                                                    sendFile(req, filesystemLocation, acceptEncodingGzip, runningInsideJar);
                                                 }
                                             } else {
                                                 if ("/-/not-found/".equals(req.path())) {
