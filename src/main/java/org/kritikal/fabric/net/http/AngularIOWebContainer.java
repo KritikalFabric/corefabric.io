@@ -309,9 +309,12 @@ public class AngularIOWebContainer {
                                                                 SsiParams ssiParams = new SsiParams(cfg, req);
                                                                 s = ssi.apply(ssiParams, s);
                                                                 cookieCutter(req);
-                                                                req.response().headers().add("Pragma", "no-cache");
-                                                                req.response().headers().add("Cache-Control", "no-cache, no-store, private, must-revalidate");
+                                                                req.response().headers().add("Cache-Control", "cache, store, private, must-revalidate");
                                                                 req.response().headers().add("Content-Type", "text/html; charset=utf-8");
+                                                                /* last modified = now */ {
+                                                                    java.util.Date t = new java.util.Date(); // now, this page is always modified but may be cached and stored
+                                                                    req.response().headers().add("Last-Modified", DATE_FORMAT_RFC1123.format(t));
+                                                                }
                                                                 req.response().end(s);
                                                             }
                                                             catch (Throwable t) {
