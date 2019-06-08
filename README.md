@@ -51,6 +51,10 @@ and you probably want to make a configuration file:
 awfulhak:corefabric.io ben$ ln -s config.json.example config.json
 ```
 
+going with this ```/deploy/hostname``` or ```/etc/hostname``` with your external hostname 
+(forward and reverse dns e.g. for SMTP HELO) and ```/deploy/ipv4``` with your external IP
+address. 
+
 Easy Links!!!
 -------------
 

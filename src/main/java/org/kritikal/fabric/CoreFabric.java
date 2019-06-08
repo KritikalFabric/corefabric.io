@@ -118,9 +118,21 @@ public class CoreFabric {
             files.add("/deploy/config.json");
             files.add("config.json");
             files.add("config.json.example"); // defaults for developers ;)
+            ArrayList<String> hostnameFiles = new ArrayList();
+            hostnameFiles.add("/deploy/hostname");
+            hostnameFiles.add("/etc/hostname");
             for (String file : files) {
                 String config_json = readFile(file);
                 if (config_json == null) continue;
+                String hostname = null;
+                for (String hostnameFile : hostnameFiles) {
+                    hostname = readFile(hostnameFile);
+                    if (null == hostname) continue;
+                    break;
+                }
+                if (null == hostname) {
+                    hostname = "localhost";
+                }
 
                 // foreach <<interface>> -> 1.2.3.4 ip address
                 HashMap<String, String> replacements = new HashMap<>();
@@ -138,12 +150,14 @@ public class CoreFabric {
                 } catch (SocketException se) {
                     logger.warn("Unable to enumerate network interfaces while loading config.json, continuing...");
                 }
-                String hostname = readFile("/deploy/hostname");
                 if (null != hostname) {
                     replacements.put("<<hostname>>", hostname.trim());
                     String ipv4 = readFile("/deploy/ipv4");
                     if (null != ipv4) {
                         replacements.put("<<ipv4>>", ipv4.trim());
+                    }
+                    else {
+                        replacements.put("<<ipv4>>", "127.0.0.1");
                     }
 
                     for (Map.Entry<String, String> replacement : replacements.entrySet()) {
