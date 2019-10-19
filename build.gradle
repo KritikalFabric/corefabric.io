@@ -9,7 +9,7 @@ buildscript {
     dependencies {
         classpath 'com.github.jengelman.gradle.plugins:shadow:1.2.3'
         classpath 'com.google.protobuf:protobuf-gradle-plugin:0.8.0'
-	classpath 'gradle.plugin.de.fuerstenau:BuildConfigPlugin:1.0.5'
+    	classpath 'gradle.plugin.de.fuerstenau:BuildConfigPlugin:1.1.8'
     }
 }
 
@@ -30,7 +30,7 @@ jar {
 }
 
 version = '0.2.1-autoconf' // our version
-vertxVersion = '3.6.3' // vert.x version
+vertxVersion = '3.8.1' // vert.x version
 
 sourceCompatibility = '1.8'
 
@@ -42,6 +42,7 @@ buildConfig {
 			version = version
 		}
 	}
+    buildConfigField 'long', 'BUILD_UNIXTIME', System.currentTimeMillis() + 'L'
 }
 
 sourceSets {
@@ -102,7 +103,7 @@ dependencies {
 }
 
 mainClassName = 'org.kritikal.fabric.CoreFabric'
-applicationDefaultJvmArgs = ['-d64','-Xmx512M']
+applicationDefaultJvmArgs = []
 
 shadowJar {
     baseName "corefabric.io"
@@ -129,7 +130,7 @@ shadowJar.dependsOn 'cpa2'
 
 test {
 
-    jvmArgs = ['-d64','-Xmx512M']
+    jvmArgs = []
 
     scanForTestClasses = true;
 

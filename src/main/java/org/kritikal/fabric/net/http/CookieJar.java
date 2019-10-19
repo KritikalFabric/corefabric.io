@@ -2,9 +2,11 @@ package org.kritikal.fabric.net.http;
 
 import io.vertx.core.http.HttpClientResponse;
 import io.vertx.core.http.HttpServerRequest;
+import io.vertx.core.http.HttpServerResponse;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.BiConsumer;
 import java.util.regex.Pattern;
 
 /**
@@ -15,6 +17,14 @@ public class CookieJar {
     final HashMap<String, String> cookies = new HashMap<>();
 
     public void fill(HttpClientResponse response) {
+        for (Map.Entry<String, String> kv : response.headers()) {
+            if ("Set-Cookie".equals(kv.getKey())) {
+                bakeCookie(kv.getValue());
+            }
+        }
+    }
+
+    public void fill(HttpServerResponse response) {
         for (Map.Entry<String, String> kv : response.headers()) {
             if ("Set-Cookie".equals(kv.getKey())) {
                 bakeCookie(kv.getValue());
@@ -50,5 +60,9 @@ public class CookieJar {
     }
 
     public String get(String cookie) { return cookies.get(cookie); }
+
+    public void forEach(BiConsumer<String, String> biConsumer) {
+        cookies.forEach(biConsumer);
+    }
 
 }

@@ -2,36 +2,36 @@ package org.kritikal.fabric.net.http;
 
 import io.netty.handler.codec.http.Cookie;
 import io.netty.handler.codec.http.CookieDecoder;
-import io.netty.handler.codec.http.DefaultCookie;
-import io.netty.handler.codec.http.ServerCookieEncoder;
-import io.vertx.core.AbstractVerticle;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
-import io.vertx.core.eventbus.Message;
 import io.vertx.core.http.*;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import io.vertx.core.Vertx;
 import io.vertx.ext.web.Router;
+import io.vertx.ext.web.handler.BodyHandler;
 import org.kritikal.fabric.CoreFabric;
+import org.kritikal.fabric.annotations.CFApi;
+import org.kritikal.fabric.annotations.CFApiBase;
+import org.kritikal.fabric.annotations.CFApiMethod;
+import org.kritikal.fabric.core.BuildConfig;
+import org.kritikal.fabric.core.Configuration;
 import org.kritikal.fabric.core.ConfigurationManager;
 import org.kritikal.fabric.daemon.MqttBrokerVerticle;
-import org.kritikal.fabric.core.VERTXDEFINES;
-import io.corefabric.pi.appweb.json.DtnConfigJson;
-import io.corefabric.pi.appweb.json.NodeMonitorJson;
-import io.corefabric.pi.appweb.json.StatusJson;
-import org.kritikal.fabric.net.http.BinaryBodyHandler;
-import org.kritikal.fabric.net.http.CorsOptionsHandler;
-import org.kritikal.fabric.net.http.FabricApiConnector;
 import org.kritikal.fabric.net.mqtt.SyncMqttBroker;
+import org.reflections.Reflections;
 
 import java.io.*;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Method;
 import java.net.URISyntaxException;
-import java.util.Enumeration;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.*;
+import java.util.function.BiFunction;
+import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.jar.JarFile;
 import java.util.zip.ZipEntry;
 import java.util.concurrent.ConcurrentHashMap;
@@ -53,8 +53,11 @@ public class AngularIOWebContainer {
     }
 
     final static ConcurrentHashMap<String, AngularIOSiteInstance> map = new ConcurrentHashMap<>();
+    final public static ConcurrentHashMap<String, AngularIOSiteInstance> map() { return map; }
 
-    private static String cookieCutter(HttpServerRequest req) {
+    public static String cookieCutter(HttpServerRequest req) {
+        boolean found = false;
+        boolean set = false;
         String corefabric = null;
         try {
             String cookies = req.headers().get("Cookie");
@@ -69,15 +72,31 @@ public class AngularIOWebContainer {
                 corefabric = null;
             }
             UUID.fromString(corefabric); // does it parse?
+            found = true;
         } catch (Throwable t) {
             corefabric = null;
         }
         if (corefabric == null) {
             corefabric = UUID.randomUUID().toString();
-            Cookie cookie = new DefaultCookie("corefabric", corefabric);
-            req.response().headers().add("Set-Cookie", ServerCookieEncoder.encode(cookie));
+            String cfcookie = "corefabric=" + corefabric + "; Path=/";
+            /*
+            if (req.isSSL())
+                cfcookie = cfcookie + "; Secure";
+            */
+            req.response().headers().add("Set-Cookie", cfcookie);
+            set = true;
         }
+
+        //logger.warn("cookie-cutter\tssl=" + req.isSSL() + "\t" + req.host() + "\t" + req.path() + "\tf=" + found + "\ts=" + set + "\t" + corefabric);
         return corefabric;
+    }
+
+    public static String hostCutter(HttpServerRequest request) {
+        String host = request.host();
+        if (null == host || "".equals(host)) return ".";
+        int i = host.indexOf(':');
+        if (i >= 0) { host = host.substring(0, i); }
+        return host;
     }
 
     private static String cookieCutter(ServerWebSocket webSocket) {
@@ -126,12 +145,15 @@ public class AngularIOWebContainer {
         }
     }
 
-    private static void sendFile(HttpServerRequest req, String pathToFile, boolean acceptEncodingGzip) {
+    public static final String PATTERN_RFC1123 = "EEE, dd MMM yyyy HH:mm:ss zzz";
+    public static final DateFormat DATE_FORMAT_RFC1123 = new SimpleDateFormat(PATTERN_RFC1123, Locale.US);
+
+    public static void sendFile(HttpServerRequest req, String pathToFile, boolean acceptEncodingGzip, boolean lastModified) {
         if (pathToFile.endsWith(".html")) {
             req.response().headers().add("Pragma", "no-cache");
             req.response().headers().add("Cache-Control", "no-cache, no-store, private, must-revalidate");
         } else {
-            req.response().headers().add("Cache-Control", "public, max-age=7200");
+            req.response().headers().add("Cache-Control", "public, max-age=63072000"); // 2 years
         }
 
         if (pathToFile.endsWith(".html")) {
@@ -144,6 +166,14 @@ public class AngularIOWebContainer {
             req.response().headers().add("Content-Type", "text/css; charset=utf-8");
         } else if (pathToFile.endsWith(".txt")) {
             req.response().headers().add("Content-Type", "text/plain; charset=utf-8");
+        } else if (pathToFile.endsWith(".png")) {
+            req.response().headers().add("Content-Type", "image/png");
+        } else if (pathToFile.endsWith(".gif")) {
+            req.response().headers().add("Content-Type", "image/gif");
+        } else if (pathToFile.endsWith(".jpg") || pathToFile.endsWith(".jpeg")) {
+            req.response().headers().add("Content-Type", "image/jpeg");
+        } else if (pathToFile.endsWith(".tif") || pathToFile.endsWith(".tiff")) {
+            req.response().headers().add("Content-Type", "image/tiff");
         } else {
             req.response().headers().add("Content-Type", "application/octet-stream");
         }
@@ -152,14 +182,53 @@ public class AngularIOWebContainer {
             req.response().headers().add("Content-Encoding", "gzip");
         }
 
+        if (lastModified) {
+            java.util.Date t = new java.util.Date(BuildConfig.BUILD_UNIXTIME);
+            req.response().headers().add("Last-Modified", DATE_FORMAT_RFC1123.format(t));
+        }
+
         req.response().sendFile(pathToFile + (acceptEncodingGzip ? ".gz" : ""));
     }
 
-    public static HttpServer initialiseHttpServer(String zone, Vertx vertx, Router router) {
+    public static HttpServer initialiseHttpToHttpsRedirect(Vertx vertx, String defaultHost) {
         HttpServerOptions httpServerOptions = new HttpServerOptions();
         httpServerOptions.setSoLinger(0);
         httpServerOptions.setTcpKeepAlive(true);
         httpServerOptions.setHandle100ContinueAutomatically(true);
+        Router router = initialiseRouter(vertx);
+        router.get().handler(rc->{
+            String host = rc.request().host();
+            if (null == host || "".equals(host)) host = defaultHost;
+            String path = rc.request().path();
+            String query = rc.request().query();
+            int x = null == host ? -1 : host.indexOf(':');
+            if (x>=0) host = host.substring(0, x);
+            if (null == path || "".equals(path)) path = "/";
+            String redirect = "https://" + host + path + (null == query || "".equals(query) ? "" : ("?" + query));
+            rc.response().setStatusCode(301).setStatusMessage("Moved Permanently");
+            rc.response().headers().add("Location", redirect);
+            rc.response().end();
+        });
+        HttpServer httpServer = vertx.createHttpServer(httpServerOptions);
+        httpServer.requestHandler(req -> { router.accept(req); });
+        return httpServer;
+    }
+
+    public static class SsiParams {
+        public SsiParams(final Configuration cfg, final HttpServerRequest request) {
+            this.cfg = cfg;
+            this.request = request;
+        }
+        public final Configuration cfg;
+        public final HttpServerRequest request;
+    }
+
+    public static HttpServer initialiseHttpServer(String namespace, String zone, Vertx vertx, Router router, Consumer<HttpServerOptions> options, BiFunction<SsiParams, String, String> ssi) {
+        HttpServerOptions httpServerOptions = new HttpServerOptions();
+        httpServerOptions.setSoLinger(0);
+        httpServerOptions.setTcpKeepAlive(true);
+        httpServerOptions.setHandle100ContinueAutomatically(true);
+        options.accept(httpServerOptions);
         HttpServer server = vertx.createHttpServer(httpServerOptions);
         server.websocketHandler(ws -> {
             String corefabric = cookieCutter(ws);
@@ -171,14 +240,13 @@ public class AngularIOWebContainer {
                 mqttBroker.waitingForConnect.add(mqttServerProtocol);
             }
         });
+        wireUpCFApi(namespace, zone, vertx, router);
         router.get().handler(rc -> {
             HttpServerRequest req = rc.request();
 
-            String hostport = req.host();
-            int i = hostport.indexOf(':');
-            if (i >= 0) { hostport = hostport.substring(0, i); }
+            final String hostname = hostCutter(req);
+            final String instancekey = zone + "/" + hostname;
 
-            String instancekey = zone + "/" + hostport;
             ConfigurationManager.getConfigurationAsync(vertx, instancekey, cfg -> {
                 String site = cfg.instanceConfig.getJsonObject("instance").getString("site");
                 if (CoreFabric.ServerConfiguration.DEBUG) logger.info("angular-io\t" + site + "\t" + req.path());
@@ -190,7 +258,7 @@ public class AngularIOWebContainer {
                                 && cfg.instanceConfig.getJsonObject("instance").getBoolean("active")) {
                             boolean noGzip = false;
                             String file = null;
-                            if (req.path().contains("..")) {
+                            if (req.path().contains("..") || req.path().contains("%2e") || req.path().contains("%2E")) {
                                 req.response().setStatusCode(500);
                                 req.response().end();
                                 return;
@@ -206,6 +274,7 @@ public class AngularIOWebContainer {
                             }
 
                             if (file != null) {
+                                final boolean isIndexHtml = "index.html".equals(file);
 
                                 cookieCutter(req);
 
@@ -224,10 +293,49 @@ public class AngularIOWebContainer {
                                     public void handle(AsyncResult<Boolean> event) {
                                         if (event.succeeded()) {
                                             if (event.result()) {
-                                                sendFile(req, filesystemLocation, acceptEncodingGzip);
+                                                if (isIndexHtml) {
+                                                    vertx.fileSystem().readFile(filesystemLocation, (ar) -> {
+                                                        if (ar.failed()) {
+                                                            if ("/-/not-found/".equals(req.path())) {
+                                                                req.response().setStatusCode(500).setStatusMessage("Server Error");
+                                                                req.response().end();
+                                                            } else {
+                                                                req.response().setStatusCode(404).setStatusMessage("Not Found");
+                                                                req.response().end("<html><head><title>Server Error</title><meta http-equiv=\"refresh\" content=\"0;URL='/-/not-found/'\" /></head><body></body></html>");
+                                                            }
+                                                        } else {
+                                                            try {
+                                                                String s = new String(ar.result().getBytes(), "UTF-8");
+                                                                SsiParams ssiParams = new SsiParams(cfg, req);
+                                                                s = ssi.apply(ssiParams, s);
+                                                                cookieCutter(req);
+                                                                req.response().headers().add("Cache-Control", "cache, store, private, must-revalidate");
+                                                                req.response().headers().add("Content-Type", "text/html; charset=utf-8");
+                                                                /* last modified = now */ {
+                                                                    java.util.Date t = new java.util.Date(); // now, this page is always modified but may be cached and stored
+                                                                    req.response().headers().add("Last-Modified", DATE_FORMAT_RFC1123.format(t));
+                                                                }
+                                                                req.response().end(s);
+                                                            }
+                                                            catch (Throwable t) {
+                                                                logger.error("angular-io\t" + site + "\t" + req.path() + "\t" + t.getMessage());
+                                                                req.response().setStatusCode(500).setStatusMessage("Server Error");
+                                                                req.response().end();
+                                                            }
+                                                        }
+                                                    });
+                                                } else {
+                                                    cookieCutter(req);
+                                                    sendFile(req, filesystemLocation, acceptEncodingGzip, runningInsideJar);
+                                                }
                                             } else {
-                                                req.response().setStatusCode(404).setStatusMessage("Not Found");
-                                                req.response().end("<html><head><title>Server Error</title><meta http-equiv=\"refresh\" content=\"0;URL='/-/not-found/'\" /></head><body></body></html>");
+                                                if ("/-/not-found/".equals(req.path())) {
+                                                    req.response().setStatusCode(500).setStatusMessage("Server Error");
+                                                    req.response().end();
+                                                } else {
+                                                    req.response().setStatusCode(404).setStatusMessage("Not Found");
+                                                    req.response().end("<html><head><title>Server Error</title><meta http-equiv=\"refresh\" content=\"0;URL='/-/not-found/'\" /></head><body></body></html>");
+                                                }
                                                 return;
                                             }
                                         } else {
@@ -261,9 +369,206 @@ public class AngularIOWebContainer {
         return server;
     }
 
+    private static void cfApi(CFApiMethod cfApiMethod, Configuration cfg, Consumer<AngularIOSiteInstance> next, Consumer<Void> fail) {
+        String site = cfg.instanceConfig.getJsonObject("instance").getString("site");
+        AngularIOSiteInstance x = map.get(site);
+        if (x != null
+                && cfg.instanceConfig.getJsonObject("zone").getBoolean("active")
+                && cfg.instanceConfig.getJsonObject("instance").getBoolean("active")) {
+            boolean found = false;
+            for (String s : cfApiMethod.sites()) {
+                if (s.equals(site)) { found = true; break; }
+            }
+            if (found) {
+                next.accept(x);
+            }
+            else {
+                fail.accept(null);
+            }
+        } else {
+            fail.accept(null);
+        }
+    }
+
+    private static void wireUpCFApi(String namespace, String zone, Vertx vertx, Router router) {
+        final CorsOptionsHandler corsOptionsHandler = new CorsOptionsHandler();
+        Reflections reflections = new Reflections(namespace);
+        for (Class<?> clazz : reflections.getTypesAnnotatedWith(CFApi.class)) {
+            try {
+                final Constructor ctor = clazz.getConstructor(Configuration.class);
+                for (final Method method : clazz.getMethods()) {
+                    if (method.isAnnotationPresent(CFApiMethod.class)) {
+                        CFApiMethod apiMethod = method.getAnnotation(CFApiMethod.class);
+                        final String url = apiMethod.url();
+                        if (apiMethod.cors()) router.options(url).handler(corsOptionsHandler);
+                        switch (apiMethod.type()) {
+                            case JSON_GET:
+                                // json handler
+                                router.get(url).handler(rc -> {
+                                    HttpServerRequest req = rc.request();
+
+                                    final String hostname = hostCutter(req);
+                                    final String instancekey = zone + "/" + hostname;
+
+                                    ConfigurationManager.getConfigurationAsync(vertx, instancekey, cfg -> {
+                                        cfApi(apiMethod, cfg, (x)->{
+                                            if (CoreFabric.ServerConfiguration.DEBUG)
+                                                logger.info("angular-io\tapi\t" + req.path());
+                                            try {
+                                                String corefabric = cookieCutter(req);
+                                                Object o = ctor.newInstance(cfg);
+                                                ((CFApiBase)o).setCookie(corefabric);
+                                                ((CFApiBase)o).setRoutingContext(rc);
+                                                Consumer<JsonObject> next = (r)->{
+                                                    req.response().setStatusCode(200).setStatusMessage("OK");
+                                                    corsOptionsHandler.applyResponseHeaders(req);
+                                                    req.response().headers().add("Content-Type", "application/json; charset=utf-8");
+                                                    req.response().end(r.encode());
+                                                };
+                                                method.invoke(o, next);
+
+                                            } catch (Throwable t) {
+                                                logger.error("angular-io\tapi\t" + req.path() + "\t" + t.getMessage());
+                                                req.response().setStatusCode(500).setStatusMessage("Server Error");
+                                                req.response().end();
+                                            }
+                                        }, (fail1)->{
+                                            logger.error("angular-io\tapi\t" + req.path() + "\tNot Available");
+                                            req.response().setStatusCode(500).setStatusMessage("Server Error");
+                                            req.response().end();
+                                        });
+                                    });
+                                });
+                                break;
+
+                            case JSON_POST:
+                                // json handler
+                                router.post(url).handler(rc -> {
+                                    HttpServerRequest req = rc.request();
+
+                                    final String hostname = hostCutter(req);
+                                    final String instancekey = zone + "/" + hostname;
+
+                                    ConfigurationManager.getConfigurationAsync(vertx, instancekey, cfg -> {
+                                        cfApi(apiMethod, cfg, (x)->{
+                                            if (CoreFabric.ServerConfiguration.DEBUG)
+                                                logger.info("angular-io\tapi\t" + req.path());
+                                            try {
+                                                String corefabric = cookieCutter(req);
+                                                Object o = ctor.newInstance(cfg);
+                                                ((CFApiBase)o).setCookie(corefabric);
+                                                ((CFApiBase)o).setRoutingContext(rc);
+                                                final byte[] body = rc.getBody().getBytes();
+                                                final JsonObject _object;
+                                                try {
+                                                    final String string = new String(body, "utf-8");
+                                                    _object = new JsonObject(string);
+                                                }
+                                                catch (Exception e) {
+                                                    throw new RuntimeException(e);
+                                                }
+                                                Consumer<JsonObject> next = (r)->{
+                                                    req.response().setStatusCode(200).setStatusMessage("OK");
+                                                    corsOptionsHandler.applyResponseHeaders(req);
+                                                    req.response().headers().add("Content-Type", "application/json; charset=utf-8");
+                                                    req.response().end(r.encode());
+                                                };
+                                                method.invoke(o, _object, next);
+                                            } catch (Throwable t) {
+                                                logger.error("angular-io\tapi\t" + req.path() + "\t" + t.getMessage());
+                                                req.response().setStatusCode(500).setStatusMessage("Server Error");
+                                                req.response().end();
+                                            }
+                                        }, (fail1)->{
+                                            logger.error("angular-io\tapi\t" + req.path() + "\tNot Available");
+                                            req.response().setStatusCode(500).setStatusMessage("Server Error");
+                                            req.response().end();
+                                        });
+                                    });
+                                });
+                                break;
+
+                            case GENERIC_POST:
+                                // generic get handler
+                                router.post(url).handler(rc -> {
+                                    HttpServerRequest req = rc.request();
+
+                                    final String hostname = hostCutter(req);
+                                    final String instancekey = zone + "/" + hostname;
+
+                                    ConfigurationManager.getConfigurationAsync(vertx, instancekey, cfg -> {
+                                        cfApi(apiMethod, cfg, (x)->{
+                                            if (CoreFabric.ServerConfiguration.DEBUG)
+                                                logger.info("angular-io\tapi\t" + req.path());
+                                            try {
+                                                String corefabric = cookieCutter(req);
+                                                Object o = ctor.newInstance(cfg);
+                                                ((CFApiBase)o).setCookie(corefabric);
+                                                ((CFApiBase)o).setRoutingContext(rc);
+                                                method.invoke(o);
+                                            } catch (Throwable t) {
+                                                logger.error("angular-io\tapi\t" + req.path() + "\t" + t.getMessage());
+                                                req.response().setStatusCode(500).setStatusMessage("Server Error");
+                                                req.response().end();
+                                            }
+                                        }, (fail1)->{
+                                            logger.error("angular-io\tapi\t" + req.path() + "\tNot Available");
+                                            req.response().setStatusCode(500).setStatusMessage("Server Error");
+                                            req.response().end();
+                                        });
+                                    });
+                                });
+                                break;
+
+                            default:
+                            case GENERIC_GET:
+                                // generic get handler
+                                router.get(url).handler(rc -> {
+                                    HttpServerRequest req = rc.request();
+
+                                    final String hostname = hostCutter(req);
+                                    final String instancekey = zone + "/" + hostname;
+
+                                    ConfigurationManager.getConfigurationAsync(vertx, instancekey, cfg -> {
+                                        cfApi(apiMethod, cfg, (x)->{
+                                            if (CoreFabric.ServerConfiguration.DEBUG)
+                                                logger.info("angular-io\tapi\t" + req.path());
+                                            try {
+                                                String corefabric = cookieCutter(req);
+                                                Object o = ctor.newInstance(cfg);
+                                                ((CFApiBase)o).setCookie(corefabric);
+                                                ((CFApiBase)o).setRoutingContext(rc);
+                                                method.invoke(o);
+                                            } catch (Throwable t) {
+                                                logger.error("angular-io\tapi\t" + req.path() + "\t" + t.getMessage());
+                                                req.response().setStatusCode(500).setStatusMessage("Server Error");
+                                                req.response().end();
+                                            }
+                                        }, (fail1)->{
+                                            logger.error("angular-io\tapi\t" + req.path() + "\tNot Available");
+                                            req.response().setStatusCode(500).setStatusMessage("Server Error");
+                                            req.response().end();
+                                        });
+                                    });
+                                });
+                        }
+                        if (CoreFabric.ServerConfiguration.DEBUG) logger.info("angular-io\t" + apiMethod.url() + "\t" + clazz.getSimpleName() + "\t" + method.getName());
+                    }
+                }
+
+            }
+            catch (ClassCastException cce) {
+                logger.fatal("angular-io\t\tUnable to wireUpCFApi " + clazz.getCanonicalName() + " class cast exception.");
+            }
+            catch (NoSuchMethodException e1) {
+                logger.fatal("angular-io\t\tUnable to wireUpCFApi " + clazz.getCanonicalName() + " no entrypoint.");
+            }
+        }
+    }
+
     public static Router initialiseRouter(Vertx vertx) {
         Router router = Router.router(vertx);
-        router.route().handler(new BinaryBodyHandler());
+        router.route().handler(BodyHandler.create().setUploadsDirectory(CoreFabric.ServerConfiguration.tmp));
         return router;
     }
 
