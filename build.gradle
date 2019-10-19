@@ -30,9 +30,10 @@ jar {
 }
 
 version = '0.2.1-autoconf' // our version
-vertxVersion = '3.8.1' // vert.x version
+vertxVersion = '3.8.3' // vert.x version
 
 sourceCompatibility = '1.8'
+targetCompatibility = '1.8'
 
 buildConfig {
 	sourceSets {
