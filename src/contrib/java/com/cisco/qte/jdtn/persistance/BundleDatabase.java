@@ -279,13 +279,13 @@ public class BundleDatabase extends AbstractStartableComponent {
 									BundleDatabaseConstants.EID_SCHEME_COL + "='" + EidScheme.eidSchemeToString(eidScheme) + "', " +
 									(bundle.getLink() != null ?
 											BundleDatabaseConstants.LINK_NAME_COL + "='" + bundle.getLink().getName() + "', " :
-											BundleDatabaseConstants.LINK_NAME_COL + "=null, ") +
+											BundleDatabaseConstants.LINK_NAME_COL + "=DEFAULT, ") +
 									(bundle.isInboundBundle() ?
 											BundleDatabaseConstants.IS_INBOUND_COL + "=1, " :
 											BundleDatabaseConstants.IS_INBOUND_COL + "=0, ") +
-									BundleDatabaseConstants.RETENTION_CONSTRAINT_COL + "=" + bundle.getRetentionConstraint() + " " +
-									BundleDatabaseConstants.DATA_BLOB_COL + "=" + path.getOid() + " " +
-									"where " +
+									BundleDatabaseConstants.RETENTION_CONSTRAINT_COL + "=" + bundle.getRetentionConstraint() + ", " +
+									BundleDatabaseConstants.DATA_BLOB_COL + "=" + path.getOid() +
+									" where " +
 									BundleDatabaseConstants.SOURCE_EID_COL + "='" + bundle.getBundleId().sourceEndPointId.getEndPointIdString() + "' and " +
 									BundleDatabaseConstants.TIME_SECS_COL + "=" + bundle.getBundleId().timestamp.getTimeSecsSinceY2K() + " and " +
 									BundleDatabaseConstants.SEQUENCE_NO_COL + "=" + bundle.getBundleId().timestamp.getSequenceNumber() + " and " +
@@ -295,6 +295,7 @@ public class BundleDatabase extends AbstractStartableComponent {
 					_logger.fine(statementText);
 					_dbInterface.executeUpdate(con, statementText);
 					try { con.commit(); } catch (SQLException e) {
+						_logger.warning(statementText);
 						_logger.warning(e.getMessage());
 					}
 					return;
@@ -325,15 +326,18 @@ public class BundleDatabase extends AbstractStartableComponent {
 				_dbInterface.executeInsert(con, statementText);
 
 				try { con.commit(); } catch (SQLException e) {
+					_logger.warning(statementText);
 					_logger.warning(e.getMessage());
 				}
 				return;
 
 			} catch (IllegalArgumentException e) {
 				_logger.log(Level.SEVERE, "introduceBundle()", e);
+				_logger.warning(statementText);
 				try { con.rollback(); } catch (SQLException ignore) { }
 			} catch (DBInterfaceException e) {
 				_logger.log(Level.SEVERE, "introduceBundle()", e);
+				_logger.warning(statementText);
 				try { con.rollback(); } catch (SQLException ignore) { }
 			}
 		}
@@ -377,10 +381,12 @@ public class BundleDatabase extends AbstractStartableComponent {
 			try {
 				_dbInterface.executeUpdate(con, statementText);
 				try { con.commit(); } catch (SQLException e) {
+					_logger.warning(statementText);
 					_logger.warning(e.getMessage());
 				}
 				return;
 			} catch (DBInterfaceException e) {
+				_logger.warning(statementText);
 				try { con.rollback(); } catch (SQLException ignore) { }
 				throw new JDtnException(e);
 			}
@@ -425,10 +431,12 @@ public class BundleDatabase extends AbstractStartableComponent {
 			try {
 				_dbInterface.executeUpdate(con, statementText);
 				try { con.commit(); } catch (SQLException e) {
+					_logger.warning(statementText);
 					_logger.warning(e.getMessage());
 				}
 				return;
 			} catch (DBInterfaceException e) {
+				_logger.warning(statementText);
 				try { con.rollback(); } catch (SQLException ignore) { }
 				throw new JDtnException(e);
 			}
@@ -474,10 +482,12 @@ public class BundleDatabase extends AbstractStartableComponent {
 			try {
 				_dbInterface.executeUpdate(con, statementText);
 				try { con.commit(); } catch (SQLException e) {
+					_logger.warning(statementText);
 					_logger.warning(e.getMessage());
 				}
 				return;
 			} catch (DBInterfaceException e) {
+				_logger.warning(statementText);
 				try { con.rollback(); } catch (SQLException ignore) { }
 				throw new JDtnException(e);
 			}
@@ -525,6 +535,7 @@ public class BundleDatabase extends AbstractStartableComponent {
 					EidScheme eidScheme =
 						EidScheme.parseEidScheme(qr.getString(1));
 					try { con.commit(); } catch (SQLException e) {
+						_logger.warning(statementText);
 						_logger.warning(e.getMessage());
 					}
 					return eidScheme;
@@ -535,6 +546,7 @@ public class BundleDatabase extends AbstractStartableComponent {
 					throw new JDtnException("No such Bundle: " + bundle.getExtendedBundleId().dump("", false));
 				}
 			} catch (DBInterfaceException e) {
+				_logger.warning(statementText);
 				try { con.rollback(); } catch (SQLException ignore) { }
 				throw new JDtnException(e);
 			}
@@ -654,10 +666,12 @@ public class BundleDatabase extends AbstractStartableComponent {
 			try {
 				_dbInterface.executeUpdate(con, statementText);
 				try { con.commit(); } catch (SQLException e) {
+					_logger.warning(statementText);
 					_logger.warning(e.getMessage());
 				}
 				return;
 			} catch (DBInterfaceException e) {
+				_logger.warning(statementText);
 				try { con.rollback(); } catch (SQLException ignore) { }
 				throw new JDtnException(e);
 			}
@@ -704,10 +718,12 @@ public class BundleDatabase extends AbstractStartableComponent {
 			try {
 				_dbInterface.executeUpdate(con, statementText);
 				try { con.commit(); } catch (SQLException e) {
+					_logger.warning(statementText);
 					_logger.warning(e.getMessage());
 				}
 				return;
 			} catch (DBInterfaceException e) {
+				_logger.warning(statementText);
 				try { con.rollback(); } catch (SQLException ignore) { }
 				throw new JDtnException(e);
 			}
@@ -755,10 +771,12 @@ public class BundleDatabase extends AbstractStartableComponent {
 			try {
 				_dbInterface.executeUpdate(con, statementText);
 				try { con.commit(); } catch (SQLException e) {
+					_logger.warning(statementText);
 					_logger.warning(e.getMessage());
 				}
 				return;
 			} catch (DBInterfaceException e) {
+				_logger.warning(statementText);
 				try { con.rollback(); } catch (SQLException ignore) { }
 				throw new JDtnException(e);
 			}
@@ -834,10 +852,12 @@ public class BundleDatabase extends AbstractStartableComponent {
 				}
 
 				try { con.commit(); } catch (SQLException e) {
+					_logger.warning(statementText);
 					_logger.warning(e.getMessage());
 				}
 				return;
 			} catch (DBInterfaceException e) {
+				_logger.warning(statementText);
 				try { con.rollback(); } catch (SQLException ignore) { }
 				throw new JDtnException(e);
 			}
@@ -935,6 +955,7 @@ public class BundleDatabase extends AbstractStartableComponent {
 					}
 
 					try { con.commit(); } catch (SQLException e) {
+						_logger.warning(statementText);
 						_logger.warning(e.getMessage());
 					}
 
@@ -946,6 +967,7 @@ public class BundleDatabase extends AbstractStartableComponent {
 				try { con.rollback(); } catch (SQLException ignore) { }
 				throw new JDtnException(e);
 			} catch (DBInterfaceException e) {
+				_logger.warning(statementText);
 				try { con.rollback(); } catch (SQLException ignore) { }
 				throw new JDtnException(e);
 			}
