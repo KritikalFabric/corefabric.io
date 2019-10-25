@@ -1,9 +1,9 @@
 #!/bin/sh
 
-service cron restart
-service dbus restart
-service procps restart
-service syslog-ng restart
+service cron start
+service dbus start
+service procps start
+service syslog-ng start
 
 #(
 #    [ -r /root/prestart.once.finished ] || (

@@ -8,6 +8,6 @@
 
 # does nothing; your services go here.
 
-service postgresql restart
+service postgresql start
 
 /usr/bin/tail -f /var/log/syslog
