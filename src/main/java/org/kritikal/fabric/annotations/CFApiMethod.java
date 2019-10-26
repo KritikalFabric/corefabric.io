@@ -13,4 +13,5 @@ public @interface CFApiMethod {
     enum TYPE {JSON_GET, JSON_POST, GENERIC_GET, GENERIC_POST }
     TYPE type() default TYPE.JSON_GET;
     boolean cors() default false;
+    boolean nocache() default false;
 }

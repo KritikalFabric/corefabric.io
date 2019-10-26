@@ -392,9 +392,9 @@ public class AngularIOWebContainer {
         }
     }
 
-    private static final void gzipJson(final HttpServerRequest req, final JsonObject r, final CorsOptionsHandler corsOptionsHandler) {
+    private static final void gzipJson(final HttpServerRequest req, final JsonObject r, final CorsOptionsHandler corsOptionsHandler, boolean nocache) {
         req.response().setStatusCode(200).setStatusMessage("OK");
-        corsOptionsHandler.applyResponseHeaders(req, true);
+        corsOptionsHandler.applyResponseHeaders(req, !nocache);
         req.response().headers().add("Content-Type", "application/json; charset=utf-8");
 
         boolean gzip = false;
@@ -474,7 +474,7 @@ public class AngularIOWebContainer {
                                                 ((CFApiBase)o).setCookie(corefabric);
                                                 ((CFApiBase)o).setRoutingContext(rc);
                                                 Consumer<JsonObject> next = (r)->{
-                                                    gzipJson(req, r, corsOptionsHandler);
+                                                    gzipJson(req, r, corsOptionsHandler, apiMethod.nocache());
                                                 };
                                                 method.invoke(o, next);
 
@@ -519,7 +519,7 @@ public class AngularIOWebContainer {
                                                     throw new RuntimeException(e);
                                                 }
                                                 Consumer<JsonObject> next = (r)->{
-                                                    gzipJson(req, r, corsOptionsHandler);
+                                                    gzipJson(req, r, corsOptionsHandler, apiMethod.nocache());
                                                 };
                                                 method.invoke(o, _object, next);
                                             } catch (Throwable t) {
