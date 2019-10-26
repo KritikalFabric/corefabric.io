@@ -52,18 +52,18 @@ public class FabricApiConnector {
                         req.response().headers().add("Access-Control-Allow-Origin", optionsOrigin);
                         if (result instanceof byte[]) {
                             req.response().setStatusCode(200).setStatusMessage("OK");
-                            req.response().headers().add("Cache-Control", "private, max-age=5");
+                            req.response().headers().add("Cache-Control", "private, max-age=0");
                             req.response().headers().add("Content-Type", "application/octet-stream");
                             req.response().end(Buffer.buffer((byte[])result));
                         } else if (result instanceof JsonArray) {
                             req.response().setStatusCode(200).setStatusMessage("OK");
-                            req.response().headers().add("Cache-Control", "private, max-age=5");
+                            req.response().headers().add("Cache-Control", "private, max-age=0");
                             req.response().headers().add("Content-Type", "application/json; charset=utf-8");
                             req.response().end(Buffer.buffer(((JsonArray)result).encode().getBytes("utf-8")));
 
                         } else if (result instanceof JsonObject) {
                             req.response().setStatusCode(200).setStatusMessage("OK");
-                            req.response().headers().add("Cache-Control", "private, max-age=5");
+                            req.response().headers().add("Cache-Control", "private, max-age=0");
                             req.response().headers().add("Content-Type", "application/json; charset=utf-8");
                             req.response().end(Buffer.buffer(((JsonObject)result).encode().getBytes("utf-8")));
                         } else {
@@ -155,18 +155,18 @@ public class FabricApiConnector {
                         req.response().headers().add("Access-Control-Allow-Origin", optionsOrigin);
                         if (result instanceof byte[]) {
                             req.response().setStatusCode(200);
-                            req.response().headers().add("Cache-Control", "private, max-age=5");
+                            req.response().headers().add("Cache-Control", "private, max-age=0");
                             req.response().headers().add("Content-Type", "application/octet-stream");
                             req.response().end(Buffer.buffer((byte[])result));
                         } else if (result instanceof JsonArray) {
                             req.response().setStatusCode(200);
-                            req.response().headers().add("Cache-Control", "private, max-age=5");
+                            req.response().headers().add("Cache-Control", "private, max-age=0");
                             req.response().headers().add("Content-Type", "application/json; charset=utf-8");
                             req.response().end(Buffer.buffer(((JsonArray)result).encode().getBytes("utf-8")));
 
                         } else if (result instanceof JsonObject) {
                             req.response().setStatusCode(200);
-                            req.response().headers().add("Cache-Control", "private, max-age=5");
+                            req.response().headers().add("Cache-Control", "private, max-age=0");
                             req.response().headers().add("Content-Type", "application/json; charset=utf-8");
                             req.response().end(Buffer.buffer(((JsonObject)result).encode().getBytes("utf-8")));
                         } else {
