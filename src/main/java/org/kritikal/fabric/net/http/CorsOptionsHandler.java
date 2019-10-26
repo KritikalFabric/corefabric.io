@@ -31,10 +31,15 @@ public class CorsOptionsHandler implements Handler<RoutingContext> {
         req.response().end();
     }
 
-    public void applyResponseHeaders(HttpServerRequest req) {
+    public void applyResponseHeaders(HttpServerRequest req, boolean cache) {
         req.response().headers().add("Content-Type", "application/json; charset=utf-8");
-        req.response().headers().add("Pragma", "no-cache");
-        req.response().headers().add("Cache-control", "no-cache, no-store, private, must-revalidate");
+        if (cache) {
+            req.response().setStatusCode(200).setStatusMessage("OK");
+            req.response().headers().add("Cache-Control", "private, max-age=5");
+        } else {
+            req.response().headers().add("Pragma", "no-cache");
+            req.response().headers().add("Cache-control", "no-cache, no-store, private, must-revalidate");
+        }
         req.response().headers().add("Access-Control-Allow-Credentials", "true");
         String optionsOrigin = req.headers().get("Origin");
         if (optionsOrigin == null) optionsOrigin = "*";

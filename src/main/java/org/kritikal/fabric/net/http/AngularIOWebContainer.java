@@ -421,7 +421,7 @@ public class AngularIOWebContainer {
                                                 ((CFApiBase)o).setRoutingContext(rc);
                                                 Consumer<JsonObject> next = (r)->{
                                                     req.response().setStatusCode(200).setStatusMessage("OK");
-                                                    corsOptionsHandler.applyResponseHeaders(req);
+                                                    corsOptionsHandler.applyResponseHeaders(req, true);
                                                     req.response().headers().add("Content-Type", "application/json; charset=utf-8");
                                                     req.response().end(r.encode());
                                                 };
@@ -469,7 +469,7 @@ public class AngularIOWebContainer {
                                                 }
                                                 Consumer<JsonObject> next = (r)->{
                                                     req.response().setStatusCode(200).setStatusMessage("OK");
-                                                    corsOptionsHandler.applyResponseHeaders(req);
+                                                    corsOptionsHandler.applyResponseHeaders(req, true);
                                                     req.response().headers().add("Content-Type", "application/json; charset=utf-8");
                                                     req.response().end(r.encode());
                                                 };
