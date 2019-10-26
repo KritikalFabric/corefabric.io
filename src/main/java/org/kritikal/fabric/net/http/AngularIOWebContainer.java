@@ -4,6 +4,7 @@ import io.netty.handler.codec.http.Cookie;
 import io.netty.handler.codec.http.CookieDecoder;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
+import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.*;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.logging.Logger;
@@ -33,6 +34,7 @@ import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.jar.JarFile;
+import java.util.zip.GZIPOutputStream;
 import java.util.zip.ZipEntry;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -390,6 +392,58 @@ public class AngularIOWebContainer {
         }
     }
 
+    private static final void gzipJson(final HttpServerRequest req, final JsonObject r, final CorsOptionsHandler corsOptionsHandler) {
+        req.response().setStatusCode(200).setStatusMessage("OK");
+        corsOptionsHandler.applyResponseHeaders(req, true);
+        req.response().headers().add("Content-Type", "application/json; charset=utf-8");
+
+        boolean gzip = false;
+        for (Map.Entry<String, String> stringStringEntry : req.headers()) {
+            if (stringStringEntry.getKey().toLowerCase().equals("accept-encoding") &&
+                    stringStringEntry.getValue().toLowerCase().contains("gzip")) {
+                gzip = true;
+            }
+        }
+        if (gzip) {
+            byte data[] = null;
+            try {
+                data = gzipString(r.encode());
+            }
+            catch (Exception e) {
+                data = null;
+            }
+            if (data != null && data.length > 1) {
+                req.response().headers().add("Content-Encoding", "gzip");
+                req.response().end(Buffer.buffer(data));
+            } else {
+                req.response().end(r.encode());
+            }
+        } else {
+            req.response().end(r.encode());
+        }
+    }
+
+    private static final byte[] gzipString(final String str) throws Exception {
+            if (str == null || str.length() == 0) {
+                return null;
+            }
+            ByteArrayOutputStream obj=new ByteArrayOutputStream();
+            try {
+                GZIPOutputStream gzip = new GZIPOutputStream(obj);
+                try {
+                    gzip.write(str.getBytes("UTF-8"));
+                }
+                finally {
+                    gzip.close();
+                    obj.flush();
+                }
+                return obj.toByteArray();
+            }
+            finally {
+                obj.close();
+            }
+    }
+
     private static void wireUpCFApi(String namespace, String zone, Vertx vertx, Router router) {
         final CorsOptionsHandler corsOptionsHandler = new CorsOptionsHandler();
         Reflections reflections = new Reflections(namespace);
@@ -420,10 +474,7 @@ public class AngularIOWebContainer {
                                                 ((CFApiBase)o).setCookie(corefabric);
                                                 ((CFApiBase)o).setRoutingContext(rc);
                                                 Consumer<JsonObject> next = (r)->{
-                                                    req.response().setStatusCode(200).setStatusMessage("OK");
-                                                    corsOptionsHandler.applyResponseHeaders(req, true);
-                                                    req.response().headers().add("Content-Type", "application/json; charset=utf-8");
-                                                    req.response().end(r.encode());
+                                                    gzipJson(req, r, corsOptionsHandler);
                                                 };
                                                 method.invoke(o, next);
 
@@ -468,10 +519,7 @@ public class AngularIOWebContainer {
                                                     throw new RuntimeException(e);
                                                 }
                                                 Consumer<JsonObject> next = (r)->{
-                                                    req.response().setStatusCode(200).setStatusMessage("OK");
-                                                    corsOptionsHandler.applyResponseHeaders(req, true);
-                                                    req.response().headers().add("Content-Type", "application/json; charset=utf-8");
-                                                    req.response().end(r.encode());
+                                                    gzipJson(req, r, corsOptionsHandler);
                                                 };
                                                 method.invoke(o, _object, next);
                                             } catch (Throwable t) {
