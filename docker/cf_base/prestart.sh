@@ -1,7 +1,6 @@
 #!/bin/sh
 
 service cron start
-service dbus start
 service procps start
 service syslog-ng start
 
