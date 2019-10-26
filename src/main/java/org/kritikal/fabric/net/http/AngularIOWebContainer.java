@@ -148,8 +148,8 @@ public class AngularIOWebContainer {
     public static final String PATTERN_RFC1123 = "EEE, dd MMM yyyy HH:mm:ss zzz";
     public static final DateFormat DATE_FORMAT_RFC1123 = new SimpleDateFormat(PATTERN_RFC1123, Locale.US);
 
-    public static void sendFile(HttpServerRequest req, String pathToFile, boolean acceptEncodingGzip, boolean lastModified) {
-        if (pathToFile.endsWith(".html")) {
+    public static void sendFile(HttpServerRequest req, String pathToFile, boolean acceptEncodingGzip, boolean lastModified, boolean nocache) {
+        if (pathToFile.endsWith(".html") || nocache) {
             req.response().headers().add("Pragma", "no-cache");
             req.response().headers().add("Cache-Control", "no-cache, no-store, private, must-revalidate");
         } else {
@@ -326,7 +326,7 @@ public class AngularIOWebContainer {
                                                     });
                                                 } else {
                                                     cookieCutter(req);
-                                                    sendFile(req, filesystemLocation, acceptEncodingGzip, runningInsideJar);
+                                                    sendFile(req, filesystemLocation, acceptEncodingGzip, runningInsideJar, false);
                                                 }
                                             } else {
                                                 if ("/-/not-found/".equals(req.path())) {
