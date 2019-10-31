@@ -230,6 +230,8 @@ public class AngularIOWebContainer {
         httpServerOptions.setSoLinger(0);
         httpServerOptions.setTcpKeepAlive(true);
         httpServerOptions.setHandle100ContinueAutomatically(true);
+        httpServerOptions.setPerFrameWebsocketCompressionSupported(true);
+        httpServerOptions.setPerMessageWebsocketCompressionSupported(true);
         options.accept(httpServerOptions);
         HttpServer server = vertx.createHttpServer(httpServerOptions);
         server.websocketHandler(ws -> {
