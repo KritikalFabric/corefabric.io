@@ -287,7 +287,8 @@ public class AngularIOWebContainer {
                                         gzip = true;
                                     }
                                 }
-                                boolean acceptEncodingGzip = gzip && !noGzip;
+                                final boolean acceptEncodingGzip = gzip && !noGzip;
+                                final boolean gzipHtml = gzip;
 
                                 String filesystemLocation = (runningInsideJar ? x.tempdir : (x.localDirSlash)) + file;
                                 vertx.fileSystem().exists(filesystemLocation + (acceptEncodingGzip ? ".gz" : ""), new Handler<AsyncResult<Boolean>>() {
@@ -317,7 +318,12 @@ public class AngularIOWebContainer {
                                                                     java.util.Date t = new java.util.Date(); // now, this page is always modified but may be cached and stored
                                                                     req.response().headers().add("Last-Modified", DATE_FORMAT_RFC1123.format(t));
                                                                 }
-                                                                req.response().end(s);
+                                                                if (gzipHtml) {
+                                                                    req.response().headers().add("Content-Encoding", "gzip");
+                                                                    req.response().end(Buffer.buffer(gzipString(s)));
+                                                                } else {
+                                                                    req.response().end(s);
+                                                                }
                                                             }
                                                             catch (Throwable t) {
                                                                 logger.error("angular-io\t" + site + "\t" + req.path() + "\t" + t.getMessage());
