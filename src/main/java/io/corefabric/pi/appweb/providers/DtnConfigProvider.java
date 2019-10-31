@@ -274,7 +274,9 @@ public class DtnConfigProvider implements IDocApiProvider {
                         callbacks.onPingException(e);*/
                     }
 
-                }, r -> {
+                },
+                false,
+                r -> {
                     if (r.failed()) {
                         __updatePing(call, statusNode, "error");
                     } else {
@@ -429,7 +431,9 @@ public class DtnConfigProvider implements IDocApiProvider {
 
                 try { Thread.sleep(1000); } catch (InterruptedException ie) { }
             }
-        }, r -> {
+        },
+        false,
+        r -> {
             // do nothing
         });
     }

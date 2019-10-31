@@ -332,7 +332,9 @@ public class AngularIOWebContainer {
                                                                 catch (Throwable t) {
                                                                     promise.fail(t);
                                                                 }
-                                                            },(result)->{
+                                                            },
+                                                            false,
+                                                            (result)->{
                                                                 if (result.failed()) {
                                                                     logger.error("angular-io\t" + site + "\t" + req.path() + "\t" + result.cause());
                                                                     req.response().setStatusCode(500).setStatusMessage("Server Error");

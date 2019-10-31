@@ -315,7 +315,9 @@ public class CoreFabric {
                 }
             }
             future.complete(true);
-        }, res -> {
+        },
+        false,
+        res -> {
             logger.info("corefabric.io\t\tONLINE, press ^C to exit.");
         });
 

@@ -153,7 +153,7 @@ public class MqttServerProtocol implements Handler<Buffer> {
                             vertx.executeBlocking(f -> {
                                 socket.close();
                                 f.complete();
-                            }, r -> {
+                            }, false, r -> {
                                 // nothing
                             });
                         }
