@@ -309,29 +309,37 @@ public class AngularIOWebContainer {
                                                                 req.response().end("<html><head><title>Server Error</title><meta http-equiv=\"refresh\" content=\"0;URL='/-/not-found/'\" /></head><body></body></html>");
                                                             }
                                                         } else {
-                                                            try {
-                                                                String s = new String(ar.result().getBytes(), "UTF-8");
-                                                                SsiParams ssiParams = new SsiParams(cfg, req);
-                                                                s = ssi.apply(ssiParams, s);
-                                                                cookieCutter(req);
-                                                                req.response().headers().add("Cache-Control", "cache, store, private, must-revalidate");
-                                                                req.response().headers().add("Content-Type", "text/html; charset=utf-8");
-                                                                /* last modified = now */ {
-                                                                    java.util.Date t = new java.util.Date(); // now, this page is always modified but may be cached and stored
-                                                                    req.response().headers().add("Last-Modified", DATE_FORMAT_RFC1123.format(t));
+                                                            vertx.executeBlocking((promise)->{
+                                                                try {
+                                                                    String s = new String(ar.result().getBytes(), "UTF-8");
+                                                                    SsiParams ssiParams = new SsiParams(cfg, req);
+                                                                    s = ssi.apply(ssiParams, s);
+                                                                    cookieCutter(req);
+                                                                    req.response().headers().add("Cache-Control", "cache, store, private, must-revalidate");
+                                                                    req.response().headers().add("Content-Type", "text/html; charset=utf-8");
+                                                                    /* last modified = now */ {
+                                                                        java.util.Date t = new java.util.Date(); // now, this page is always modified but may be cached and stored
+                                                                        req.response().headers().add("Last-Modified", DATE_FORMAT_RFC1123.format(t));
+                                                                    }
+                                                                    if (gzipHtml) {
+                                                                        req.response().headers().add("Content-Encoding", "gzip");
+                                                                        req.response().end(Buffer.buffer(gzipString(s)));
+                                                                    } else {
+                                                                        req.response().end(s);
+                                                                    }
+                                                                    promise.complete();
                                                                 }
-                                                                if (gzipHtml) {
-                                                                    req.response().headers().add("Content-Encoding", "gzip");
-                                                                    req.response().end(Buffer.buffer(gzipString(s)));
-                                                                } else {
-                                                                    req.response().end(s);
+                                                                catch (Throwable t) {
+                                                                    promise.fail(t);
                                                                 }
-                                                            }
-                                                            catch (Throwable t) {
-                                                                logger.error("angular-io\t" + site + "\t" + req.path() + "\t" + t.getMessage());
-                                                                req.response().setStatusCode(500).setStatusMessage("Server Error");
-                                                                req.response().end();
-                                                            }
+                                                            },(result)->{
+                                                                if (result.failed()) {
+                                                                    logger.error("angular-io\t" + site + "\t" + req.path() + "\t" + result.cause());
+                                                                    req.response().setStatusCode(500).setStatusMessage("Server Error");
+                                                                    req.response().end();
+                                                                }
+                                                            });
+
                                                         }
                                                     });
                                                 } else {
