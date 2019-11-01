@@ -96,7 +96,7 @@ public abstract class CFApiBase {
             c.applyInstanceConfig(configuration);
             // we ignore local config
 
-            withConfig.accept(c);
+            CoreFabric.getVertx().executeBlocking((future)->{ withConfig.accept(c); future.complete(); }, false, (result)->{ /* nothing */ });
         });
     }
 }
