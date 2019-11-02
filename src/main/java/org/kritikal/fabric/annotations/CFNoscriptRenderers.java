@@ -66,9 +66,10 @@ public class CFNoscriptRenderers {
                     new StreamResult(buffer));
             String str = buffer.toString();
             int i = str.indexOf("<body>");
+            if (i>=0) str = str.substring(i+6);
             int j = str.indexOf("</body>");
-            if (i >= 0 && j >= 0) {
-                str = str.substring(i+6,j-i-6);
+            if (j >= 0) {
+                str = str.substring(0,j);
             }
             return str;
         }
