@@ -13,6 +13,7 @@ import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.stream.StreamSource;
 import java.io.*;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
@@ -36,11 +37,11 @@ public class CFNoscriptRenderers {
     public Transformer get(String filesystemLocation) {
         return map.computeIfAbsent(filesystemLocation, (file)->{
             try {
-                final Reader xslReader = new BufferedReader(new FileReader(file));
+                final Reader xslReader = new BufferedReader(new FileReader(file, Charset.forName("UTF-8")));
                 try {
                     StreamSource xslSource = new StreamSource(xslReader, file);
                     return tfactory.newTransformer(xslSource);
-                } catch (TransformerConfigurationException e) {
+                } catch (Exception e) {
                     logger.warn(e);
                     return null;
                 } finally {
@@ -50,7 +51,7 @@ public class CFNoscriptRenderers {
                     }
                 }
             }
-            catch (FileNotFoundException e) {
+            catch (Exception e) {
                 logger.warn(e);
                 return null;
             }
@@ -62,6 +63,9 @@ public class CFNoscriptRenderers {
         try {
             Transformer transformer = tfactory.newTransformer();
             transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
+            transformer.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
+            transformer.setOutputProperty(OutputKeys.METHOD, "html");
+            transformer.setOutputProperty(OutputKeys.VERSION, "5.0");
             transformer.transform(new DOMSource(node),
                     new StreamResult(buffer));
             String str = buffer.toString();
@@ -91,14 +95,16 @@ public class CFNoscriptRenderers {
     }
 
     public static class CFXmlParameters {
-        public CFXmlParameters(Configuration cfg, HttpServerRequest req, RoutingContext rc) {
+        public CFXmlParameters(Configuration cfg, HttpServerRequest req, RoutingContext rc, String corefabric) {
             this.cfg = cfg;
             this.req = req;
             this.rc = rc;
+            this.corefabric = corefabric;
         }
         public final Configuration cfg;
         public final HttpServerRequest req;
         public final RoutingContext rc;
+        public final String corefabric;
     }
 
     public final ArrayList<CFXmlRenderer> array = new ArrayList<>();

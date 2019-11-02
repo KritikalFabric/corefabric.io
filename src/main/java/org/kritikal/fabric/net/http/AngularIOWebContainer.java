@@ -290,7 +290,7 @@ public class AngularIOWebContainer {
                             if (file != null) {
                                 final boolean isIndexHtml = "index.html".equals(file);
 
-                                cookieCutter(req);
+                                final String corefabric = cookieCutter(req);
 
                                 boolean gzip = false;
                                 for (Map.Entry<String, String> stringStringEntry : req.headers()) {
@@ -330,7 +330,7 @@ public class AngularIOWebContainer {
                                                                     for (CFNoscriptRenderers.CFXmlRenderer renderer : noscriptRenderers.array) {
                                                                         Matcher matcher = renderer.pattern.matcher(req.path());
                                                                         if (matcher.matches()) {
-                                                                            CFNoscriptRenderers.CFXmlParameters parameters = new CFNoscriptRenderers.CFXmlParameters(cfg, req, rc);
+                                                                            CFNoscriptRenderers.CFXmlParameters parameters = new CFNoscriptRenderers.CFXmlParameters(cfg, req, rc, corefabric);
                                                                             noscript = renderer.processor.apply(parameters);
                                                                             break;
                                                                         }
@@ -343,7 +343,6 @@ public class AngularIOWebContainer {
                                                                             s = s.substring(0, i) + "<noscript>" + noscript + "</noscript>" + s.substring(j + 11);
                                                                         }
                                                                     }
-                                                                    cookieCutter(req);
                                                                     req.response().headers().add("Cache-Control", "cache, store, private, must-revalidate");
                                                                     req.response().headers().add("Content-Type", "text/html; charset=utf-8");
                                                                     /* last modified = now */ {
@@ -352,9 +351,15 @@ public class AngularIOWebContainer {
                                                                     }
                                                                     if (gzipHtml) {
                                                                         req.response().headers().add("Content-Encoding", "gzip");
-                                                                        req.response().end(Buffer.buffer(gzipString(s)));
+                                                                        if (!s.startsWith("\ufeff"))
+                                                                            req.response().end(Buffer.buffer(gzipString('\ufeff' + s)));
+                                                                        else
+                                                                            req.response().end(Buffer.buffer(gzipString(s)));
                                                                     } else {
-                                                                        req.response().end(s);
+                                                                        if (!s.startsWith("\ufeff"))
+                                                                            req.response().write("\ufeff").end(s);
+                                                                        else
+                                                                            req.response().end(s);
                                                                     }
                                                                     promise.complete();
                                                                 }
@@ -374,7 +379,6 @@ public class AngularIOWebContainer {
                                                         }
                                                     });
                                                 } else {
-                                                    cookieCutter(req);
                                                     sendFile(req, filesystemLocation, acceptEncodingGzip, runningInsideJar, false);
                                                 }
                                             } else {
@@ -527,9 +531,8 @@ public class AngularIOWebContainer {
                             String filesystemLocation = (runningInsideJar ? x.tempdir : (x.localDirSlash)) + renderMethod.template();
                             final Transformer xsl = result.get(filesystemLocation);
                             try {
-                                String corefabric = cookieCutter(params.req);
                                 Object o = ctor.newInstance(params.cfg);
-                                ((CFApiBase)o).setCookie(corefabric);
+                                ((CFApiBase)o).setCookie(params.corefabric);
                                 ((CFApiBase)o).setRoutingContext(params.rc);
                                 Function<Document, String> fn = (doc)->{
                                     DOMResult output = new DOMResult();
