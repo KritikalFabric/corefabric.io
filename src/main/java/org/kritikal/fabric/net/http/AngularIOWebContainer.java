@@ -13,16 +13,22 @@ import io.vertx.core.Vertx;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.handler.BodyHandler;
 import org.kritikal.fabric.CoreFabric;
-import org.kritikal.fabric.annotations.CFApi;
-import org.kritikal.fabric.annotations.CFApiBase;
-import org.kritikal.fabric.annotations.CFApiMethod;
+import org.kritikal.fabric.annotations.*;
 import org.kritikal.fabric.core.BuildConfig;
 import org.kritikal.fabric.core.Configuration;
 import org.kritikal.fabric.core.ConfigurationManager;
 import org.kritikal.fabric.daemon.MqttBrokerVerticle;
 import org.kritikal.fabric.net.mqtt.SyncMqttBroker;
 import org.reflections.Reflections;
+import org.w3c.dom.Document;
+import org.w3c.dom.Node;
 
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerException;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMResult;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamSource;
 import java.io.*;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
@@ -34,6 +40,8 @@ import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.jar.JarFile;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.zip.GZIPOutputStream;
 import java.util.zip.ZipEntry;
 import java.util.concurrent.ConcurrentHashMap;
@@ -244,6 +252,8 @@ public class AngularIOWebContainer {
                 mqttBroker.waitingForConnect.add(mqttServerProtocol);
             }
         });
+
+        final CFNoscriptRenderers noscriptRenderers = wireUpCFNoscriptRenderers(namespace, zone);
         wireUpCFApi(namespace, zone, vertx, router);
         router.get().handler(rc -> {
             HttpServerRequest req = rc.request();
@@ -314,6 +324,25 @@ public class AngularIOWebContainer {
                                                                     String s = new String(ar.result().getBytes(), "UTF-8");
                                                                     SsiParams ssiParams = new SsiParams(cfg, req);
                                                                     s = ssi.apply(ssiParams, s);
+                                                                    // run no-script handler, if it exists
+                                                                    String noscript = null;
+
+                                                                    for (CFNoscriptRenderers.CFXmlRenderer renderer : noscriptRenderers.array) {
+                                                                        Matcher matcher = renderer.pattern.matcher(req.path());
+                                                                        if (matcher.matches()) {
+                                                                            CFNoscriptRenderers.CFXmlParameters parameters = new CFNoscriptRenderers.CFXmlParameters(cfg, req, rc);
+                                                                            noscript = renderer.processor.apply(parameters);
+                                                                            break;
+                                                                        }
+                                                                    }
+
+                                                                    if (null != noscript) {
+                                                                        int i = s.indexOf("<noscript>");
+                                                                        int j = s.indexOf("</noscript>");
+                                                                        if (j > i && i >= 0) {
+                                                                            s = s.substring(0, i) + "<noscript>" + noscript + "</noscript>" + s.substring(j + 11);
+                                                                        }
+                                                                    }
                                                                     cookieCutter(req);
                                                                     req.response().headers().add("Cache-Control", "cache, store, private, must-revalidate");
                                                                     req.response().headers().add("Content-Type", "text/html; charset=utf-8");
@@ -389,6 +418,27 @@ public class AngularIOWebContainer {
         return server;
     }
 
+    private static String cfRender(CFRenderMethod cfRenderMethod, Configuration cfg, Function<AngularIOSiteInstance, String> process, Function<Void, String> fail) {
+        String site = cfg.instanceConfig.getJsonObject("instance").getString("site");
+        AngularIOSiteInstance x = map.get(site);
+        if (x != null
+                && cfg.instanceConfig.getJsonObject("zone").getBoolean("active")
+                && cfg.instanceConfig.getJsonObject("instance").getBoolean("active")) {
+            boolean found = false;
+            for (String s : cfRenderMethod.sites()) {
+                if (s.equals(site)) { found = true; break; }
+            }
+            if (found) {
+                return process.apply(x);
+            }
+            else {
+                return fail.apply(null);
+            }
+        } else {
+            return fail.apply(null);
+        }
+    }
+
     private static void cfApi(CFApiMethod cfApiMethod, Configuration cfg, Consumer<AngularIOSiteInstance> next, Consumer<Void> fail) {
         String site = cfg.instanceConfig.getJsonObject("instance").getString("site");
         AngularIOSiteInstance x = map.get(site);
@@ -462,6 +512,63 @@ public class AngularIOWebContainer {
             }
     }
 
+    private static CFNoscriptRenderers wireUpCFNoscriptRenderers(String namespace, String zone) {
+        final CFNoscriptRenderers result = new CFNoscriptRenderers();
+        Reflections reflections = new Reflections(namespace);
+        for (Class<?> clazz : reflections.getTypesAnnotatedWith(CFApi.class)) {
+            try {
+                final Constructor ctor = clazz.getConstructor(Configuration.class);
+                for (final Method method : clazz.getMethods()) {
+                    if (method.isAnnotationPresent(CFRenderMethod.class)) {
+                        CFRenderMethod renderMethod = method.getAnnotation(CFRenderMethod.class);
+
+                        final Pattern pattern = Pattern.compile(renderMethod.regex(), Pattern.CASE_INSENSITIVE);
+                        final Function<CFNoscriptRenderers.CFXmlParameters, String> processor = (params) -> cfRender(renderMethod, params.cfg, (x)->{
+                            String filesystemLocation = (runningInsideJar ? x.tempdir : (x.localDirSlash)) + renderMethod.template();
+                            final Transformer xsl = result.get(filesystemLocation);
+                            try {
+                                String corefabric = cookieCutter(params.req);
+                                Object o = ctor.newInstance(params.cfg);
+                                ((CFApiBase)o).setCookie(corefabric);
+                                ((CFApiBase)o).setRoutingContext(params.rc);
+                                Function<Document, String> fn = (doc)->{
+                                    DOMResult output = new DOMResult();
+                                    try {
+                                        xsl.transform(new DOMSource(doc), output);
+                                        return CFNoscriptRenderers.nodeToString(output.getNode().getFirstChild().getFirstChild());
+                                    } catch (TransformerException e) {
+                                        logger.error("angular-io\tapi\t" + params.req.path() + "\t" + e.getMessage());
+                                        return null;
+                                    }
+                                };
+
+                                return (String)method.invoke(o, fn);
+                            } catch (Throwable t) {
+                                logger.error("angular-io\tapi\t" + params.req.path() + "\t" + t.getMessage());
+                                return null;
+                            }
+                        }, (fail)->{
+                            return null;
+                        });
+                        result.add(pattern, processor);
+
+                        if (CoreFabric.ServerConfiguration.DEBUG)
+                            logger.info("angular-io\t" + renderMethod.regex() + "\t" + renderMethod.type().name() + "\t" + renderMethod.template() + "\t" + clazz.getSimpleName() + "\t" + method.getName());
+                    }
+                }
+            }
+            catch (ClassCastException cce) {
+                logger.fatal("angular-io\t\tUnable to wireUpCFNoscriptRenderers " + clazz.getCanonicalName() + " class cast exception.");
+            }
+            catch (NoSuchMethodException e1) {
+                logger.fatal("angular-io\t\tUnable to wireUpCFNoscriptRenderers " + clazz.getCanonicalName() + " no entrypoint.");
+            }
+            catch (Throwable t) {
+                logger.fatal("angular-io\t\tUnable to wireUpCFNoscriptRenderers " + clazz.getCanonicalName(), t);
+            }
+        }
+        return result;
+    }
     private static void wireUpCFApi(String namespace, String zone, Vertx vertx, Router router) {
         final CorsOptionsHandler corsOptionsHandler = new CorsOptionsHandler();
         Reflections reflections = new Reflections(namespace);

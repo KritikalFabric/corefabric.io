@@ -7,7 +7,12 @@ import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.web.RoutingContext;
 import org.kritikal.fabric.CoreFabric;
 import org.kritikal.fabric.core.Configuration;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
 
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
 import java.util.HashMap;
 import java.util.UUID;
 import java.util.function.Consumer;
@@ -98,5 +103,45 @@ public abstract class CFApiBase {
 
             CoreFabric.getVertx().executeBlocking((future)->{ withConfig.accept(c); future.complete(); }, false, (result)->{ /* nothing */ });
         });
+    }
+
+    final static DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory.newInstance();
+
+    public final static Document newDocument() {
+        try {
+            return documentBuilderFactory.newDocumentBuilder().newDocument();
+        } catch (ParserConfigurationException e) {
+            logger.fatal(e);
+            return null;
+        }
+    }
+
+    public Document buildDocument() {
+        try {
+            DocumentBuilder builder = documentBuilderFactory.newDocumentBuilder();
+            Document document = builder.newDocument();
+            Element root = document.createElement("root");
+            Element item = document.createElement("item");
+            root.appendChild(item);
+            Element data = document.createElement("data");
+            Element year = document.createElement("year");
+            year.setTextContent("" + (new java.util.Date().getYear() + 1900));
+            data.appendChild(year);
+            root.appendChild(data);
+            Element system = document.createElement("system");
+            Element instance_type = document.createElement("instance_type");;
+            instance_type.appendChild(document.createTextNode(cfg.instanceConfig.getJsonObject("instance").getString("instance_type")));
+            system.appendChild(instance_type);
+            Element short_name = document.createElement("short_name");
+            short_name.appendChild(document.createTextNode(cfg.instanceConfig.getJsonObject("instance").getString("short_name")));
+            system.appendChild(short_name);
+            root.appendChild(system);
+            document.appendChild(root);
+            return document;
+        }
+        catch (ParserConfigurationException e) {
+            logger.fatal(e);
+            return null;
+        }
     }
 }
