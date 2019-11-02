@@ -135,6 +135,12 @@ public abstract class CFApiBase {
             Element short_name = document.createElement("short_name");
             short_name.appendChild(document.createTextNode(cfg.instanceConfig.getJsonObject("instance").getString("short_name")));
             system.appendChild(short_name);
+            Element test_mode = document.createElement("test_mode");
+            test_mode.appendChild(document.createTextNode(cfg.instanceConfig.getJsonObject("instance").getBoolean("test_mode").toString().toLowerCase()));
+            system.appendChild(test_mode);
+            Element title = document.createElement("title");
+            title.appendChild(document.createTextNode(cfg.instanceConfig.getJsonObject("instance").getJsonObject("object").getString("title")));
+            system.appendChild(title);
             root.appendChild(system);
             document.appendChild(root);
             return document;
