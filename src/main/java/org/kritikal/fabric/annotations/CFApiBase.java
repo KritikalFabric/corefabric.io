@@ -105,7 +105,7 @@ public abstract class CFApiBase {
         });
     }
 
-    final static DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory.newInstance();
+    public final static DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory.newInstance();
 
     public final static Document newDocument() {
         try {
@@ -116,38 +116,5 @@ public abstract class CFApiBase {
         }
     }
 
-    public Document buildDocument() {
-        try {
-            DocumentBuilder builder = documentBuilderFactory.newDocumentBuilder();
-            Document document = builder.newDocument();
-            Element root = document.createElement("root");
-            Element item = document.createElement("item");
-            root.appendChild(item);
-            Element data = document.createElement("data");
-            Element year = document.createElement("year");
-            year.setTextContent("" + (new java.util.Date().getYear() + 1900));
-            data.appendChild(year);
-            root.appendChild(data);
-            Element system = document.createElement("system");
-            Element instance_type = document.createElement("instance_type");;
-            instance_type.appendChild(document.createTextNode(cfg.instanceConfig.getJsonObject("instance").getString("instance_type")));
-            system.appendChild(instance_type);
-            Element short_name = document.createElement("short_name");
-            short_name.appendChild(document.createTextNode(cfg.instanceConfig.getJsonObject("instance").getString("short_name")));
-            system.appendChild(short_name);
-            Element test_mode = document.createElement("test_mode");
-            test_mode.appendChild(document.createTextNode(cfg.instanceConfig.getJsonObject("instance").getBoolean("test_mode").toString().toLowerCase()));
-            system.appendChild(test_mode);
-            Element title = document.createElement("title");
-            title.appendChild(document.createTextNode(cfg.instanceConfig.getJsonObject("instance").getJsonObject("object").getString("title")));
-            system.appendChild(title);
-            root.appendChild(system);
-            document.appendChild(root);
-            return document;
-        }
-        catch (ParserConfigurationException e) {
-            logger.fatal(e);
-            return null;
-        }
-    }
+    public abstract Document buildDocument();
 }
