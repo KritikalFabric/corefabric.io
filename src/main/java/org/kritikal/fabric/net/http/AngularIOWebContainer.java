@@ -233,6 +233,8 @@ public class AngularIOWebContainer {
         public final HttpServerRequest request;
     }
 
+    final static Pattern bingUserAgent = Pattern.compile("(compatible; (bingbot|adidxbot)| BingPreview)/", Pattern.CASE_INSENSITIVE);
+
     public static HttpServer initialiseHttpServer(String namespace, String zone, Vertx vertx, Router router, Consumer<HttpServerOptions> options, BiFunction<SsiParams, String, String> ssi) {
         HttpServerOptions httpServerOptions = new HttpServerOptions();
         httpServerOptions.setSoLinger(0);
@@ -337,10 +339,52 @@ public class AngularIOWebContainer {
                                                                     }
 
                                                                     if (null != noscript) {
-                                                                        int i = s.indexOf("<noscript>");
-                                                                        int j = s.indexOf("</noscript>");
-                                                                        if (j > i && i >= 0) {
-                                                                            s = s.substring(0, i) + "<noscript>" + noscript + "</noscript>" + s.substring(j + 11);
+                                                                        String userAgent = req.headers().get("user-agent");
+                                                                        // some web crawlers will prefer working html to broken javascript
+                                                                        if (bingUserAgent.matcher(userAgent).find()) {
+                                                                            // strip 1st noscript
+                                                                            // de-noscript
+                                                                            int i = s.indexOf("<noscript>");
+                                                                            boolean initial = true;
+                                                                            do {
+                                                                                int j = s.indexOf("</noscript>", i);
+                                                                                if (j > i && i >= 0) {
+                                                                                    if (initial) {
+                                                                                        s = s.substring(0, i) + s.substring(j + 11);
+                                                                                        initial = false;
+                                                                                    } else {
+                                                                                        int k = s.indexOf(">", i);
+                                                                                        s = s.substring(0, i) + s.substring(k+1, j) + s.substring(j+11);
+                                                                                    }
+                                                                                    i = s.indexOf("<noscript ");
+                                                                                } else {
+                                                                                    break;
+                                                                                }
+                                                                            }
+                                                                            while (i>=0);
+                                                                            // strip <script></script>
+                                                                            i = s.indexOf("<script");
+                                                                            do {
+                                                                                int j = s.indexOf("</script>", i);
+                                                                                if (j > i && i >= 0) {
+                                                                                    s = s.substring(0, i) + s.substring(j + 9);
+                                                                                    i = s.indexOf("<script");
+                                                                                } else {
+                                                                                    break;
+                                                                                }
+                                                                            }
+                                                                            while (i>=0);
+                                                                            // replace <app-root></app-root> with noscript content
+                                                                            i = s.indexOf("<app-root></app-root>");
+                                                                            if (i >= 0) {
+                                                                                s = s.substring(0, i) + noscript + s.substring(i + 21);
+                                                                            }
+                                                                        } else {
+                                                                            int i = s.indexOf("<noscript>");
+                                                                            int j = s.indexOf("</noscript>");
+                                                                            if (j > i && i >= 0) {
+                                                                                s = s.substring(0, i) + "<noscript>" + noscript + "</noscript>" + s.substring(j + 11);
+                                                                            }
                                                                         }
                                                                     }
                                                                     req.response().headers().add("Cache-Control", "cache, store, private, must-revalidate");
