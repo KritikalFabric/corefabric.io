@@ -42,29 +42,34 @@ public class CFNoscriptRenderers {
         array.add(new CFXmlRenderer(pattern, processor));
     }
 
-    private ConcurrentHashMap<String, Transformer> map = new ConcurrentHashMap<>();
+    private ConcurrentHashMap<String, ThreadLocal<Transformer>> map = new ConcurrentHashMap<>();
     public Transformer get(String filesystemLocation) {
-        return xslProcessors.get().computeIfAbsent(filesystemLocation, (file)->{
-            try {
-                final Reader xslReader = new BufferedReader(new FileReader(file, Charset.forName("UTF-8")));
-                try {
-                    StreamSource xslSource = new StreamSource(xslReader, file);
-                    return tfactory.newTransformer(xslSource);
-                } catch (Exception e) {
-                    logger.warn(e);
-                    return null;
-                } finally {
+        return map.computeIfAbsent(filesystemLocation, (file)->{
+            return new ThreadLocal<Transformer>() {
+                @Override
+                protected Transformer initialValue() {
                     try {
-                        xslReader.close();
-                    } catch (IOException e) {
+                        final Reader xslReader = new BufferedReader(new FileReader(file, Charset.forName("UTF-8")));
+                        try {
+                            StreamSource xslSource = new StreamSource(xslReader, file);
+                            return tfactory.newTransformer(xslSource);
+                        } catch (Exception e) {
+                            logger.warn(e);
+                            return null;
+                        } finally {
+                            try {
+                                xslReader.close();
+                            } catch (IOException e) {
+                            }
+                        }
+                    }
+                    catch (Exception e) {
+                        logger.warn(e);
+                        return null;
                     }
                 }
-            }
-            catch (Exception e) {
-                logger.warn(e);
-                return null;
-            }
-        });
+            };
+        }).get();
     }
 
     public static String nodeToString(Node node) {
