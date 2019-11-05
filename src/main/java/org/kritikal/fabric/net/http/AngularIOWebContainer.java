@@ -333,7 +333,9 @@ public class AngularIOWebContainer {
                                                                         Matcher matcher = renderer.pattern.matcher(req.path());
                                                                         if (matcher.matches()) {
                                                                             CFNoscriptRenderers.CFXmlParameters parameters = new CFNoscriptRenderers.CFXmlParameters(cfg, req, rc, corefabric);
-                                                                            noscript = renderer.processor.apply(parameters);
+                                                                            synchronized (renderer) {
+                                                                                noscript = renderer.processor.apply(parameters);
+                                                                            }
                                                                             break;
                                                                         }
                                                                     }
