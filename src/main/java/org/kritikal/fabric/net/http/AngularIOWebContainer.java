@@ -21,14 +21,11 @@ import org.kritikal.fabric.daemon.MqttBrokerVerticle;
 import org.kritikal.fabric.net.mqtt.SyncMqttBroker;
 import org.reflections.Reflections;
 import org.w3c.dom.Document;
-import org.w3c.dom.Node;
 
 import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerException;
-import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMResult;
 import javax.xml.transform.dom.DOMSource;
-import javax.xml.transform.stream.StreamSource;
 import java.io.*;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
@@ -255,7 +252,7 @@ public class AngularIOWebContainer {
             }
         });
 
-        final CFNoscriptRenderers noscriptRenderers = wireUpCFNoscriptRenderers(namespace, zone);
+        final CFNoscriptRenderers noscriptRenderers = wireUpCFNoscriptRenderers(namespace, zone, vertx, router, ssi);
         wireUpCFApi(namespace, zone, vertx, router);
         router.get().handler(rc -> {
             HttpServerRequest req = rc.request();
@@ -560,7 +557,7 @@ public class AngularIOWebContainer {
             }
     }
 
-    private static CFNoscriptRenderers wireUpCFNoscriptRenderers(String namespace, String zone) {
+    private static CFNoscriptRenderers wireUpCFNoscriptRenderers(String namespace, String zone, Vertx vertx, Router router, BiFunction<SsiParams, String, String> ssi) {
         final CFNoscriptRenderers result = new CFNoscriptRenderers();
         Reflections reflections = new Reflections(namespace);
         for (Class<?> clazz : reflections.getTypesAnnotatedWith(CFApi.class)) {
@@ -582,7 +579,13 @@ public class AngularIOWebContainer {
                                     DOMResult output = new DOMResult();
                                     try {
                                         xsl.transform(new DOMSource(doc), output);
-                                        return CFNoscriptRenderers.nodeToString(output.getNode().getFirstChild().getFirstChild());
+                                        if (renderMethod.type()== CFRenderMethod.TYPE.NOSCRIPT)
+                                            return CFNoscriptRenderers.getBodyTagAsString(output.getNode().getFirstChild().getFirstChild()); // html -> body
+                                        else if (renderMethod.type()== CFRenderMethod.TYPE.AMP)
+                                            return CFNoscriptRenderers.nodeToString(output.getNode()); // html
+                                        else {
+                                            return null;
+                                        }
                                     } catch (TransformerException e) {
                                         logger.error("angular-io\tapi\t" + params.req.path() + "\t" + e.getMessage());
                                         return null;
@@ -597,7 +600,73 @@ public class AngularIOWebContainer {
                         }, (fail)->{
                             return null;
                         });
-                        result.add(pattern, processor);
+                        if (renderMethod.type()== CFRenderMethod.TYPE.NOSCRIPT) {
+                            result.add(pattern, processor);
+                        } else {
+                            router.getWithRegex(renderMethod.regex()).handler(rc -> {
+                                HttpServerRequest req = rc.request();
+
+                                final String hostname = hostCutter(req);
+                                final String instancekey = zone + "/" + hostname;
+
+                                ConfigurationManager.getConfigurationAsync(vertx, instancekey, cfg -> {
+
+                                    String corefabric = cookieCutter(req);
+                                    CFNoscriptRenderers.CFXmlParameters params = new CFNoscriptRenderers.CFXmlParameters(cfg, req, rc, corefabric);
+
+                                    CFNoscriptRenderers.sharedWorkerExecutor.executeBlocking(promise1 -> {
+                                        try {
+                                            promise1.complete(processor.apply(params));
+                                        }
+                                        catch (Exception e) {
+                                            logger.warn(e);
+                                            promise1.fail(e);
+                                        }
+                                    }, false, result1->{
+
+                                        if (result1.failed()) {
+                                            req.response().setStatusCode(500).end();
+                                        } else {
+                                            boolean gzip = false;
+                                            for (Map.Entry<String, String> stringStringEntry : req.headers()) {
+                                                if (stringStringEntry.getKey().toLowerCase().equals("accept-encoding") &&
+                                                        stringStringEntry.getValue().toLowerCase().contains("gzip")) {
+                                                    gzip = true;
+                                                }
+                                            }
+                                            SsiParams ssiParams = new SsiParams(cfg, req);
+                                            String html = ssi.apply(ssiParams, (String) result1.result());
+
+                                            req.response().headers().add("Cache-Control", "cache, store, private, must-revalidate");
+                                            req.response().headers().add("Content-Type", "text/html; charset=utf-8");
+                                            /* last modified = now */
+                                            {
+                                                java.util.Date t = new java.util.Date(); // now, this page is always modified but may be cached and stored
+                                                req.response().headers().add("Last-Modified", DATE_FORMAT_RFC1123.format(t));
+                                            }
+                                            try {
+                                                if (gzip) {
+                                                    req.response().headers().add("Content-Encoding", "gzip");
+                                                    if (!html.startsWith("\ufeff"))
+                                                        req.response().end(Buffer.buffer(gzipString('\ufeff' + html)));
+                                                    else
+                                                        req.response().end(Buffer.buffer(gzipString(html)));
+                                                } else {
+                                                    if (!html.startsWith("\ufeff"))
+                                                        req.response().write("\ufeff").end(html);
+                                                    else
+                                                        req.response().end(html);
+                                                }
+                                            } catch (Exception e) {
+                                                logger.warn(e);
+                                                req.response().setStatusCode(500).end();
+                                            }
+                                        }
+                                    });
+
+                                });
+                            });
+                        }
 
                         if (CoreFabric.ServerConfiguration.DEBUG)
                             logger.info("angular-io\t" + renderMethod.regex() + "\t" + renderMethod.type().name() + "\t" + renderMethod.template() + "\t" + clazz.getSimpleName() + "\t" + method.getName());

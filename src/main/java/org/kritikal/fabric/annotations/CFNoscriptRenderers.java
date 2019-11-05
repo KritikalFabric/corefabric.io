@@ -72,7 +72,7 @@ public class CFNoscriptRenderers {
         }).get();
     }
 
-    public static String nodeToString(Node node) {
+    public static String getBodyTagAsString(Node node) {
         StringWriter buffer = new StringWriter();
         try {
             Transformer transformer = tfactory.newTransformer();
@@ -89,6 +89,27 @@ public class CFNoscriptRenderers {
             if (j >= 0) {
                 str = str.substring(0,j);
             }
+            return str;
+        }
+        catch (TransformerException e) {
+            return null;
+        }
+        finally {
+            try { buffer.close(); } catch (IOException e) { }
+        }
+    }
+
+    public static String nodeToString(Node node) {
+        StringWriter buffer = new StringWriter();
+        try {
+            Transformer transformer = tfactory.newTransformer();
+            transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
+            transformer.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
+            transformer.setOutputProperty(OutputKeys.METHOD, "html");
+            transformer.setOutputProperty(OutputKeys.VERSION, "5.0");
+            transformer.transform(new DOMSource(node),
+                    new StreamResult(buffer));
+            String str = buffer.toString();
             return str;
         }
         catch (TransformerException e) {
