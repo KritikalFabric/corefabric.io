@@ -1,9 +1,11 @@
 package org.kritikal.fabric.annotations;
 
+import io.vertx.core.WorkerExecutor;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.web.RoutingContext;
+import org.kritikal.fabric.CoreFabric;
 import org.kritikal.fabric.core.Configuration;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
@@ -28,6 +30,13 @@ public class CFNoscriptRenderers {
     }
     static final TransformerFactory tfactory = TransformerFactory.newInstance();
 
+    public static ThreadLocal<ConcurrentHashMap<String, Transformer>> xslProcessors = new ThreadLocal<>() {
+        @Override
+        protected ConcurrentHashMap<String, Transformer> initialValue() { return new ConcurrentHashMap<>(); }
+    };
+
+    public static final WorkerExecutor sharedWorkerExecutor = CoreFabric.getVertx().createSharedWorkerExecutor("xslt.worker-pool", Runtime.getRuntime().availableProcessors());
+
     public void add(Pattern pattern, Function<CFXmlParameters, String> processor)
     {
         array.add(new CFXmlRenderer(pattern, processor));
@@ -35,7 +44,7 @@ public class CFNoscriptRenderers {
 
     private ConcurrentHashMap<String, Transformer> map = new ConcurrentHashMap<>();
     public Transformer get(String filesystemLocation) {
-        return map.computeIfAbsent(filesystemLocation, (file)->{
+        return xslProcessors.get().computeIfAbsent(filesystemLocation, (file)->{
             try {
                 final Reader xslReader = new BufferedReader(new FileReader(file, Charset.forName("UTF-8")));
                 try {

@@ -321,7 +321,7 @@ public class AngularIOWebContainer {
                                                                 req.response().end("<html><head><title>Server Error</title><meta http-equiv=\"refresh\" content=\"0;URL='/-/not-found/'\" /></head><body></body></html>");
                                                             }
                                                         } else {
-                                                            vertx.executeBlocking((promise)->{
+                                                            CFNoscriptRenderers.sharedWorkerExecutor.executeBlocking((promise)->{
                                                                 try {
                                                                     String s = new String(ar.result().getBytes(), "UTF-8");
                                                                     SsiParams ssiParams = new SsiParams(cfg, req);
@@ -333,9 +333,7 @@ public class AngularIOWebContainer {
                                                                         Matcher matcher = renderer.pattern.matcher(req.path());
                                                                         if (matcher.matches()) {
                                                                             CFNoscriptRenderers.CFXmlParameters parameters = new CFNoscriptRenderers.CFXmlParameters(cfg, req, rc, corefabric);
-                                                                            synchronized (renderer) {
-                                                                                noscript = renderer.processor.apply(parameters);
-                                                                            }
+                                                                            noscript = renderer.processor.apply(parameters);
                                                                             break;
                                                                         }
                                                                     }
