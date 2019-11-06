@@ -637,7 +637,7 @@ public class AngularIOWebContainer {
                                             SsiParams ssiParams = new SsiParams(cfg, req);
                                             String html = ssi.apply(ssiParams, (String) result1.result());
 
-                                            req.response().headers().add("Cache-Control", "cache, store, private, must-revalidate");
+                                            req.response().headers().add("Cache-Control", "cache, store, public, max-age: 3600");
                                             req.response().headers().add("Content-Type", "text/html; charset=utf-8");
                                             /* last modified = now */
                                             {
