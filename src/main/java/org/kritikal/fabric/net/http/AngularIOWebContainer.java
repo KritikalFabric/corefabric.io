@@ -62,6 +62,18 @@ public class AngularIOWebContainer {
     final static ConcurrentHashMap<String, AngularIOSiteInstance> map = new ConcurrentHashMap<>();
     final public static ConcurrentHashMap<String, AngularIOSiteInstance> map() { return map; }
 
+    public static void endResponse(HttpServerRequest req, String html) {
+        req.response().headers().add("Content-Type", "text/html; charset=utf-8");
+        byte data[] = {};
+        try {
+            data = html.getBytes("UTF-8");
+        } catch (UnsupportedEncodingException e) {
+
+        }
+        req.response().headers().add("Content-Length", "" + data.length);
+        req.response().end(html);
+    }
+
     public static String cookieCutter(HttpServerRequest req) {
         boolean found = false;
         boolean set = false;
@@ -310,12 +322,12 @@ public class AngularIOWebContainer {
                                                 if (isIndexHtml) {
                                                     vertx.fileSystem().readFile(filesystemLocation, (ar) -> {
                                                         if (ar.failed()) {
-                                                            if ("/-/not-found/".equals(req.path())) {
+                                                            if ("/-/not-found".equals(req.path())) {
                                                                 req.response().setStatusCode(500).setStatusMessage("Server Error");
                                                                 req.response().end();
                                                             } else {
                                                                 req.response().setStatusCode(404).setStatusMessage("Not Found");
-                                                                req.response().end("<html><head><title>Server Error</title><meta http-equiv=\"refresh\" content=\"0;URL='/-/not-found/'\" /></head><body></body></html>");
+                                                                endResponse(req, "<html><head><title>Server Error</title><meta http-equiv=\"refresh\" content=\"0;URL='/-/not-found'\" /></head><body></body></html>");
                                                             }
                                                         } else {
                                                             CFNoscriptRenderers.sharedWorkerExecutor.executeBlocking((promise)->{
@@ -390,18 +402,21 @@ public class AngularIOWebContainer {
                                                                         java.util.Date t = new java.util.Date(); // now, this page is always modified but may be cached and stored
                                                                         req.response().headers().add("Last-Modified", DATE_FORMAT_RFC1123.format(t));
                                                                     }
+                                                                    byte data[] = null;
                                                                     if (gzipHtml) {
                                                                         req.response().headers().add("Content-Encoding", "gzip");
                                                                         if (!s.startsWith("\ufeff"))
-                                                                            req.response().end(Buffer.buffer(gzipString('\ufeff' + s)));
+                                                                            data = gzipString('\ufeff' + s);
                                                                         else
-                                                                            req.response().end(Buffer.buffer(gzipString(s)));
+                                                                            data = gzipString(s);
                                                                     } else {
                                                                         if (!s.startsWith("\ufeff"))
-                                                                            req.response().write("\ufeff").end(s);
+                                                                            data = ("\ufeff" + s).getBytes("UTF-8");
                                                                         else
-                                                                            req.response().end(s);
+                                                                            data = s.getBytes("UTF-8");
                                                                     }
+                                                                    req.response().headers().add("Content-Length", "" + data.length);
+                                                                    req.response().end(Buffer.buffer(data));
                                                                     promise.complete();
                                                                 }
                                                                 catch (Throwable t) {
@@ -423,12 +438,12 @@ public class AngularIOWebContainer {
                                                     sendFile(req, filesystemLocation, acceptEncodingGzip, runningInsideJar, false);
                                                 }
                                             } else {
-                                                if ("/-/not-found/".equals(req.path())) {
+                                                if ("/-/not-found".equals(req.path())) {
                                                     req.response().setStatusCode(500).setStatusMessage("Server Error");
                                                     req.response().end();
                                                 } else {
                                                     req.response().setStatusCode(404).setStatusMessage("Not Found");
-                                                    req.response().end("<html><head><title>Server Error</title><meta http-equiv=\"refresh\" content=\"0;URL='/-/not-found/'\" /></head><body></body></html>");
+                                                    endResponse(req, "<html><head><title>Server Error</title><meta http-equiv=\"refresh\" content=\"0;URL='/-/not-found'\" /></head><body></body></html>");
                                                 }
                                                 return;
                                             }
@@ -517,23 +532,26 @@ public class AngularIOWebContainer {
                 gzip = true;
             }
         }
+        byte data[] = null;
+        boolean gzipped = false;
         if (gzip) {
-            byte data[] = null;
             try {
                 data = gzipString(r.encode());
-            }
-            catch (Exception e) {
+                gzipped = true;
+            } catch (Exception e) {
                 data = null;
             }
-            if (data != null && data.length > 1) {
-                req.response().headers().add("Content-Encoding", "gzip");
-                req.response().end(Buffer.buffer(data));
-            } else {
-                req.response().end(r.encode());
-            }
-        } else {
-            req.response().end(r.encode());
         }
+        if (null == data) {
+            try {
+                data = r.encode().getBytes("UTF-8");
+            } catch (UnsupportedEncodingException e) {
+                // ignore
+            }
+        }
+        if (gzipped) req.response().headers().add("Content-Encoding", "gzip");
+        req.response().headers().add("Content-Length", "" + data.length);
+        req.response().end(Buffer.buffer(data));
     }
 
     private static final byte[] gzipString(final String str) throws Exception {
@@ -645,18 +663,22 @@ public class AngularIOWebContainer {
                                                 req.response().headers().add("Last-Modified", DATE_FORMAT_RFC1123.format(t));
                                             }
                                             try {
+                                                byte data[] = null;
                                                 if (gzip) {
                                                     req.response().headers().add("Content-Encoding", "gzip");
                                                     if (!html.startsWith("\ufeff"))
-                                                        req.response().end(Buffer.buffer(gzipString('\ufeff' + html)));
+                                                        data = gzipString('\ufeff' + html);
                                                     else
-                                                        req.response().end(Buffer.buffer(gzipString(html)));
+                                                        data = gzipString(html);
                                                 } else {
                                                     if (!html.startsWith("\ufeff"))
-                                                        req.response().write("\ufeff").end(html);
+                                                        data = ("\ufeff" + html).getBytes("UTF-8");
                                                     else
-                                                        req.response().end(html);
+                                                        data = html.getBytes("UTF-8");
                                                 }
+                                                req.response().headers().add("Content-Length", "" + data.length);
+                                                req.response().end(Buffer.buffer(data));
+
                                             } catch (Exception e) {
                                                 logger.warn(e);
                                                 req.response().setStatusCode(500).end();
