@@ -335,8 +335,6 @@ public class AngularIOWebContainer {
                                                             CFNoscriptRenderers.sharedWorkerExecutor.executeBlocking((promise)->{
                                                                 try {
                                                                     String s = new String(ar.result().getBytes(), "UTF-8");
-                                                                    SsiParams ssiParams = new SsiParams(cfg, req);
-                                                                    s = ssi.apply(ssiParams, s);
                                                                     // run no-script handler, if it exists
                                                                     String noscript = null;
 
@@ -398,6 +396,10 @@ public class AngularIOWebContainer {
                                                                             }
                                                                         }
                                                                     }
+
+                                                                    SsiParams ssiParams = new SsiParams(cfg, req);
+                                                                    s = ssi.apply(ssiParams, s);
+
                                                                     req.response().headers().add("Cache-Control", "cache, store, public, max-age=60");
                                                                     req.response().headers().add("Content-Type", "text/html; charset=utf-8");
                                                                     /* last modified = now */ {
@@ -559,8 +561,6 @@ public class AngularIOWebContainer {
                                                             CFNoscriptRenderers.sharedWorkerExecutor.executeBlocking((promise)->{
                                                                         try {
                                                                             String s = new String(ar.result().getBytes(), "UTF-8");
-                                                                            SsiParams ssiParams = new SsiParams(cfg, req);
-                                                                            s = ssi.apply(ssiParams, s);
                                                                             // run no-script handler, if it exists
                                                                             String noscript = null;
 
@@ -621,6 +621,10 @@ public class AngularIOWebContainer {
                                                                                     }
                                                                                 }
                                                                             }
+
+                                                                            SsiParams ssiParams = new SsiParams(cfg, req);
+                                                                            s = ssi.apply(ssiParams, s);
+
                                                                             req.response().headers().add("Cache-Control", "cache, store, public, max-age=60");
                                                                             req.response().headers().add("Content-Type", "text/html; charset=utf-8");
                                                                             /* last modified = now */ {
