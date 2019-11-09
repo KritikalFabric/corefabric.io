@@ -46,17 +46,17 @@ import java.util.concurrent.ConcurrentHashMap;
 public class AngularIOWebContainer {
     final static Logger logger = LoggerFactory.getLogger(AngularIOWebContainer.class);
     static String runningJar;
-    static boolean runningInsideJar;
+    public static final boolean runningInsideJar;
     static {
         try {
             runningJar = new File(AngularIOWebContainer.class.getProtectionDomain().getCodeSource().getLocation().toURI()).getAbsolutePath();
             //if (CoreFabric.ServerConfiguration.DEBUG) logger.info("angular-io\tCode running from:\t" + runningJar);
-            runningInsideJar = runningJar.endsWith("-fat.jar");
         }
         catch (URISyntaxException use) {
             logger.warn("angular-io\tURI syntax exception");
-            runningInsideJar = false;
+            runningJar = "";
         }
+        runningInsideJar = runningJar.endsWith("-fat.jar");
     }
 
     final static ConcurrentHashMap<String, AngularIOSiteInstance> map = new ConcurrentHashMap<>();
@@ -433,6 +433,229 @@ public class AngularIOWebContainer {
                                                                     req.response().end();
                                                                 }
                                                             });
+
+                                                        }
+                                                    });
+                                                } else {
+                                                    sendFile(req, filesystemLocation, acceptEncodingGzip, runningInsideJar, false);
+                                                }
+                                            } else {
+                                                if ("/-/not-found".equals(req.path())) {
+                                                    req.response().setStatusCode(500).setStatusMessage("Server Error");
+                                                    req.response().end();
+                                                } else {
+                                                    req.response().setStatusCode(404).setStatusMessage("Not Found");
+                                                    endResponse(req, "<html><head><title>Server Error</title><meta http-equiv=\"refresh\" content=\"0;URL='/-/not-found'\" /></head><body></body></html>");
+                                                }
+                                                return;
+                                            }
+                                        } else {
+                                            req.response().setStatusCode(500).setStatusMessage("Server Error");
+                                            req.response().end();
+                                            return;
+                                        }
+                                    }
+                                });
+                            } else {
+                                req.response().setStatusCode(500).setStatusMessage("Server Error");
+                                req.response().end();
+                            }
+                        } else {
+                            req.response().setStatusCode(500).setStatusMessage("Server Error");
+                            req.response().end();
+                        }
+                    }
+                    catch (Throwable t) {
+                        logger.error("angular-io\t" + site + "\t" + req.path() + "\t" + t.getMessage());
+                        req.response().setStatusCode(500).setStatusMessage("Server Error");
+                        req.response().end();
+                    }
+                } else {
+                    req.response().setStatusCode(500).setStatusMessage("Server Error");
+                    req.response().end();
+                }
+            });
+        });
+        server.requestHandler(req -> { router.accept(req); });
+        return server;
+    }
+
+    public static HttpServer initialiseHttpServerStaticRender(String namespace, String zone, Vertx vertx, Router router, Consumer<HttpServerOptions> options, BiFunction<SsiParams, String, String> ssi) {
+        HttpServerOptions httpServerOptions = new HttpServerOptions();
+        httpServerOptions.setSoLinger(0);
+        httpServerOptions.setTcpKeepAlive(true);
+        httpServerOptions.setHandle100ContinueAutomatically(true);
+        httpServerOptions.setPerFrameWebsocketCompressionSupported(true);
+        httpServerOptions.setPerMessageWebsocketCompressionSupported(true);
+        options.accept(httpServerOptions);
+        HttpServer server = vertx.createHttpServer(httpServerOptions);
+
+        final CFNoscriptRenderers noscriptRenderers = wireUpCFNoscriptRenderers(namespace, zone, vertx, router, ssi);
+
+        router.get().handler(rc -> {
+            HttpServerRequest req = rc.request();
+
+            final String hostname = hostCutter(req);
+            final String instancekey = zone + "/" + hostname;
+
+            ConfigurationManager.getConfigurationAsync(vertx, instancekey, cfg -> {
+                String site = cfg.instanceConfig.getJsonObject("instance").getString("site");
+                if (CoreFabric.ServerConfiguration.DEBUG) logger.info("angular-io\t" + site + "\t" + req.path());
+                if (site != null) {
+                    try {
+                        AngularIOSiteInstance x = map.get(site);
+                        if (x != null
+                                && cfg.instanceConfig.getJsonObject("zone").getBoolean("active")
+                                && cfg.instanceConfig.getJsonObject("instance").getBoolean("active")) {
+                            boolean noGzip = false;
+                            String file = null;
+                            if (req.path().contains("..") || req.path().contains("%2e") || req.path().contains("%2E")) {
+                                req.response().setStatusCode(500);
+                                req.response().end();
+                                return;
+                            } else if (req.path().equals("/") || req.path().startsWith("/-/") || req.path().equals("/index.html")) {
+                                file = "index.html";
+                                noGzip = true;
+                            } else if (req.path().startsWith("/")) {
+                                file = req.path().substring(1);
+                            } else {
+                                req.response().setStatusCode(404);
+                                req.response().end();
+                                return;
+                            }
+
+                            if (file != null) {
+                                final boolean isIndexHtml = "index.html".equals(file);
+
+                                final String corefabric = cookieCutter(req);
+
+                                boolean gzip = false;
+                                for (Map.Entry<String, String> stringStringEntry : req.headers()) {
+                                    if (stringStringEntry.getKey().toLowerCase().equals("accept-encoding") &&
+                                            stringStringEntry.getValue().toLowerCase().contains("gzip")) {
+                                        gzip = true;
+                                    }
+                                }
+                                final boolean acceptEncodingGzip = gzip && !noGzip;
+                                final boolean gzipHtml = gzip;
+
+                                String filesystemLocation = (runningInsideJar ? x.tempdir : (x.localDirSlash)) + file;
+                                vertx.fileSystem().exists(filesystemLocation + (acceptEncodingGzip ? ".gz" : ""), new Handler<AsyncResult<Boolean>>() {
+                                    @Override
+                                    public void handle(AsyncResult<Boolean> event) {
+                                        if (event.succeeded()) {
+                                            if (event.result()) {
+                                                if (isIndexHtml) {
+                                                    vertx.fileSystem().readFile(filesystemLocation, (ar) -> {
+                                                        if (ar.failed()) {
+                                                            if ("/-/not-found".equals(req.path())) {
+                                                                req.response().setStatusCode(500).setStatusMessage("Server Error");
+                                                                req.response().end();
+                                                            } else {
+                                                                req.response().setStatusCode(404).setStatusMessage("Not Found");
+                                                                endResponse(req, "<html><head><title>Server Error</title><meta http-equiv=\"refresh\" content=\"0;URL='/-/not-found'\" /></head><body></body></html>");
+                                                            }
+                                                        } else {
+                                                            CFNoscriptRenderers.sharedWorkerExecutor.executeBlocking((promise)->{
+                                                                        try {
+                                                                            String s = new String(ar.result().getBytes(), "UTF-8");
+                                                                            SsiParams ssiParams = new SsiParams(cfg, req);
+                                                                            s = ssi.apply(ssiParams, s);
+                                                                            // run no-script handler, if it exists
+                                                                            String noscript = null;
+
+                                                                            for (CFNoscriptRenderers.CFXmlRenderer renderer : noscriptRenderers.array) {
+                                                                                Matcher matcher = renderer.pattern.matcher(req.path());
+                                                                                if (matcher.matches()) {
+                                                                                    CFNoscriptRenderers.CFXmlParameters parameters = new CFNoscriptRenderers.CFXmlParameters(cfg, req, rc, corefabric);
+                                                                                    noscript = renderer.processor.apply(parameters);
+                                                                                    break;
+                                                                                }
+                                                                            }
+
+                                                                            if (null != noscript) {
+                                                                                // some web crawlers will prefer working html to broken javascript
+                                                                                if (true) {
+                                                                                    // strip 1st noscript
+                                                                                    // de-noscript
+                                                                                    int i = s.indexOf("<noscript>");
+                                                                                    boolean initial = true;
+                                                                                    do {
+                                                                                        int j = s.indexOf("</noscript>", i);
+                                                                                        if (j > i && i >= 0) {
+                                                                                            if (initial) {
+                                                                                                s = s.substring(0, i) + s.substring(j + 11);
+                                                                                                initial = false;
+                                                                                            } else {
+                                                                                                int k = s.indexOf(">", i);
+                                                                                                s = s.substring(0, i) + s.substring(k+1, j) + s.substring(j+11);
+                                                                                            }
+                                                                                            i = s.indexOf("<noscript ");
+                                                                                        } else {
+                                                                                            break;
+                                                                                        }
+                                                                                    }
+                                                                                    while (i>=0);
+                                                                                    // strip <script></script>
+                                                                                    i = s.indexOf("<script");
+                                                                                    do {
+                                                                                        int j = s.indexOf("</script>", i);
+                                                                                        if (j > i && i >= 0) {
+                                                                                            s = s.substring(0, i) + s.substring(j + 9);
+                                                                                            i = s.indexOf("<script");
+                                                                                        } else {
+                                                                                            break;
+                                                                                        }
+                                                                                    }
+                                                                                    while (i>=0);
+                                                                                    // replace <app-root></app-root> with noscript content
+                                                                                    i = s.indexOf("<app-root></app-root>");
+                                                                                    if (i >= 0) {
+                                                                                        s = s.substring(0, i) + noscript + s.substring(i + 21);
+                                                                                    }
+                                                                                } else {
+                                                                                    int i = s.indexOf("<noscript>");
+                                                                                    int j = s.indexOf("</noscript>");
+                                                                                    if (j > i && i >= 0) {
+                                                                                        s = s.substring(0, i) + "<noscript>" + noscript + "</noscript>" + s.substring(j + 11);
+                                                                                    }
+                                                                                }
+                                                                            }
+                                                                            req.response().headers().add("Cache-Control", "cache, store, public, max-age=60");
+                                                                            req.response().headers().add("Content-Type", "text/html; charset=utf-8");
+                                                                            /* last modified = now */ {
+                                                                                java.util.Date t = new java.util.Date(); // now, this page is always modified but may be cached and stored
+                                                                                req.response().headers().add("Last-Modified", DATE_FORMAT_RFC1123.format(t));
+                                                                            }
+                                                                            byte data[] = null;
+                                                                            if (gzipHtml) {
+                                                                                req.response().headers().add("Content-Encoding", "gzip");
+                                                                                if (!s.startsWith("\ufeff"))
+                                                                                    data = gzipString('\ufeff' + s);
+                                                                                else
+                                                                                    data = gzipString(s);
+                                                                            } else {
+                                                                                if (!s.startsWith("\ufeff"))
+                                                                                    data = ("\ufeff" + s).getBytes("UTF-8");
+                                                                                else
+                                                                                    data = s.getBytes("UTF-8");
+                                                                            }
+                                                                            req.response().headers().add("Content-Length", "" + data.length);
+                                                                            req.response().end(Buffer.buffer(data));
+                                                                            promise.complete();
+                                                                        }
+                                                                        catch (Throwable t) {
+                                                                            promise.fail(t);
+                                                                        }
+                                                                    },
+                                                                    false,
+                                                                    (result)->{
+                                                                        if (result.failed()) {
+                                                                            logger.error("angular-io\t" + site + "\t" + req.path() + "\t" + result.cause());
+                                                                            req.response().setStatusCode(500).setStatusMessage("Server Error");
+                                                                            req.response().end();
+                                                                        }
+                                                                    });
 
                                                         }
                                                     });
