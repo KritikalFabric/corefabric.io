@@ -168,11 +168,13 @@ public class AngularIOWebContainer {
     public static final DateFormat DATE_FORMAT_RFC1123 = new SimpleDateFormat(PATTERN_RFC1123, Locale.US);
 
     public static void sendFile(HttpServerRequest req, String pathToFile, boolean acceptEncodingGzip, boolean lastModified, boolean nocache) {
-        if (pathToFile.endsWith(".html") || nocache) {
+        if (nocache) {
             req.response().headers().add("Pragma", "no-cache");
             req.response().headers().add("Cache-Control", "no-cache, no-store, private, must-revalidate");
+        } else if (pathToFile.endsWith(".html")) {
+            req.response().headers().add("Cache-Control", "cache, store, public, max-age=60");
         } else {
-            req.response().headers().add("Cache-Control", "public, max-age=63072000"); // 2 years
+            req.response().headers().add("Cache-Control", "cache, store, public, max-age=63072000"); // 2 years
         }
 
         if (pathToFile.endsWith(".html")) {
@@ -287,7 +289,7 @@ public class AngularIOWebContainer {
                                 req.response().setStatusCode(500);
                                 req.response().end();
                                 return;
-                            } else if (req.path().equals("/") || req.path().startsWith("/-/")) {
+                            } else if (req.path().equals("/") || req.path().startsWith("/-/") || req.path().equals("/index.html")) {
                                 file = "index.html";
                                 noGzip = true;
                             } else if (req.path().startsWith("/")) {
@@ -396,7 +398,7 @@ public class AngularIOWebContainer {
                                                                             }
                                                                         }
                                                                     }
-                                                                    req.response().headers().add("Cache-Control", "cache, store, private, must-revalidate");
+                                                                    req.response().headers().add("Cache-Control", "cache, store, public, max-age=60");
                                                                     req.response().headers().add("Content-Type", "text/html; charset=utf-8");
                                                                     /* last modified = now */ {
                                                                         java.util.Date t = new java.util.Date(); // now, this page is always modified but may be cached and stored
