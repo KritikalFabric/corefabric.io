@@ -14,4 +14,6 @@ public @interface CFApiMethod {
     TYPE type() default TYPE.JSON_GET;
     boolean cors() default false;
     boolean nocache() default false;
+    boolean http() default false;
+    boolean https() default true;
 }

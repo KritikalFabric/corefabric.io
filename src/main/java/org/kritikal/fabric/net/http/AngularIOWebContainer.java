@@ -267,7 +267,7 @@ public class AngularIOWebContainer {
         });
 
         final CFNoscriptRenderers noscriptRenderers = wireUpCFNoscriptRenderers(namespace, zone, vertx, router, ssi);
-        wireUpCFApi(namespace, zone, vertx, router);
+        wireUpCFApi(namespace, zone, vertx, router, true);
         router.get().handler(rc -> {
             HttpServerRequest req = rc.request();
 
@@ -493,7 +493,7 @@ public class AngularIOWebContainer {
         HttpServer server = vertx.createHttpServer(httpServerOptions);
 
         final CFNoscriptRenderers noscriptRenderers = wireUpCFNoscriptRenderers(namespace, zone, vertx, router, ssi);
-
+        wireUpCFApi(namespace, zone, vertx, router, false);
         router.get().handler(rc -> {
             HttpServerRequest req = rc.request();
 
@@ -936,7 +936,7 @@ public class AngularIOWebContainer {
         }
         return result;
     }
-    private static void wireUpCFApi(String namespace, String zone, Vertx vertx, Router router) {
+    private static void wireUpCFApi(String namespace, String zone, Vertx vertx, Router router, boolean isHttps) {
         final CorsOptionsHandler corsOptionsHandler = new CorsOptionsHandler();
         Reflections reflections = new Reflections(namespace);
         for (Class<?> clazz : reflections.getTypesAnnotatedWith(CFApi.class)) {
@@ -945,6 +945,11 @@ public class AngularIOWebContainer {
                 for (final Method method : clazz.getMethods()) {
                     if (method.isAnnotationPresent(CFApiMethod.class)) {
                         CFApiMethod apiMethod = method.getAnnotation(CFApiMethod.class);
+                        if (isHttps) {
+                            if (!apiMethod.https()) continue;
+                        } else {
+                            if (!apiMethod.http()) continue;
+                        }
                         final String url = apiMethod.url();
                         if (apiMethod.cors()) router.options(url).handler(corsOptionsHandler);
                         switch (apiMethod.type()) {
