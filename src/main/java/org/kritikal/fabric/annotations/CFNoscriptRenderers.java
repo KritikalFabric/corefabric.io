@@ -80,6 +80,7 @@ public class CFNoscriptRenderers {
             transformer.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
             transformer.setOutputProperty(OutputKeys.METHOD, "html");
             transformer.setOutputProperty(OutputKeys.VERSION, "5.0");
+            transformer.setOutputProperty(OutputKeys.INDENT, "no");
             transformer.transform(new DOMSource(node),
                     new StreamResult(buffer));
             String str = buffer.toString();
@@ -107,10 +108,10 @@ public class CFNoscriptRenderers {
             transformer.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
             transformer.setOutputProperty(OutputKeys.METHOD, "html");
             transformer.setOutputProperty(OutputKeys.VERSION, "5.0");
+            transformer.setOutputProperty(OutputKeys.INDENT, "no");
             transformer.transform(new DOMSource(node),
                     new StreamResult(buffer));
-            String str = buffer.toString();
-            return str;
+            return buffer.toString();
         }
         catch (TransformerException e) {
             return null;
