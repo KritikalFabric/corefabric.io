@@ -877,7 +877,7 @@ public class AngularIOWebContainer {
                                         }
                                     }, false, result1->{
 
-                                        if (result1.failed()) {
+                                        if (result1.failed() || null==result1.result()) {
                                             req.response().setStatusCode(500).end();
                                         } else {
                                             boolean gzip = false;
