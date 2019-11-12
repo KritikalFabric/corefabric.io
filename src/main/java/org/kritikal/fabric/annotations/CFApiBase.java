@@ -80,30 +80,6 @@ public abstract class CFApiBase {
     public HttpServerRequest request() {
         return this.r.request();
     }
-    public void withConfigFor(final String short_name, Consumer<Configuration> withConfig) {
-        final String zone = "street-stall.space";
-
-        // Fake a config ping for the trader
-        final JsonObject dbQuery = new JsonObject();
-        dbQuery.put("action", "by_short_name");
-        dbQuery.put("zone", zone);
-        dbQuery.put("short_name", short_name);
-
-        CoreFabric.getVertx().eventBus().send("corefabric.app-config-db." + zone, dbQuery, (ar) -> {
-            JsonObject configuration = null;
-            if (ar.succeeded()) {
-                configuration = (JsonObject) ar.result().body();
-            } else {
-                configuration = new JsonObject();
-            }
-
-            final Configuration c = new Configuration(short_name); // lie about instance name
-            c.applyInstanceConfig(configuration);
-            // we ignore local config
-
-            CoreFabric.getVertx().executeBlocking((future)->{ withConfig.accept(c); future.complete(); }, false, (result)->{ /* nothing */ });
-        });
-    }
 
     public final static DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory.newInstance();
 
