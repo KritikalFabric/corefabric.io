@@ -242,6 +242,7 @@ public class AngularIOWebContainer {
         }
         public final Configuration cfg;
         public final HttpServerRequest request;
+        public CFNoscriptRenderers.CFXmlParameters noscriptParameters = null;
     }
 
     final static Pattern bingUserAgent = Pattern.compile("(compatible; (bingbot|adidxbot)| BingPreview)/", Pattern.CASE_INSENSITIVE);
@@ -336,12 +337,13 @@ public class AngularIOWebContainer {
                                                                 try {
                                                                     String s = new String(ar.result().getBytes(), "UTF-8");
                                                                     // run no-script handler, if it exists
+                                                                    CFNoscriptRenderers.CFXmlParameters parameters = null;
                                                                     String noscript = null;
 
                                                                     for (CFNoscriptRenderers.CFXmlRenderer renderer : noscriptRenderers.array) {
                                                                         Matcher matcher = renderer.pattern.matcher(req.path());
                                                                         if (matcher.matches()) {
-                                                                            CFNoscriptRenderers.CFXmlParameters parameters = new CFNoscriptRenderers.CFXmlParameters(cfg, req, rc, corefabric);
+                                                                            parameters = new CFNoscriptRenderers.CFXmlParameters(cfg, req, rc, corefabric);
                                                                             noscript = renderer.processor.apply(parameters);
                                                                             break;
                                                                         }
@@ -398,6 +400,7 @@ public class AngularIOWebContainer {
                                                                     }
 
                                                                     SsiParams ssiParams = new SsiParams(cfg, req);
+                                                                    ssiParams.noscriptParameters = parameters;
                                                                     s = ssi.apply(ssiParams, s);
 
                                                                     req.response().headers().add("Cache-Control", "cache, store, public, max-age=60");
@@ -562,12 +565,13 @@ public class AngularIOWebContainer {
                                                                         try {
                                                                             String s = new String(ar.result().getBytes(), "UTF-8");
                                                                             // run no-script handler, if it exists
+                                                                            CFNoscriptRenderers.CFXmlParameters parameters = null;
                                                                             String noscript = null;
 
                                                                             for (CFNoscriptRenderers.CFXmlRenderer renderer : noscriptRenderers.array) {
                                                                                 Matcher matcher = renderer.pattern.matcher(req.path());
                                                                                 if (matcher.matches()) {
-                                                                                    CFNoscriptRenderers.CFXmlParameters parameters = new CFNoscriptRenderers.CFXmlParameters(cfg, req, rc, corefabric);
+                                                                                    parameters = new CFNoscriptRenderers.CFXmlParameters(cfg, req, rc, corefabric);
                                                                                     noscript = renderer.processor.apply(parameters);
                                                                                     break;
                                                                                 }
@@ -623,6 +627,7 @@ public class AngularIOWebContainer {
                                                                             }
 
                                                                             SsiParams ssiParams = new SsiParams(cfg, req);
+                                                                            ssiParams.noscriptParameters = parameters;
                                                                             s = ssi.apply(ssiParams, s);
 
                                                                             req.response().headers().add("Cache-Control", "cache, store, public, max-age=60");
@@ -820,6 +825,7 @@ public class AngularIOWebContainer {
                             final Transformer xsl = result.get(filesystemLocation);
                             try {
                                 Object o = ctor.newInstance(params.cfg);
+                                params.api = (CFApiBase)o;
                                 ((CFApiBase)o).setCookie(params.corefabric);
                                 ((CFApiBase)o).setRoutingContext(params.rc);
                                 Function<Document, String> fn = (doc)->{
@@ -882,6 +888,7 @@ public class AngularIOWebContainer {
                                                 }
                                             }
                                             SsiParams ssiParams = new SsiParams(cfg, req);
+                                            ssiParams.noscriptParameters = params;
                                             String html = ssi.apply(ssiParams, (String) result1.result());
 
                                             req.response().headers().add("Cache-Control", "cache, store, public, max-age: 3600");

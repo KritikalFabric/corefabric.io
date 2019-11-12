@@ -47,6 +47,16 @@ public abstract class CFApiBase {
     public String getCookie() {
         return corefabric;
     }
+    JsonObject schemaOrgMetaData = null;
+    public void setSchemaOrgMetaData(JsonObject object) {
+        this.schemaOrgMetaData = object;
+    }
+    public boolean hasSchemaOrgMetaData() {
+        return null != this.schemaOrgMetaData;
+    }
+    public JsonObject getSchemaOrgMetaData() {
+        return this.schemaOrgMetaData;
+    }
 
     public void proceedIfCookie(Consumer<UUID> ifCookie, Consumer<Void> ifNoCookie) {
         boolean preAuthFailure = false;

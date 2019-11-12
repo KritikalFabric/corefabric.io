@@ -137,6 +137,7 @@ public class CFNoscriptRenderers {
             this.rc = rc;
             this.corefabric = corefabric;
         }
+        public CFApiBase api = null;
         public final Configuration cfg;
         public final HttpServerRequest req;
         public final RoutingContext rc;
