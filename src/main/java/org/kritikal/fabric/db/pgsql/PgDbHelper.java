@@ -286,4 +286,16 @@ public class PgDbHelper {
         return ary;
     }
 
+    public static void execute(Connection con, String sql) throws SQLException
+    {
+        // "SET SESSION CHARACTERISTICS AS TRANSACTION ISOLATION LEVEL READ UNCOMMITTED READ ONLY DEFERRABLE;"
+        PreparedStatement stmt = con.prepareStatement(sql);
+        try {
+            stmt.execute();
+        }
+        finally {
+            stmt.close();
+        }
+    }
+
 }
