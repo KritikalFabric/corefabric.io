@@ -577,6 +577,13 @@ public class AngularIOWebContainer {
                                                                                 }
                                                                             }
 
+                                                                            if (null == noscript) {
+                                                                                req.response().setStatusCode(404);
+                                                                                req.response().end();
+                                                                                promise.complete();
+                                                                                return;
+                                                                            }
+
                                                                             if (null != noscript) {
                                                                                 // some web crawlers will prefer working html to broken javascript
                                                                                 if (true) {
