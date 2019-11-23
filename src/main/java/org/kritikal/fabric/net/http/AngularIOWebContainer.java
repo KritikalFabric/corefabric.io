@@ -77,12 +77,13 @@ public class AngularIOWebContainer {
     public static String cookieCutter(HttpServerRequest req) {
         boolean found = false;
         boolean set = false;
+        String cookieName = req.isSSL() ? "corefabric" : "cf_http";
         String corefabric = null;
         try {
             String cookies = req.headers().get("Cookie");
             Set<Cookie> cookieSet = CookieDecoder.decode(cookies);
             for (Cookie cookie : cookieSet) {
-                if ("corefabric".equals(cookie.getName())) {
+                if (cookieName.equals(cookie.getName())) {
                     corefabric = cookie.getValue().trim();
                     break;
                 }
@@ -97,11 +98,10 @@ public class AngularIOWebContainer {
         }
         if (corefabric == null) {
             corefabric = UUID.randomUUID().toString();
-            String cfcookie = "corefabric=" + corefabric + "; Path=/";
-            /*
+            String cfcookie = cookieName + "=" + corefabric + "; Path=/";
             if (req.isSSL())
                 cfcookie = cfcookie + "; Secure";
-            */
+
             req.response().headers().add("Set-Cookie", cfcookie);
             set = true;
         }
@@ -118,7 +118,7 @@ public class AngularIOWebContainer {
         return host;
     }
 
-    private static String cookieCutter(ServerWebSocket webSocket) {
+    public static String cookieCutter(ServerWebSocket webSocket) {
         String corefabric = null;
         try {
             String cookies = webSocket.headers().get("Cookie");

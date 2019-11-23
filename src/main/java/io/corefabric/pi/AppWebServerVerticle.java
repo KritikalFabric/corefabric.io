@@ -20,6 +20,7 @@ import org.kritikal.fabric.core.VERTXDEFINES;
 import io.corefabric.pi.appweb.json.DtnConfigJson;
 import io.corefabric.pi.appweb.json.NodeMonitorJson;
 import io.corefabric.pi.appweb.json.StatusJson;
+import org.kritikal.fabric.net.http.AngularIOWebContainer;
 import org.kritikal.fabric.net.http.BinaryBodyHandler;
 import org.kritikal.fabric.net.http.CorsOptionsHandler;
 import org.kritikal.fabric.net.http.FabricApiConnector;
@@ -42,50 +43,6 @@ public class AppWebServerVerticle extends AbstractVerticle {
     HttpServer server = null;
     String tempdir = null;
     boolean runningInsideJar = true;
-
-    private static String cookieCutter(HttpServerRequest req) {
-        String corefabric = null;
-        try {
-            String cookies = req.headers().get("Cookie");
-            Set<Cookie> cookieSet = CookieDecoder.decode(cookies);
-            for (Cookie cookie : cookieSet) {
-                if ("corefabric".equals(cookie.getName())) {
-                    corefabric = cookie.getValue().trim();
-                    break;
-                }
-            }
-            if ("".equals(corefabric)) {
-                corefabric = null;
-            }
-            UUID.fromString(corefabric); // does it parse?
-        } catch (Throwable t) {
-            corefabric = null;
-        }
-        if (corefabric == null) {
-            corefabric = UUID.randomUUID().toString();
-            Cookie cookie = new DefaultCookie("corefabric", corefabric);
-            req.response().headers().add("Set-Cookie", ServerCookieEncoder.encode(cookie));
-        }
-        return corefabric;
-    }
-
-    private static String cookieCutter(ServerWebSocket webSocket) {
-        String corefabric = null;
-        try {
-            String cookies = webSocket.headers().get("Cookie");
-            Set<Cookie> cookieSet = CookieDecoder.decode(cookies);
-            for (Cookie cookie : cookieSet) {
-                if ("corefabric".equals(cookie.getName())) {
-                    corefabric = cookie.getValue().trim();
-                    UUID.fromString(corefabric); // does it parse?
-                    return corefabric;
-                }
-            }
-        } catch (Throwable t) {
-            // ignore
-        }
-        return null;
-    }
 
     private static void extract(JarFile parentJar, ZipEntry entry, String destination)
         throws java.io.FileNotFoundException, java.io.IOException
@@ -220,7 +177,7 @@ public class AppWebServerVerticle extends AbstractVerticle {
         httpServerOptions.setHandle100ContinueAutomatically(true);
         server = vertx.createHttpServer(httpServerOptions);
         server.websocketHandler(ws -> {
-            final String corefabric = cookieCutter(ws);
+            final String corefabric = AngularIOWebContainer.cookieCutter(ws);
             if (corefabric==null) ws.reject();
             if (!"/mqtt".equals(ws.path())) ws.reject();
             else {
@@ -250,7 +207,7 @@ public class AppWebServerVerticle extends AbstractVerticle {
             //String instancekey = host.split("\\.")[0];
             final String instancekey = "development/demo"; //FIXME zone/instance
 
-            final String corefabric = cookieCutter(req);
+            final String corefabric = AngularIOWebContainer.cookieCutter(req);
 
             JsonObject o = new JsonObject();
             o.put("instancekey", instancekey);
@@ -295,7 +252,7 @@ public class AppWebServerVerticle extends AbstractVerticle {
 
             if (file != null) {
 
-                cookieCutter(req);
+                AngularIOWebContainer.cookieCutter(req);
 
                 boolean gzip = false;
                 for (Map.Entry<String, String> stringStringEntry : req.headers()) {
