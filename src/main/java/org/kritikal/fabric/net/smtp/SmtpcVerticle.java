@@ -110,7 +110,7 @@ public abstract class SmtpcVerticle extends AbstractVerticle implements Handler<
             return;
         }
 
-        logger.info(address + " mail from <" + state.message.from + "> to <" + state.message.to.get(0) + "> retry " + state.retryCount);
+        logger.debug(address + " mail from <" + state.message.from + "> to <" + state.message.to.get(0) + "> retry " + state.retryCount);
 
         String _domain = state.message.to.get(0);
         int i = _domain.indexOf('@');
@@ -142,10 +142,12 @@ public abstract class SmtpcVerticle extends AbstractVerticle implements Handler<
                 if (!state.deliveryInformation.haveLookedUpMxList) {
                     state.deliveryInformation.haveLookedUpMxList = true;
                     DnsClient client = vertx.createDnsClient(53, CoreFabric.ServerConfiguration.resolver);
+                    state.tainted = true;
                     client.resolveMX(domain, new Handler<AsyncResult<List<MxRecord>>>() {
                         @Override
                         public void handle(AsyncResult<List<MxRecord>> result) {
                             if (result.succeeded()) {
+                                SmtpTransactionState state1 = new SmtpTransactionState(state.toJsonObject());
                                 List<MxRecord> list = result.result();
                                 if (list.size() == 0) {
                                     controller.handleProtocolFailure(Buffer.buffer("500 no MX records", Constants.ASCII));
@@ -158,10 +160,10 @@ public abstract class SmtpcVerticle extends AbstractVerticle implements Handler<
                                         }
                                     });
                                     for (int i = 0; i < list.size(); ++i) {
-                                        state.deliveryInformation.remainingMxListForDns.add(list.get(i).name());
+                                        state1.deliveryInformation.remainingMxListForDns.add(list.get(i).name());
                                     }
 
-                                    vertx.eventBus().send(address, state.toJsonObject(), VERTXDEFINES.DELIVERY_OPTIONS); // next step
+                                    vertx.eventBus().send(address, state1.toJsonObject(), VERTXDEFINES.DELIVERY_OPTIONS); // next step
                                 }
                             } else {
                                 controller.handleProtocolFailure(Buffer.buffer("500 could not resolve MX", Constants.ASCII));
@@ -171,31 +173,54 @@ public abstract class SmtpcVerticle extends AbstractVerticle implements Handler<
                     });
                 }
 
+                if (state.tainted) return;
+
                 String mxName = state.deliveryInformation.mxName();
                 if (mxName != null) {
                     DnsClient client = vertx.createDnsClient(53, CoreFabric.ServerConfiguration.resolver);
+                    state.tainted = true;
                     client.resolveA(mxName, new Handler<AsyncResult<List<String>>>() {
                         @Override
                         public void handle(AsyncResult<List<String>> event) {
+                            SmtpTransactionState state1 = new SmtpTransactionState(state.toJsonObject());
                             if (event.succeeded()) {
                                 List<String> list = event.result();
                                 for (int i = 0; i < list.size(); ++i) {
-                                    state.deliveryInformation.remainingIpAddressesForConnect.add(list.get(i));
+                                    state1.deliveryInformation.remainingIpAddressesForConnect.add(list.get(i));
                                 }
                             } else {
                                 // ignore error at this point
                             }
 
-                            vertx.eventBus().send(address, state.toJsonObject(), VERTXDEFINES.DELIVERY_OPTIONS);
+                            state1.tainted = true;
+                            client.resolveAAAA(mxName, new Handler<AsyncResult<List<String>>>() {
+                                @Override
+                                public void handle(AsyncResult<List<String>> event) {
+                                    SmtpTransactionState state2 = new SmtpTransactionState(state1.toJsonObject());
+                                    if (event.succeeded()) {
+                                        List<String> list = event.result();
+                                        for (int i = 0; i < list.size(); ++i) {
+                                            state2.deliveryInformation.remainingIpAddressesForConnect.add(list.get(i));
+                                        }
+                                    } else {
+                                        // ignore error at this point
+                                    }
+
+                                    vertx.eventBus().send(address, state2.toJsonObject(), VERTXDEFINES.DELIVERY_OPTIONS);
+                                }
+                            });
                         }
                     });
-                    // TODO: extra phase resolving AAAA records if IPV6 switched on by config
                     return;
                 }
+
+                if (state.tainted) return;
 
                 state.deliveryInformation.readyForConnect = true;
             }
         }
+
+        if (state.tainted) return;
 
         final String connectAddress = state.deliveryInformation.useMx ? state.deliveryInformation.connectAddress() : state.deliveryInformation.smartHost;
         if (connectAddress == null) {

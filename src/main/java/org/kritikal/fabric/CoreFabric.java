@@ -71,6 +71,7 @@ public class CoreFabric {
                 ip4 = node.getString("ip4", "127.0.0.1");
                 nodejsDev = node.getBoolean("nodejs_dev", false);
                 tmp = node.getString("tmp", "/var/tmp");
+                resolver = node.getString("resolver", "localhost");
             }
             JsonObject cluster = globalConfig.getJsonObject("cluster");
             if (cluster != null) {

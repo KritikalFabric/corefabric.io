@@ -32,6 +32,8 @@ public class SmtpTransactionState {
         lastResponse = o.containsKey("last_response") ? Buffer.buffer(o.getString("last_response")) : null;
     }
 
+    public boolean tainted = false;
+
     public String serverIp = null;
     public String serverName = null;
 
