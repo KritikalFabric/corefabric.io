@@ -3,6 +3,7 @@ package org.kritikal.fabric.net.smtp;
 import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.net.NetSocket;
+import org.kritikal.fabric.CoreFabric;
 
 import java.util.ArrayList;
 
@@ -98,10 +99,10 @@ public abstract class SmtpcProtocol {
                     isEsmtp = banner.contains(" ESMTP ");
 
                     if (isEsmtp) {
-                        socket.write("EHLO nat.amb1ent.org\r\n"); // TODO: helo address
+                        socket.write("EHLO " + CoreFabric.ServerConfiguration.hostname + "\r\n");
                     }
                     else {
-                        socket.write("HELO nat.amb1ent.org\r\n"); // TODO: helo address
+                        socket.write("HELO " + CoreFabric.ServerConfiguration.hostname + "\r\n");
                     }
                     state.state = SmtpTransactionStateEnum.HELO;
                 }
