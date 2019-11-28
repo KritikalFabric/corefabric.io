@@ -27,7 +27,7 @@ public abstract class DbInstanceWorkerVerticle extends AbstractVerticle implemen
     List<String> addresses;
     boolean readOnly;
 
-    public /* hack */ static DbInstanceContainer dbContainer = null;
+    public DbInstanceContainer dbContainer = null;
 
     public Logger logger = null;
     List<MessageConsumer> mcList = null;
