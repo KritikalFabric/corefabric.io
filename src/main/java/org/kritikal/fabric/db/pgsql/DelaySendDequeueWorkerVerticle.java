@@ -11,6 +11,8 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.*;
 
 /**
@@ -23,8 +25,9 @@ public class DelaySendDequeueWorkerVerticle extends AbstractVerticle {
     private final ScheduledExecutorService scheduler =
             Executors.newScheduledThreadPool(1);
     ScheduledFuture<?> taskHandle;
-    ConcurrentHashMap<String, String> addresses;
-    String connectionString;
+    List<String> addresses;
+    public DbInstanceContainer dbContainer = new DbInstanceContainer(1);
+
     Logger logger;
 
     public void start() throws Exception
@@ -38,18 +41,13 @@ public class DelaySendDequeueWorkerVerticle extends AbstractVerticle {
             return;
         }
 
-        addresses = new ConcurrentHashMap<String, String>();
-        JsonObject obj = config().getJsonObject("addresses");
-        for (String fieldName : obj.fieldNames())
-        {
-            addresses.put(fieldName, obj.getString(fieldName));
-        }
+        addresses = new ArrayList<String>();
+        addresses.add(config().getString("destination"));
 
-        connectionString = config().getString("connectionString");
+        dbContainer.initialise(config().getJsonObject(config().getString("db_ref")));
 
         try {
-            DelaySendEnqueueWorkerVerticle.ensureQueue(connectionString);
-            ensureDequeue(connectionString);
+            ensureDequeue();
         }
         catch (Exception e) {
             logger.fatal("Cannot build tables.", e);
@@ -61,14 +59,7 @@ public class DelaySendDequeueWorkerVerticle extends AbstractVerticle {
             public void run() {
                 try
                 {
-                    final Connection con = poolOfPools.computeIfAbsent(connectionString, (k) -> {
-                        return BasicDataSourceHelper.pool(1, basicDataSource -> {
-                                    basicDataSource.setUrl(connectionString);
-                                    basicDataSource.setUsername("postgres");
-                                    basicDataSource.setPassword("password");
-                                    basicDataSource.setAccessToUnderlyingConnectionAllowed(true);
-                                });
-                    }).getConnection();
+                    final Connection con = dbContainer.connect(getVertx().fileSystem(), false);
                     try
                     {
                         StringBuilder array = new StringBuilder();
@@ -77,11 +68,12 @@ public class DelaySendDequeueWorkerVerticle extends AbstractVerticle {
                             array.append(i == 0 ? "?" : ",?");
                         }
                         array.append("]");
-                        PreparedStatement stmt = con.prepareStatement("LOCK TABLE node.send_q IN EXCLUSIVE MODE NOWAIT; SELECT a, b FROM node.dequeue_send_q(" +
+                        //PreparedStatement stmt = con.prepareStatement("LOCK TABLE node.send_q IN EXCLUSIVE MODE NOWAIT; SELECT a, b FROM node.dequeue_send_q(" +
+                        PreparedStatement stmt = con.prepareStatement("SELECT a, b FROM node.dequeue_send_q(" +
                                 array.toString() + ");");
                         try {
                             int i = 0;
-                            for (String address : addresses.keySet())  {
+                            for (String address : addresses)  {
                                 stmt.setString(++i, address);
                             }
                             if (stmt.execute()) {
@@ -92,8 +84,7 @@ public class DelaySendDequeueWorkerVerticle extends AbstractVerticle {
                                             String address = rs.getString(1);
                                             String body = rs.getString(2);
                                             final JsonObject o = new JsonObject(body);
-                                            String toAddress = addresses.get(address);
-                                            vertx.eventBus().send(toAddress, o, VERTXDEFINES.DELIVERY_OPTIONS);
+                                            vertx.eventBus().send(address, o, VERTXDEFINES.DELIVERY_OPTIONS);
                                         }
                                         catch (Exception e)
                                         {
@@ -104,6 +95,7 @@ public class DelaySendDequeueWorkerVerticle extends AbstractVerticle {
                                     rs.close();
                                 }
                             }
+                            con.commit();
                         }
                         finally {
                             stmt.close();
@@ -121,7 +113,7 @@ public class DelaySendDequeueWorkerVerticle extends AbstractVerticle {
                     logger.warn("In run()", e);
                 }
             }
-        }, 1, 1, TimeUnit.SECONDS);
+        }, 1, 1, TimeUnit.MINUTES);
     }
 
     public void stop() throws Exception
@@ -130,7 +122,7 @@ public class DelaySendDequeueWorkerVerticle extends AbstractVerticle {
         super.stop();
     }
 
-    public static void ensureDequeue(String connectionString) throws Exception
+    public static void ensureDequeue() throws Exception
     {
     }
 

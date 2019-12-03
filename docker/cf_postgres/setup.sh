@@ -43,7 +43,7 @@ CREATE TABLE node.send_q (
 );
 
 CREATE OR REPLACE FUNCTION node.dequeue_send_q(addresses text[]) RETURNS SETOF node.send_q AS \$\$
-DECLARE c CURSOR FOR SELECT * FROM node.send_q WHERE ARRAY[a] <@ addresses AND dt < current_timestamp FOR UPDATE OF node.send_q;
+DECLARE c CURSOR FOR SELECT * FROM node.send_q WHERE ARRAY[a] <@ addresses AND dt < current_timestamp FOR UPDATE OF send_q;
 BEGIN
 FOR r IN c LOOP
     DELETE FROM node.send_q WHERE CURRENT OF c;

@@ -18,11 +18,12 @@ import java.util.*;
 public class DelaySendEnqueueWorkerVerticle extends AbstractVerticle implements Handler<Message<JsonObject>> {
 
     List<String> addresses;
-    String connectionString;
     int delayMilliseconds;
 
     Logger logger = null;
     List<MessageConsumer> mcList = null;
+
+    public DbInstanceContainer dbContainer = new DbInstanceContainer(1);
 
     public void start() throws Exception
     {
@@ -36,14 +37,12 @@ public class DelaySendEnqueueWorkerVerticle extends AbstractVerticle implements 
         }
 
         addresses = new ArrayList<String>();
-        JsonArray ary = config().getJsonArray("addresses");
-        for (int i = 0; i < ary.size(); ++i)
-            addresses.add(ary.getString(i));
-        connectionString = config().getString("connectionString");
+        addresses.add(config().getString("destination"));
+        dbContainer.initialise(config().getJsonObject(config().getString("db_ref")));
         delayMilliseconds = config().getInteger("delayMinutes") * 1000 * 60;
 
         try {
-            ensureQueue(connectionString);
+            ensureQueue();
         }
         catch (Exception e) {
             logger.fatal("Cannot build tables.", e);
@@ -51,12 +50,10 @@ public class DelaySendEnqueueWorkerVerticle extends AbstractVerticle implements 
         }
 
         mcList = new ArrayList<>();
-        for(String address : addresses) {
-            mcList.add(vertx.eventBus().localConsumer(address, this));
-        }
+        mcList.add(vertx.eventBus().localConsumer(config().getString("listen"), this));
     }
 
-    public static void ensureQueue(String connectionString) throws SQLException
+    public static void ensureQueue() throws SQLException
     {
     }
 
@@ -74,13 +71,13 @@ public class DelaySendEnqueueWorkerVerticle extends AbstractVerticle implements 
     {
         try
         {
-            Connection con = DriverManager.getConnection(connectionString);
+            Connection con = dbContainer.connect(getVertx().fileSystem(), false);
             try
             {
                 Timestamp ts = new Timestamp(new java.util.Date().getTime() + delayMilliseconds);
                 PreparedStatement stmt = con.prepareStatement("INSERT INTO node.send_q (a, b, dt) VALUES (?, ?::jsonb, ?)");
                 try {
-                    stmt.setString(1, message.address());
+                    stmt.setString(1, config().getString("destination"));
                     stmt.setString(2, message.body().toString());
                     stmt.setTimestamp(3, ts);
                     stmt.executeUpdate();
@@ -88,6 +85,8 @@ public class DelaySendEnqueueWorkerVerticle extends AbstractVerticle implements 
                 finally {
                     stmt.close();
                 }
+
+                con.commit();
             }
             finally
             {

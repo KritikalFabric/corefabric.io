@@ -30,6 +30,8 @@ public abstract class SmtpcProtocol {
         from = this.state.message.from;
         for (int i = 0; i < this.state.message.to.size(); ++i) { to.add(this.state.message.to.get(i)); }
         body = this.state.message.getBodyBuffer();
+
+        if (from == null) from = "";
     }
 
     public abstract void handleSentOk();
