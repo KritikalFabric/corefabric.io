@@ -15,9 +15,11 @@ import io.vertx.core.net.NetSocket;
 import org.kritikal.fabric.CoreFabric;
 import org.kritikal.fabric.core.VERTXDEFINES;
 
+import java.text.SimpleDateFormat;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.BiConsumer;
@@ -65,6 +67,12 @@ public abstract class SmtpcVerticle extends AbstractVerticle implements Handler<
         vertx.eventBus().send(address + ".ready", new JsonObject().put("ok", false), VERTXDEFINES.DELIVERY_OPTIONS);
         emptyPool();
         super.stop();
+    }
+
+    private final static String pattern = "EEE, dd MMM yyyy HH:mm:ss Z";
+    private final static SimpleDateFormat format = new SimpleDateFormat(pattern, Locale.ENGLISH);
+    public final static String formatSmtpDateHeader(java.util.Date date) {
+        return format.format(date);
     }
 
     public void emptyPool()
