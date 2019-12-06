@@ -100,6 +100,11 @@ public abstract class SmtpcProtocol {
                     String banner = lines.toString(Constants.ASCII);
                     isEsmtp = banner.contains(" ESMTP ");
 
+                    // synesis.co.uk exim dislikes mail submitted after starttls
+                    if (banner.contains(" Exim ")) {
+                        isEsmtp = false;
+                    }
+
                     if (isEsmtp) {
                         socket.write("EHLO " + CoreFabric.ServerConfiguration.hostname + "\r\n");
                     }
