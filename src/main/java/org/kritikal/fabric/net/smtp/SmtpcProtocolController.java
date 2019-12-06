@@ -31,17 +31,17 @@ public abstract class SmtpcProtocolController {
         }
         warn.append(">");
         logger.warn(warn.toString());
-        handleSuccess();
+        handleSuccess(state);
     }
 
     // no message
-    public abstract void handleSuccess();
+    public abstract void handleSuccess(final SmtpTransactionState state);
 
     // full message, with delivery information but not state.
-    public abstract void handleRetry(final JsonObject o);
+    public abstract void handleRetry(final SmtpTransactionState state, final JsonObject o);
 
     // partial message, just one to address.
-    public abstract void handleUndeliverable(final JsonObject o);
+    public abstract void handleUndeliverable(final SmtpTransactionState state, final JsonObject o);
 
     public final void handleProtocolFailure(Buffer buffer)
     {
@@ -66,9 +66,9 @@ public abstract class SmtpcProtocolController {
         }
 
         state.retryCount++;
-        if ((400 <= code && code < 500) && state.retryCount < 10) {
+        if ((400 <= code && code < 500) && state.retryCount < 3) {
             final JsonObject o = state.toMiniJsonObject();
-            handleRetry(o);
+            handleRetry(state, o);
         }
         else {
             StringBuilder fatal = new StringBuilder();
@@ -109,7 +109,7 @@ public abstract class SmtpcProtocolController {
             o.put("from", "");
             o.put("body", bounceMessage.toString());
 
-            handleUndeliverable(o);
+            handleUndeliverable(state, o);
         }
     }
 }
