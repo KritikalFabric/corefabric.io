@@ -104,6 +104,10 @@ public abstract class SmtpcProtocol {
                     if (banner.contains(" Exim ")) {
                         isEsmtp = false;
                     }
+                    // hotmail.com moans
+                    if (banner.contains(" Microsoft ")) {
+                        isEsmtp = false;
+                    }
 
                     if (isEsmtp) {
                         socket.write("EHLO " + CoreFabric.ServerConfiguration.hostname + "\r\n");
