@@ -2,6 +2,7 @@ package org.kritikal.fabric.net.smtp;
 
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.net.NetSocket;
+import io.vertx.core.net.SocketAddress;
 
 import java.util.regex.Pattern;
 import java.util.regex.Matcher;
@@ -19,6 +20,10 @@ public abstract class SmtpdProtocol {
         this.socket = socket;
         socket.write("220 " + banner() + " SMTP\r\n");
         state.state = SmtpTransactionStateEnum.HELO;
+    }
+
+    public SocketAddress getRemoteAddress() {
+        return socket.remoteAddress();
     }
 
     public abstract String banner();
