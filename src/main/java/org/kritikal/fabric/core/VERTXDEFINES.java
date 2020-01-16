@@ -9,6 +9,6 @@ public class VERTXDEFINES {
 
     private final static long LONGTIMEOUT = 5*3600000l;
 
-    public final static DeliveryOptions DELIVERY_OPTIONS = new DeliveryOptions().setSendTimeout(LONGTIMEOUT);
+    public final static DeliveryOptions DELIVERY_OPTIONS = new DeliveryOptions().setSendTimeout(LONGTIMEOUT).setLocalOnly(false);
 
 }
