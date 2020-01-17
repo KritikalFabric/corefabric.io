@@ -52,6 +52,7 @@ import io.vertx.ext.shell.command.CommandProcess;
 import io.vertx.ext.shell.command.CommandRegistry;
 import io.vertx.ext.shell.term.HttpTermOptions;
 import io.hawt.web.plugin.HawtioPlugin;
+import org.kritikal.fabric.CoreFabric;
 import org.kritikal.fabric.contrib.jdtn.BlobAndBundleDatabase;
 
 import java.io.File;
@@ -112,11 +113,13 @@ public class JDTNHTTPShell extends AbstractVerticle{
 		}
 
 		//Expose Metrics to JMX for Jolokia to expose over REST and hawtIO to render
-		Vertx vertx = Vertx.vertx(new VertxOptions().setMetricsOptions(
+		Vertx vertx = /*Vertx.vertx(new VertxOptions().setMetricsOptions(
 				new DropwizardMetricsOptions()
 						.setEnabled(true)
 						.setJmxEnabled(true)
 						.setJmxDomain("vertx-metrics")));
+						*/
+				CoreFabric.getVertx();
 
 		//Deploy shell verticle
 		vertx.deployVerticle(shell);

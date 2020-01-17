@@ -3,6 +3,7 @@ package org.kritikal.fabric;
 import com.hazelcast.config.*;
 import com.hazelcast.core.HazelcastInstance;
 import io.vertx.core.*;
+import io.vertx.core.http.ClientAuth;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.logging.Logger;
@@ -59,6 +60,7 @@ public class CoreFabric {
             public final String host;
             public final int port;
         }
+        public static String hazelcastHost = null;
         public static boolean hazelcastJoinTcpip = false;
         public static boolean hazelcastJoinMulticast = true;
         public static final ArrayList<ClusterPeer> peers = new ArrayList<>();
@@ -86,6 +88,7 @@ public class CoreFabric {
                         }
                     }
                 }
+                hazelcastHost = cluster.getString("host");
             }
         }
     }
@@ -225,6 +228,12 @@ public class CoreFabric {
         vertxOptions.setBlockedThreadCheckInterval(5 * 3600 * 1000);
         vertxOptions.setWarningExceptionTime(5 * 3600 * 1000);
         vertxOptions.setMetricsOptions(new DropwizardMetricsOptions().setEnabled(true).setJmxEnabled(true).setJmxDomain("io.corefabric").setRegistryName("io.corefabric"));
+
+        vertxOptions.getEventBusOptions()
+                .setHost(ServerConfiguration.hazelcastHost)
+                .setPort(25701)
+                .setClientAuth(ClientAuth.NONE)
+                .setClustered(true);
 
         final Future<Vertx> vertxFuture = Future.future();
         Vertx.clusteredVertx(vertxOptions, res -> {
