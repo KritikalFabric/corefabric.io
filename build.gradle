@@ -2,20 +2,16 @@ buildscript {
     repositories {
 	jcenter() 
 	mavenLocal()
+        mavenCentral()
 	maven {
 	    url 'https://plugins.gradle.org/m2/'
 	}
     }
     dependencies {
-        classpath 'com.github.jengelman.gradle.plugins:shadow:1.2.3'
+        classpath 'com.github.jengelman.gradle.plugins:shadow:5.2.0'
         classpath 'com.google.protobuf:protobuf-gradle-plugin:0.8.0'
     	classpath 'gradle.plugin.de.fuerstenau:BuildConfigPlugin:1.1.8'
     }
-}
-
-plugins {
-    id "com.eriwen.gradle.js" version "1.12.1"
-    id "com.eriwen.gradle.css" version "1.11.1"
 }
 
 apply plugin: 'java'
@@ -32,8 +28,8 @@ jar {
 version = '0.2.1-autoconf' // our version
 vertxVersion = '3.8.4' // vert.x version
 
-sourceCompatibility = '1.12'
-targetCompatibility = '1.12'
+sourceCompatibility = '1.13'
+targetCompatibility = '1.13'
 
 buildConfig {
 	sourceSets {
@@ -73,7 +69,7 @@ protobuf {
 dependencies {
 
     contribCompile "io.vertx:vertx-core:$vertxVersion"
-    contribCompile group: 'org.postgresql', name: 'postgresql', version: '9.4.1211.jre7'
+    contribCompile group: 'org.postgresql', name: 'postgresql', version: '42.2.9'
     contribCompile group: 'org.apache.commons', name: 'commons-dbcp2', version: '2.0.1'
     contribCompile fileTree(include: ['*.jar'], dir: 'lib')
     compile fileTree(include: ['*.jar'], dir: 'lib')
@@ -90,7 +86,7 @@ dependencies {
     compile "io.vertx:vertx-auth-oauth2:$vertxVersion"
 
     testCompile group: 'junit', name: 'junit', version: '4.12'
-    compile group: 'org.postgresql', name: 'postgresql', version: '9.4.1211.jre7'
+    compile group: 'org.postgresql', name: 'postgresql', version: '42.2.9'
     compile group: 'com.datastax.cassandra', name: 'cassandra-driver-core', version: '2.1.6'
     compile group: 'com.datastax.cassandra', name: 'cassandra-driver-mapping', version: '2.1.6'
     compile group: 'org.apache.commons', name: 'commons-dbcp2', version: '2.0.1'
