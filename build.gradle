@@ -70,7 +70,7 @@ dependencies {
 
     contribCompile "io.vertx:vertx-core:$vertxVersion"
     contribCompile group: 'org.postgresql', name: 'postgresql', version: '42.2.9'
-    contribCompile group: 'org.apache.commons', name: 'commons-dbcp2', version: '2.0.1'
+    contribCompile group: 'org.apache.commons', name: 'commons-dbcp2', version: '2.7.0'
     contribCompile fileTree(include: ['*.jar'], dir: 'lib')
     compile fileTree(include: ['*.jar'], dir: 'lib')
 
@@ -87,17 +87,17 @@ dependencies {
 
     testCompile group: 'junit', name: 'junit', version: '4.12'
     compile group: 'org.postgresql', name: 'postgresql', version: '42.2.9'
-    compile group: 'com.datastax.cassandra', name: 'cassandra-driver-core', version: '2.1.6'
-    compile group: 'com.datastax.cassandra', name: 'cassandra-driver-mapping', version: '2.1.6'
-    compile group: 'org.apache.commons', name: 'commons-dbcp2', version: '2.0.1'
-    compile group: 'com.google.guava', name: 'guava', version: '18.0';
+    compile group: 'com.datastax.cassandra', name: 'cassandra-driver-core', version: '2.1.10.3'
+    compile group: 'com.datastax.cassandra', name: 'cassandra-driver-mapping', version: '2.1.10.3'
+    compile group: 'org.apache.commons', name: 'commons-dbcp2', version: '2.7.0'
+    compile group: 'com.google.guava', name: 'guava', version: '28.2-jre';
     compile group: 'com.google.protobuf', name: 'protobuf-java', version: '3.0.0+'
-    compile group: 'commons-codec', name: 'commons-codec', version: '1.10'
+    compile group: 'commons-codec', name: 'commons-codec', version: '1.13'
     compile group: 'commons-io', name: 'commons-io', version: '2.6'
     compile "io.hawt:hawtio-plugin-mbean:1.5-SNAPSHOT"
     compile "javax.servlet:servlet-api:2.5"
-    compile group: 'org.reflections', name: 'reflections', version: '0.9.11'
-    compile group: 'net.sf.saxon', name: 'Saxon-HE', version: '9.9.1-5'
+    compile group: 'org.reflections', name: 'reflections', version: '0.9.12'
+    compile group: 'net.sf.saxon', name: 'Saxon-HE', version: '9.9.1-6'
 }
 
 mainClassName = 'org.kritikal.fabric.CoreFabric'
