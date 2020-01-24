@@ -76,7 +76,7 @@ dependencies {
 
     compile sourceSets.contrib.output
 
-    compile group: 'org.slf4j', name: 'slf4j-api', version: '1.7.21'
+    compile group: 'org.slf4j', name: 'slf4j-api', version: '1.7.30'
 
     compile "io.vertx:vertx-shell:$vertxVersion"
     compile "io.vertx:vertx-hazelcast:$vertxVersion"
