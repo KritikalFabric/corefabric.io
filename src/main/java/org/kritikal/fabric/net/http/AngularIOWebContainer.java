@@ -182,7 +182,13 @@ public class AngularIOWebContainer {
         } else if (pathToFile.endsWith(".js")) {
             req.response().headers().add("Content-Type", "text/javascript; charset=utf-8");
         } else if (pathToFile.endsWith(".json")) {
-            req.response().headers().add("Content-Type", "application/json; charset=utf-8");
+            // see: https://docs.microsoft.com/en-us/azure/active-directory/develop/howto-configure-publisher-domain
+            if (pathToFile.endsWith("/.well-known/microsoft-identity-association.json")) {
+                req.response().headers().add("Content-Type", "application/json");
+            } else {
+                // standards compliant:
+                req.response().headers().add("Content-Type", "application/json; charset=utf-8");
+            }
         } else if (pathToFile.endsWith(".css")) {
             req.response().headers().add("Content-Type", "text/css; charset=utf-8");
         } else if (pathToFile.endsWith(".txt")) {
