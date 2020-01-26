@@ -106,7 +106,7 @@ public class AngularIOWebContainer {
             set = true;
         }
 
-        //logger.warn("cookie-cutter\tssl=" + req.isSSL() + "\t" + req.host() + "\t" + req.remoteAddress().host() + "\t" + req.path() + "\tf=" + found + "\ts=" + set + "\t" + corefabric);
+        //logger.warn("cookie-cutter\tssl=" + req.isSSL() + "\t" + req.host() + "\t" + req.remoteAddress().host() + "\t" + req.host() + "\t" + req.path() + "\tf=" + found + "\ts=" + set + "\t" + corefabric);
         return corefabric;
     }
 
@@ -277,7 +277,7 @@ public class AngularIOWebContainer {
 
             ConfigurationManager.getConfigurationAsync(vertx, instancekey, cfg -> {
                 String site = cfg.instanceConfig.getJsonObject("instance").getString("site");
-                if (CoreFabric.ServerConfiguration.DEBUG) logger.info("angular-io\t" + site + "\t" + req.remoteAddress().host() + "\t" + req.path());
+                if (CoreFabric.ServerConfiguration.DEBUG) logger.info("angular-io\t" + site + "\t" + req.remoteAddress().host() + "\t" + req.host() +  "\t" + req.path());
                 if (site != null) {
                     try {
                         AngularIOSiteInstance x = map.get(site);
@@ -433,7 +433,7 @@ public class AngularIOWebContainer {
                                                             false,
                                                             (result)->{
                                                                 if (result.failed()) {
-                                                                    logger.error("angular-io\t" + site + "\t" + req.remoteAddress().host() + "\t" + req.path() + "\t" + result.cause());
+                                                                    logger.error("angular-io\t" + site + "\t" + req.remoteAddress().host() + "\t" + req.host() + "\t" + req.path() + "\t" + result.cause());
                                                                     req.response().setStatusCode(500).setStatusMessage("Server Error");
                                                                     req.response().end();
                                                                 }
@@ -471,7 +471,7 @@ public class AngularIOWebContainer {
                         }
                     }
                     catch (Throwable t) {
-                        logger.error("angular-io\t" + site + "\t" + req.remoteAddress().host() + "\t" + req.path() + "\t" + t.getMessage());
+                        logger.error("angular-io\t" + site + "\t" + req.remoteAddress().host() + "\t" + req.host() + "\t" + req.path() + "\t" + t.getMessage());
                         req.response().setStatusCode(500).setStatusMessage("Server Error");
                         req.response().end();
                     }
@@ -505,7 +505,7 @@ public class AngularIOWebContainer {
 
             ConfigurationManager.getConfigurationAsync(vertx, instancekey, cfg -> {
                 String site = cfg.instanceConfig.getJsonObject("instance").getString("site");
-                if (CoreFabric.ServerConfiguration.DEBUG) logger.info("angular-io\t" + site + "\t" + req.remoteAddress().host() + "\t" + req.path());
+                if (CoreFabric.ServerConfiguration.DEBUG) logger.info("angular-io\t" + site + "\t" + req.remoteAddress().host() + "\t" + req.host() + "\t" + req.path());
                 if (site != null) {
                     try {
                         AngularIOSiteInstance x = map.get(site);
@@ -667,7 +667,7 @@ public class AngularIOWebContainer {
                                                                     false,
                                                                     (result)->{
                                                                         if (result.failed()) {
-                                                                            logger.error("angular-io\t" + site + "\t" + req.remoteAddress().host() + "\t" + req.path() + "\t" + result.cause());
+                                                                            logger.error("angular-io\t" + site + "\t" + req.remoteAddress().host() + "\t" + req.host() + "\t" + req.path() + "\t" + result.cause());
                                                                             req.response().setStatusCode(500).setStatusMessage("Server Error");
                                                                             req.response().end();
                                                                         }
@@ -705,7 +705,7 @@ public class AngularIOWebContainer {
                         }
                     }
                     catch (Throwable t) {
-                        logger.error("angular-io\t" + site + "\t" + req.remoteAddress().host() + "\t" + req.path() + "\t" + t.getMessage());
+                        logger.error("angular-io\t" + site + "\t" + req.remoteAddress().host() + "\t" + req.host() + "\t" + req.path() + "\t" + t.getMessage());
                         req.response().setStatusCode(500).setStatusMessage("Server Error");
                         req.response().end();
                     }
@@ -978,7 +978,7 @@ public class AngularIOWebContainer {
                                     ConfigurationManager.getConfigurationAsync(vertx, instancekey, cfg -> {
                                         cfApi(apiMethod, cfg, (x)->{
                                             if (CoreFabric.ServerConfiguration.DEBUG)
-                                                logger.info("angular-io\tapi\t" + req.remoteAddress().host() + "\t" + req.path());
+                                                logger.info("angular-io\tapi\t" + req.remoteAddress().host() + "\t" + req.host() + "\t" + req.path());
                                             try {
                                                 String corefabric = cookieCutter(req);
                                                 Object o = ctor.newInstance(cfg);
@@ -990,12 +990,12 @@ public class AngularIOWebContainer {
                                                 method.invoke(o, next);
 
                                             } catch (Throwable t) {
-                                                logger.error("angular-io\tapi\t" + req.remoteAddress().host() + "\t" + req.path() + "\t" + t.getMessage());
+                                                logger.error("angular-io\tapi\t" + req.remoteAddress().host() + "\t" + req.host() + "\t" + req.path() + "\t" + t.getMessage());
                                                 req.response().setStatusCode(500).setStatusMessage("Server Error");
                                                 req.response().end();
                                             }
                                         }, (fail1)->{
-                                            logger.error("angular-io\tapi\t" + req.remoteAddress().host() + "\t" + req.path() + "\tNot Available");
+                                            logger.error("angular-io\tapi\t" + req.remoteAddress().host() + "\t" + req.host() + "\t" + req.path() + "\tNot Available");
                                             req.response().setStatusCode(500).setStatusMessage("Server Error");
                                             req.response().end();
                                         });
@@ -1014,7 +1014,7 @@ public class AngularIOWebContainer {
                                     ConfigurationManager.getConfigurationAsync(vertx, instancekey, cfg -> {
                                         cfApi(apiMethod, cfg, (x)->{
                                             if (CoreFabric.ServerConfiguration.DEBUG)
-                                                logger.info("angular-io\tapi\t" + req.remoteAddress().host() + "\t" + req.path());
+                                                logger.info("angular-io\tapi\t" + req.remoteAddress().host() + "\t" + req.host() + "\t" + req.path());
                                             try {
                                                 String corefabric = cookieCutter(req);
                                                 Object o = ctor.newInstance(cfg);
@@ -1034,12 +1034,12 @@ public class AngularIOWebContainer {
                                                 };
                                                 method.invoke(o, _object, next);
                                             } catch (Throwable t) {
-                                                logger.error("angular-io\tapi\t" + req.remoteAddress().host() + "\t" + req.path() + "\t" + t.getMessage());
+                                                logger.error("angular-io\tapi\t" + req.remoteAddress().host() + "\t" + req.host() + "\t" + req.path() + "\t" + t.getMessage());
                                                 req.response().setStatusCode(500).setStatusMessage("Server Error");
                                                 req.response().end();
                                             }
                                         }, (fail1)->{
-                                            logger.error("angular-io\tapi\t" + req.remoteAddress().host() + "\t" + req.path() + "\tNot Available");
+                                            logger.error("angular-io\tapi\t" + req.remoteAddress().host() + "\t" + req.host() + "\t" + req.path() + "\tNot Available");
                                             req.response().setStatusCode(500).setStatusMessage("Server Error");
                                             req.response().end();
                                         });
@@ -1058,7 +1058,7 @@ public class AngularIOWebContainer {
                                     ConfigurationManager.getConfigurationAsync(vertx, instancekey, cfg -> {
                                         cfApi(apiMethod, cfg, (x)->{
                                             if (CoreFabric.ServerConfiguration.DEBUG)
-                                                logger.info("angular-io\tapi\t" + req.remoteAddress().host() + "\t" + req.path());
+                                                logger.info("angular-io\tapi\t" + req.remoteAddress().host() + "\t" + req.host() + "\t" + req.path());
                                             try {
                                                 String corefabric = cookieCutter(req);
                                                 Object o = ctor.newInstance(cfg);
@@ -1066,12 +1066,12 @@ public class AngularIOWebContainer {
                                                 ((CFApiBase)o).setRoutingContext(rc);
                                                 method.invoke(o);
                                             } catch (Throwable t) {
-                                                logger.error("angular-io\tapi\t" + req.remoteAddress().host() + "\t" + req.path() + "\t" + t.getMessage());
+                                                logger.error("angular-io\tapi\t" + req.remoteAddress().host() + "\t" + req.host() + "\t" + req.path() + "\t" + t.getMessage());
                                                 req.response().setStatusCode(500).setStatusMessage("Server Error");
                                                 req.response().end();
                                             }
                                         }, (fail1)->{
-                                            logger.error("angular-io\tapi\t" + req.remoteAddress().host() + "\t" + req.path() + "\tNot Available");
+                                            logger.error("angular-io\tapi\t" + req.remoteAddress().host() + "\t" + req.host() + "\t" + req.path() + "\tNot Available");
                                             req.response().setStatusCode(500).setStatusMessage("Server Error");
                                             req.response().end();
                                         });
@@ -1091,7 +1091,7 @@ public class AngularIOWebContainer {
                                     ConfigurationManager.getConfigurationAsync(vertx, instancekey, cfg -> {
                                         cfApi(apiMethod, cfg, (x)->{
                                             if (CoreFabric.ServerConfiguration.DEBUG)
-                                                logger.info("angular-io\tapi\t" + req.remoteAddress().host() + "\t" + req.path());
+                                                logger.info("angular-io\tapi\t" + req.remoteAddress().host() + "\t" + req.host() + "\t" + req.path());
                                             try {
                                                 String corefabric = cookieCutter(req);
                                                 Object o = ctor.newInstance(cfg);
@@ -1099,12 +1099,12 @@ public class AngularIOWebContainer {
                                                 ((CFApiBase)o).setRoutingContext(rc);
                                                 method.invoke(o);
                                             } catch (Throwable t) {
-                                                logger.error("angular-io\tapi\t" + req.remoteAddress().host() + "\t" + req.path() + "\t" + t.getMessage());
+                                                logger.error("angular-io\tapi\t" + req.remoteAddress().host() + "\t" + req.host() + "\t" + req.path() + "\t" + t.getMessage());
                                                 req.response().setStatusCode(500).setStatusMessage("Server Error");
                                                 req.response().end();
                                             }
                                         }, (fail1)->{
-                                            logger.error("angular-io\tapi\t" + req.remoteAddress().host() + "\t" + req.path() + "\tNot Available");
+                                            logger.error("angular-io\tapi\t" + req.remoteAddress().host() + "\t" + req.host() + "\t" + req.path() + "\tNot Available");
                                             req.response().setStatusCode(500).setStatusMessage("Server Error");
                                             req.response().end();
                                         });
