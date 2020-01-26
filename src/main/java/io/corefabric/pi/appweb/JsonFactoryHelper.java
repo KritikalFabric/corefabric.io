@@ -15,7 +15,7 @@ public class JsonFactoryHelper {
         router.get(ROUTE).blockingHandler(rc -> {
             HttpServerRequest req = rc.request();
             req.response().setStatusCode(200).setStatusMessage("OK");
-            req.response().headers().add("Content-Type", "application/json; charset=utf-8");
+            req.response().headers().add("Content-Type", "application/json");
             req.response().headers().add("Cache-Control", "private, max-age=0");
             req.response().headers().add("Access-Control-Allow-Credentials", "true");
             String optionsOrigin = req.headers().get("Origin");

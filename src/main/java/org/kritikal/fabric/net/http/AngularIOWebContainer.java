@@ -764,7 +764,7 @@ public class AngularIOWebContainer {
     private static final void gzipJson(final HttpServerRequest req, final JsonObject r, final CorsOptionsHandler corsOptionsHandler, boolean nocache) {
         req.response().setStatusCode(200).setStatusMessage("OK");
         corsOptionsHandler.applyResponseHeaders(req, !nocache);
-        req.response().headers().add("Content-Type", "application/json; charset=utf-8");
+        req.response().headers().add("Content-Type", "application/json");
 
         boolean gzip = false;
         for (Map.Entry<String, String> stringStringEntry : req.headers()) {

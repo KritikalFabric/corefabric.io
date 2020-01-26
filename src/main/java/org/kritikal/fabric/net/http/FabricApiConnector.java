@@ -58,13 +58,13 @@ public class FabricApiConnector {
                         } else if (result instanceof JsonArray) {
                             req.response().setStatusCode(200).setStatusMessage("OK");
                             req.response().headers().add("Cache-Control", "private, max-age=0");
-                            req.response().headers().add("Content-Type", "application/json; charset=utf-8");
+                            req.response().headers().add("Content-Type", "application/json");
                             req.response().end(Buffer.buffer(((JsonArray)result).encode().getBytes("utf-8")));
 
                         } else if (result instanceof JsonObject) {
                             req.response().setStatusCode(200).setStatusMessage("OK");
                             req.response().headers().add("Cache-Control", "private, max-age=0");
-                            req.response().headers().add("Content-Type", "application/json; charset=utf-8");
+                            req.response().headers().add("Content-Type", "application/json");
                             req.response().end(Buffer.buffer(((JsonObject)result).encode().getBytes("utf-8")));
                         } else {
                             req.response().setStatusCode(501).end();
@@ -161,13 +161,13 @@ public class FabricApiConnector {
                         } else if (result instanceof JsonArray) {
                             req.response().setStatusCode(200);
                             req.response().headers().add("Cache-Control", "private, max-age=0");
-                            req.response().headers().add("Content-Type", "application/json; charset=utf-8");
+                            req.response().headers().add("Content-Type", "application/json");
                             req.response().end(Buffer.buffer(((JsonArray)result).encode().getBytes("utf-8")));
 
                         } else if (result instanceof JsonObject) {
                             req.response().setStatusCode(200);
                             req.response().headers().add("Cache-Control", "private, max-age=0");
-                            req.response().headers().add("Content-Type", "application/json; charset=utf-8");
+                            req.response().headers().add("Content-Type", "application/json");
                             req.response().end(Buffer.buffer(((JsonObject)result).encode().getBytes("utf-8")));
                         } else {
                             req.response().setStatusCode(501).end();

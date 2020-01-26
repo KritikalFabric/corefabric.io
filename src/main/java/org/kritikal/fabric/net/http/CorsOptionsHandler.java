@@ -32,7 +32,7 @@ public class CorsOptionsHandler implements Handler<RoutingContext> {
     }
 
     public void applyResponseHeaders(HttpServerRequest req, boolean cache) {
-        req.response().headers().add("Content-Type", "application/json; charset=utf-8");
+        req.response().headers().add("Content-Type", "application/json");
         if (cache) {
             req.response().setStatusCode(200).setStatusMessage("OK");
             req.response().headers().add("Cache-Control", "private, max-age=0");

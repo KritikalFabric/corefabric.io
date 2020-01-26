@@ -85,7 +85,7 @@ public class AppWebServerVerticle extends AbstractVerticle {
         } else if (pathToFile.endsWith(".js")) {
             req.response().headers().add("Content-Type", "text/javascript; charset=utf-8");
         } else if (pathToFile.endsWith(".json")) {
-            req.response().headers().add("Content-Type", "application/json; charset=utf-8");
+            req.response().headers().add("Content-Type", "application/json");
         } else if (pathToFile.endsWith(".css")) {
             req.response().headers().add("Content-Type", "text/css; charset=utf-8");
         } else if (pathToFile.endsWith(".txt")) {
@@ -223,7 +223,7 @@ public class AppWebServerVerticle extends AbstractVerticle {
                         String optionsOrigin = req.headers().get("Origin");
                         if (optionsOrigin == null) optionsOrigin = "*";
                         req.response().headers().add("Access-Control-Allow-Origin", optionsOrigin);
-                        req.response().headers().add("Content-Type", "application/json; charset=utf-8");
+                        req.response().headers().add("Content-Type", "application/json");
                         req.response().end(event.encode());
                     } else {
                         req.response().setStatusCode(500).end();
