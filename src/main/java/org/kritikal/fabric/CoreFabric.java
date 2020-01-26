@@ -169,7 +169,7 @@ public class CoreFabric {
                     }
 
                     globalConfig = new JsonObject(config_json);
-                    LoggerFactory.getLogger(CoreFabric.class).info("Loaded " + file + "\n" + config_json);
+                    LoggerFactory.getLogger(CoreFabric.class).info("Loaded " + file/* + "\n" + config_json*/);
                     break;
                 }
             }
