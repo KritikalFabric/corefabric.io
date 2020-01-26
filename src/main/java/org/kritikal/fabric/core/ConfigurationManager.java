@@ -351,9 +351,6 @@ public class ConfigurationManager {
                             }
                             final String s = bodyBuilder.toString();
                             final String json = s.isEmpty() ? "{}" : s;
-                            if (CoreFabric.ServerConfiguration.DEBUG) {
-                                logger.info("configuration-manager\t" + instancekey + "\t" + json);
-                            }
                             try {
                                 MqttBrokerVerticle.asyncBroker().apiPublish(topic, json.getBytes("UTF-8"), 0, true, TTL, (vo1d) -> {
                                     nextStep(json, q);
