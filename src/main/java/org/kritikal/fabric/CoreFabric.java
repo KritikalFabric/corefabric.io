@@ -44,7 +44,7 @@ public class CoreFabric {
         public static boolean PRODUCTION = false;
         public static boolean DEBUG = true;
         public static String resolver = "localhost";
-        public static final int threads = Runtime.getRuntime().availableProcessors();
+        public static final int threads = Runtime.getRuntime().availableProcessors() * 8;
         public static boolean SLOWER = true; // watch out this cooks laptops
         public static String hostname = "localhost.localdomain";
         public static String name = "localhost";
