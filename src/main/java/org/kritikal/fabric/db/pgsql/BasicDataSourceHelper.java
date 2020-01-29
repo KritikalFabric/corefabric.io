@@ -25,10 +25,10 @@ public class BasicDataSourceHelper {
         basicDataSource.setDriverClassName("org.postgresql.Driver");
         basicDataSource.setDefaultAutoCommit(false);
         basicDataSource.setMaxWaitMillis(-1);
-        basicDataSource.setValidationQuery("SELECT 1;");
+        basicDataSource.setValidationQuery("SELECT pg_advisory_unlock_all();");
         basicDataSource.setTestOnBorrow(true);
-        basicDataSource.setTestOnReturn(false);
-        basicDataSource.setTestWhileIdle(false);
+        basicDataSource.setTestOnReturn(true);
+        basicDataSource.setTestWhileIdle(true);
         basicDataSource.setLifo(false);
         basicDataSource.setRollbackOnReturn(false);
         basicDataSource.setDefaultTransactionIsolation(Connection.TRANSACTION_READ_UNCOMMITTED);
