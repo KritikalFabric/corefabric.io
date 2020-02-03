@@ -4,6 +4,7 @@ import io.vertx.core.buffer.Buffer;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.logging.Logger;
+import org.kritikal.fabric.CoreFabric;
 
 /**
  * Created by ben on 5/15/14.
@@ -24,10 +25,10 @@ public abstract class SmtpcProtocolController {
     public final void handleSubmission()
     {
         StringBuilder warn = new StringBuilder();
-        warn.append(address).append(" SUBMITTED ").append(" from=<").append(state.message.from);
+        warn.append(address).append(" SUBMITTED ").append(" from=<").append(CoreFabric.gdpr(state.message.from));
         for (int i = 0; i < state.message.to.size(); ++i)
         {
-            warn.append("> to=<").append(state.message.to.get(i));
+            warn.append("> to=<").append(CoreFabric.gdpr(state.message.to.get(i)));
         }
         warn.append(">");
         logger.warn(warn.toString());
@@ -72,9 +73,9 @@ public abstract class SmtpcProtocolController {
         }
         else {
             StringBuilder fatal = new StringBuilder();
-            fatal.append(address).append(" *FAILURE* ").append(" from=<").append(state.message.from);
+            fatal.append(address).append(" *FAILURE* ").append(" from=<").append(CoreFabric.gdpr(state.message.from));
             for (int i = 0; i < state.message.to.size(); ++i) {
-                fatal.append("> to=<").append(state.message.to.get(i));
+                fatal.append("> to=<").append(CoreFabric.gdpr(state.message.to.get(i)));
             }
             fatal.append(">");
             logger.fatal(fatal.toString());

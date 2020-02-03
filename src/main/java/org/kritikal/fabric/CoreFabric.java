@@ -13,6 +13,7 @@ import io.vertx.spi.cluster.hazelcast.HazelcastClusterManager;
 import org.kritikal.fabric.annotations.CFMain;
 import org.kritikal.fabric.annotations.CFRoleRegistry;
 import org.kritikal.fabric.annotations.IRoleRegistry;
+import org.kritikal.fabric.core.CFLogEncrypt;
 import org.kritikal.fabric.core.exceptions.FabricError;
 import org.kritikal.fabric.net.mqtt.entities.PublishMessage;
 import org.kritikal.fabric.net.mqtt.entities.PublishMessageStreamSerializer;
@@ -93,6 +94,17 @@ public class CoreFabric {
         }
     }
     public static void addNamespace(String ns) { searchNamespaces.add(ns); }
+    private static CFLogEncrypt logEncrypt = null;
+    public static void setGdpr(final CFLogEncrypt logEncrypt) {
+        CoreFabric.logEncrypt = logEncrypt;
+    }
+    public static String gdpr(String plaintext) {
+        if (null==CoreFabric.logEncrypt) {
+            return plaintext;
+        } else {
+            return CoreFabric.logEncrypt.encrypt(plaintext);
+        }
+    }
     static String readFile(String file) {
         StringBuilder sb = new StringBuilder();
         InputStreamReader reader = null;

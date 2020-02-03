@@ -118,7 +118,7 @@ public abstract class SmtpcVerticle extends AbstractVerticle implements Handler<
             return;
         }
 
-        logger.debug(address + " mail from <" + state.message.from + "> to <" + state.message.to.get(0) + "> retry " + state.retryCount);
+        //logger.debug(address + " mail from <" + state.message.from + "> to <" + state.message.to.get(0) + "> retry " + state.retryCount);
 
         String _domain = state.message.to.get(0);
         int i = _domain.indexOf('@');
