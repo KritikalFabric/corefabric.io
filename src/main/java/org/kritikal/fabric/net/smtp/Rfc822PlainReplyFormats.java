@@ -6,7 +6,7 @@ import java.util.regex.Pattern;
 public class Rfc822PlainReplyFormats {
 
     private static Pattern reOnWrote = Pattern.compile("^\\s*on\\s+.*\\s+wrote:\\s*$", Pattern.CASE_INSENSITIVE | Pattern.MULTILINE);
-    private static Pattern reVendors = Pattern.compile("^\\s*(Get Outlook for|Sent from Yahoo)", Pattern.CASE_INSENSITIVE | Pattern.MULTILINE);
+    private static Pattern reVendors = Pattern.compile("^\\s*(Get Outlook for|Sent from (Yahoo|my iPhone))", Pattern.CASE_INSENSITIVE | Pattern.MULTILINE);
 
     public static String scrub(String emailBody) {
         return stripSignature2(

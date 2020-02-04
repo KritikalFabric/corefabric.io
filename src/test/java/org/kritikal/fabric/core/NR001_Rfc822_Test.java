@@ -150,5 +150,13 @@ public class NR001_Rfc822_Test {
         );
     }
 
-
+    @Test
+    public void nr001_009_apple_mail_reply() {
+        Assert.assertEquals(
+                "Test reply from email",
+                Rfc822PlainReplyFormats.scrub("Test reply from email\n" +
+                        "\n" +
+                        "Sent from my iPhone")
+        );
+    }
 }
