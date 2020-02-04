@@ -125,4 +125,30 @@ public class NR001_Rfc822_Test {
                         "\n")
         );
     }
+
+    @Test
+    public void nr001_008_apple_mail_reply() {
+        Assert.assertEquals(
+                "Reply apple mail",
+                Rfc822PlainReplyFormats.scrub("Reply apple mail\n" +
+                        "\n" +
+                        "> On 4 Feb 2020, at 10:30, street-stall.space - planet ferenginar =\n" +
+                        "<please-reply@ferenginar.street-stall.space> wrote:\n" +
+                        ">=20\n" +
+                        "> Reply desktop outlook\n" +
+                        ">=20\n" +
+                        "> --=20\n" +
+                        "> sysop bbs\tstreet-stall.space - planet ferenginar\n" +
+                        "> =\n" +
+                        "https://ferenginar.street-stall.space/-/bbs/post/c1217e83-6c2e-4387-a036-0=\n" +
+                        "c38fc1f3106/1021c4c8-9e4e-4123-95a1-2c4a7ab9443f\n" +
+                        "\n" +
+                        "--\n" +
+                        "System Operator\n" +
+                        "sysop@street-stall.space\n" +
+                        "+44 (0)330 808 2056")
+        );
+    }
+
+
 }
