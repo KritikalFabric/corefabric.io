@@ -24,6 +24,7 @@ import io.vertx.core.net.NetSocket;
 
 import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
+import java.util.UUID;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -211,6 +212,7 @@ public class SyncMqttBroker implements IMqttServerCallback, ISyncMqttBroker {
         current.clientID = connectMessage.getClientID();
 
         // basic security, disabled on development, ensure the clientID contains the cookie
+        /*
         if (!CoreFabric.ServerConfiguration.nodejsDev) {
             if (current.socket instanceof CServerWebSocket) {
                 final CServerWebSocket socket = (CServerWebSocket) current.socket;
@@ -218,6 +220,11 @@ public class SyncMqttBroker implements IMqttServerCallback, ISyncMqttBroker {
                     throw new KillConnectionError();
                 }
             }
+        }
+         see #121
+         */
+        if (current.socket instanceof  CServerWebSocket) {
+            current.clientID = "corefabric--" + ((CServerWebSocket) current.socket).corefabric.session_uuid.toString() + "--" + UUID.randomUUID().toString();
         }
 
         connected.stream().mapToLong(p -> {

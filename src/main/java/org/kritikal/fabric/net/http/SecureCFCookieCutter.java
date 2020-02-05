@@ -174,7 +174,7 @@ public class SecureCFCookieCutter implements CFCookieCutter {
             cfCookie = new SecureCFCookie();
         }
 
-        String cfcookie = cookieName + "=" + cfCookie.cookieValue() + "; Path=/";
+        String cfcookie = cookieName + "=" + cfCookie.cookieValue() + "; Path=/; HttpOnly";
         if (req.isSSL())
             cfcookie = cfcookie + "; Secure";
 
