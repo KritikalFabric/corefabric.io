@@ -75,39 +75,7 @@ public class AngularIOWebContainer {
     }
 
     public static String cookieCutter(HttpServerRequest req) {
-        boolean found = false;
-        boolean set = false;
-        String cookieName = req.isSSL() ? "corefabric" : "cf_http";
-        String corefabric = null;
-        try {
-            String cookies = req.headers().get("Cookie");
-            Set<Cookie> cookieSet = CookieDecoder.decode(cookies);
-            for (Cookie cookie : cookieSet) {
-                if (cookieName.equals(cookie.getName())) {
-                    corefabric = cookie.getValue().trim();
-                    break;
-                }
-            }
-            if ("".equals(corefabric)) {
-                corefabric = null;
-            }
-            UUID.fromString(corefabric); // does it parse?
-            found = true;
-        } catch (Throwable t) {
-            corefabric = null;
-        }
-        if (corefabric == null) {
-            corefabric = UUID.randomUUID().toString();
-            String cfcookie = cookieName + "=" + corefabric + "; Path=/";
-            if (req.isSSL())
-                cfcookie = cfcookie + "; Secure";
-
-            req.response().headers().add("Set-Cookie", cfcookie);
-            set = true;
-        }
-
-        //logger.warn("cookie-cutter\tssl=" + req.isSSL() + "\t" + req.host() + "\t" + req.remoteAddress().host() + "\t" + req.host() + "\t" + req.path() + "\tf=" + found + "\ts=" + set + "\t" + corefabric);
-        return corefabric;
+        return new DefaultCFCookieCutter().cut(req).session_uuid.toString();
     }
 
     public static String hostCutter(HttpServerRequest request) {
@@ -119,21 +87,7 @@ public class AngularIOWebContainer {
     }
 
     public static String cookieCutter(ServerWebSocket webSocket) {
-        String corefabric = null;
-        try {
-            String cookies = webSocket.headers().get("Cookie");
-            Set<Cookie> cookieSet = CookieDecoder.decode(cookies);
-            for (Cookie cookie : cookieSet) {
-                if ("corefabric".equals(cookie.getName())) {
-                    corefabric = cookie.getValue().trim();
-                    UUID.fromString(corefabric); // does it parse?
-                    return corefabric;
-                }
-            }
-        } catch (Throwable t) {
-            // ignore
-        }
-        return null;
+        return new DefaultCFCookieCutter().cut(webSocket).session_uuid.toString();
     }
 
     private static void extract(JarFile parentJar, ZipEntry entry, String destination)
