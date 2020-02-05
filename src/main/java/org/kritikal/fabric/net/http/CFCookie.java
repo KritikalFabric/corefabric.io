@@ -16,7 +16,7 @@ public class CFCookie {
     private final String originalCookieValue;
     public final UUID session_uuid;
     public final boolean is_new;
-    public final String cookieValue() {
+    public String cookieValue() {
         return originalCookieValue;
     }
 }
