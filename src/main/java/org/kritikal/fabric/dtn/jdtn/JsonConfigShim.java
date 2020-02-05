@@ -1,6 +1,8 @@
 package org.kritikal.fabric.dtn.jdtn;
 
+import com.cisco.qte.jdtn.apps.AppManager;
 import com.cisco.qte.jdtn.bp.BPManagement;
+import com.cisco.qte.jdtn.bp.BpApi;
 import com.cisco.qte.jdtn.persistance.DBInterfaceJDBC;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
@@ -13,9 +15,15 @@ import org.kritikal.fabric.contrib.jdtn.JDtnConfig;
  */
 public class JsonConfigShim {
 
+    private static boolean bootstrapped = false;
+
     public static void bootstrap() {
-        Management.getInstance().start();
-        BPManagement.getInstance().requestBundleRestore();
+        if (!bootstrapped) {
+            bootstrapped = true;
+            Management.getInstance().start();
+            BPManagement.getInstance().requestBundleRestore();
+            AppManager.getInstance().start();
+        }
     }
 
     public static void apply(Vertx vertx, JsonObject globalConfig) {

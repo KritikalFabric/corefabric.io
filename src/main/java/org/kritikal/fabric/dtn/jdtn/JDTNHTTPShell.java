@@ -44,6 +44,8 @@ import com.cisco.qte.jdtn.udpcl.UdpClManagement;
 import com.cisco.qte.jdtn.udpcl.UdpClNeighbor;
 import com.cisco.saf.Service;
 import io.vertx.core.*;
+import io.vertx.core.logging.Logger;
+import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.dropwizard.DropwizardMetricsOptions;
 import io.vertx.ext.shell.ShellService;
 import io.vertx.ext.shell.ShellServiceOptions;
@@ -59,8 +61,6 @@ import java.io.File;
 import java.net.UnknownHostException;
 import java.sql.SQLException;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  * A command line interface to the JDTN Stack.  Mostly managment and config.
@@ -68,15 +68,27 @@ import java.util.logging.Logger;
  */
 public class JDTNHTTPShell extends AbstractVerticle{
 
-	private static final Logger _logger =
-		Logger.getLogger(JDTNHTTPShell.class.getCanonicalName());
+	private static final Logger logger = LoggerFactory.getLogger(JDTNHTTPShell.class);
 
 	private TestApp _testApp = null;
 
-
-
 	@Override
 	public void start(Future<Void> startFuture) throws Exception {
+
+		getVertx().executeBlocking((future)->{
+			try {
+				JsonConfigShim.bootstrap();
+			}
+			catch (Throwable t) {
+				logger.fatal("dtn-shell", t);
+				future.fail(t);
+			}
+		}, true, result->{
+			if (result.succeeded()) startFuture.complete();
+			else startFuture.fail(result.cause());
+		});
+
+		/*
 		ShellService service = ShellService.create(vertx, new ShellServiceOptions().
 				setHttpOptions(
 						new HttpTermOptions().
@@ -88,11 +100,17 @@ public class JDTNHTTPShell extends AbstractVerticle{
 				startFuture.fail(ar.cause());
 			}
 		});
+
+		 */
 	}
 
 	@Override
 	public void stop(Future<Void> stopFuture) throws Exception {
+		/*
 		this.terminate();
+		stopFuture.complete();
+
+		 */
 		stopFuture.complete();
 	}
 
@@ -107,7 +125,7 @@ public class JDTNHTTPShell extends AbstractVerticle{
 		try {
 			shell = new JDTNHTTPShell();
 		} catch (BPException e) {
-			_logger.log(Level.SEVERE, "Shell construction", e);
+			logger.fatal("Shell construction", e);
 			System.exit(1);
 			return;
 		}
@@ -133,9 +151,7 @@ public class JDTNHTTPShell extends AbstractVerticle{
 	 * @throws BPException On startup errors
 	 */
 	public JDTNHTTPShell() throws BPException {
-		Management.getInstance().start();
-		BPManagement.getInstance().requestBundleRestore();
-		
+/*
 		try {
 			_testApp = (TestApp)
 				AppManager.getInstance().installApp("Test", TestApp.class, null);
@@ -143,6 +159,8 @@ public class JDTNHTTPShell extends AbstractVerticle{
 		} catch (JDtnException e) {
 			throw new BPException(e);
 		}
+
+ */
 	}
 	
 
@@ -155,14 +173,14 @@ public class JDTNHTTPShell extends AbstractVerticle{
 		try {
 			AppManager.getInstance().uninstallApp(_testApp.getName());
 		} catch (JDtnException e) {
-			_logger.log(Level.SEVERE, "uninstallApp testApp()", e);
+			logger.warn("uninstallApp testApp()", e);
 		} catch (InterruptedException e) {
-			_logger.log(Level.SEVERE, "uninstallApp testApp()", e);
+			logger.warn("uninstallApp testApp()", e);
 		}
 		try {
 			Management.getInstance().stop();
 		} catch (InterruptedException e) {
-			_logger.log(Level.SEVERE, "Management.stop()", e);
+			logger.warn("Management.stop()", e);
 		}
 		System.out.println("Done");
 	}
@@ -3684,10 +3702,10 @@ public class JDTNHTTPShell extends AbstractVerticle{
 				return;
 			}
 
-			try { con.commit(); } catch (SQLException e) { _logger.warning(e.getMessage()); }
+			try { con.commit(); } catch (SQLException e) { logger.warn(e.getMessage()); }
 		}
 		finally {
-			try { con.close(); } catch (SQLException e) { _logger.warning(e.getMessage()); }
+			try { con.close(); } catch (SQLException e) { logger.warn(e.getMessage()); }
 		}
 
 	}
