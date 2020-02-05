@@ -41,12 +41,12 @@ public abstract class CFApiBase {
         }
         return args;
     }
-    CFCookie corefabric = null;
+    private CFCookie corefabric = null;
     public void setCookie(CFCookie s) {
         corefabric = s;
     }
-    public String getCookie() {
-        return corefabric.session_uuid.toString();
+    public CFCookie getCookie() {
+        return corefabric;
     }
     JsonObject schemaOrgMetaData = null;
     public void setSchemaOrgMetaData(JsonObject object) {
@@ -61,25 +61,11 @@ public abstract class CFApiBase {
 
     public void proceedIfCookie(Consumer<UUID> ifCookie, Consumer<Void> ifNoCookie) {
         boolean preAuthFailure = false;
-        String corefabric = getCookie();
-        UUID cfuuid = null;
-        if (null!=corefabric) {
-            try {
-                cfuuid = UUID.fromString(corefabric);
-            }
-            catch (Exception e) {
-                preAuthFailure = true;
-            }
-        } else {
-            preAuthFailure = true;
-        }
-
-        if (preAuthFailure || null == cfuuid) {
-            logger.warn("Pre-auth failure"); //FIXME
+        CFCookie corefabric = getCookie();
+        if (corefabric.is_new) {
             ifNoCookie.accept(null);
         } else {
-            final UUID x = cfuuid;
-            ifCookie.accept(x);
+            ifCookie.accept(corefabric.session_uuid);
         }
     }
 
