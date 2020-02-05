@@ -5,6 +5,9 @@ import io.netty.handler.codec.http.CookieDecoder;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.ServerWebSocket;
 import org.apache.commons.codec.binary.Base64;
+import org.bouncycastle.crypto.digests.SHA256Digest;
+import org.bouncycastle.crypto.macs.HMac;
+import org.bouncycastle.crypto.params.KeyParameter;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.kritikal.fabric.CoreFabric;
 import org.kritikal.fabric.core.CFLogEncrypt;
@@ -12,10 +15,13 @@ import org.kritikal.fabric.core.CFLogEncrypt;
 import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
+import java.security.SecureRandom;
+import java.util.Arrays;
 import java.util.Set;
 import java.util.UUID;
 
 public class SecureCFCookieCutter implements CFCookieCutter {
+    SecureRandom secureRandom = new SecureRandom();
     public static class Credentials {
         public byte[] code_key, hash_key;
     }
@@ -23,7 +29,7 @@ public class SecureCFCookieCutter implements CFCookieCutter {
         protected SecureCFCookie(String originalCookieValue, UUID session_uuid) {
             super(originalCookieValue, session_uuid);
         }
-        protected SecureCFCookie() {
+        public SecureCFCookie() {
             super(null, UUID.randomUUID());
         }
 
@@ -40,12 +46,41 @@ public class SecureCFCookieCutter implements CFCookieCutter {
         @Override
         public String encrypt(String plaintext) {
             try {
-                Cipher cipher = Cipher.getInstance("AES", new BouncyCastleProvider());
-                SecretKey key = new SecretKeySpec(credentials.code_key, "AES");
-                cipher.init(Cipher.ENCRYPT_MODE, key);
-                byte[] encrypted = cipher.doFinal(plaintext.getBytes("UTF-8"));
-                byte[] encryptedValue = Base64.encodeBase64(encrypted);
-                return "1." + new String(encryptedValue);
+                StringBuilder sb = new StringBuilder();
+                sb.append("2."); // format
+                byte[] entropy = SecureRandom.getSeed(64);
+                byte[] plainBytes = plaintext.getBytes("UTF-8");
+
+                byte[] a = null;
+                byte[] b = null;
+
+                {
+                    Cipher cipher = Cipher.getInstance("AES", new BouncyCastleProvider());
+                    SecretKey key = new SecretKeySpec(credentials.code_key, "AES");
+                    cipher.init(Cipher.ENCRYPT_MODE, key);
+                    a = cipher.update(entropy);
+                    byte[] encrypted = b = cipher.doFinal(plainBytes);
+                    byte[] combined = new byte[a.length + b.length];
+                    int x = 0;
+                    for (; x < a.length; ++x) {
+                        combined[x]=a[x];
+                    }
+                    for (; x - a.length < b.length; ++x) {
+                        combined[x]=b[x - a.length];
+                    }
+                    byte[] encryptedValue = Base64.encodeBase64(combined);
+                    sb.append(new String(encryptedValue, "UTF-8")).append('.');
+                }
+                {
+                    HMac hmac = new HMac(new SHA256Digest());
+                    hmac.init(new KeyParameter(credentials.hash_key));
+                    byte[] result = new byte[hmac.getMacSize()];
+                    hmac.update(entropy, 0, entropy.length);
+                    hmac.update(plainBytes, 0, plainBytes.length);
+                    hmac.doFinal(result, 0);
+                    sb.append(new String(Base64.encodeBase64(result), "UTF-8"));
+                }
+                return sb.toString();
             }
             catch (Throwable t) {
                 CoreFabric.logger.fatal("log-encrypt", t);
@@ -58,13 +93,34 @@ public class SecureCFCookieCutter implements CFCookieCutter {
                 int i = ciphertext.indexOf('.');
                 if (i == -1) throw new RuntimeException();
                 switch (ciphertext.substring(0, i)) {
-                    case "1":
+                    case "2":
+                        int j = ciphertext.indexOf('.', i+1);
+                        if (j == -1) throw new RuntimeException();
+                        byte plaintext[] = ciphertext.substring(i + 1, j).getBytes("UTF-8");
                         Cipher cipher = Cipher.getInstance("AES", new BouncyCastleProvider());
                         SecretKey key = new SecretKeySpec(credentials.code_key, "AES");
                         cipher.init(Cipher.DECRYPT_MODE, key);
-                        byte[] decodedBytes = Base64.decodeBase64(ciphertext.substring(2).getBytes("UTF-8"));
+                        byte[] decodedBytes = Base64.decodeBase64(plaintext);
                         byte[] original = cipher.doFinal(decodedBytes);
-                        return new String(original, "UTF-8");
+                        byte[] data = Arrays.copyOfRange(original, 64, original.length);
+                        String cookieData = new String(data, "UTF-8");
+                        byte[] hashCheck = Base64.decodeBase64(ciphertext.substring(j+1));
+                        HMac hmac = new HMac(new SHA256Digest());
+                        hmac.init(new KeyParameter(credentials.hash_key));
+                        byte[] result = new byte[hmac.getMacSize()];
+                        hmac.update(original, 0, original.length);
+                        hmac.doFinal(result, 0);
+                        for(int k = 0; k < result.length; ++k) {
+                            if (hashCheck.length < k) {
+                                throw new RuntimeException("Invalid HMAC");
+                            }
+                            if (hashCheck[k]!=result[k]) {
+                                throw new RuntimeException("Invalid HMAC");
+                            }
+                        }
+                        return cookieData; // OK!!!
+                    case "1":
+                        // upgrade cookies
                     default:
                         throw new RuntimeException();
                 }
