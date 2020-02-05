@@ -5,8 +5,20 @@ import org.bouncycastle.crypto.macs.HMac;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 import javax.crypto.Cipher;
+import java.security.SecureRandom;
 
 public class ThreadLocalSecurity {
+    public final static ThreadLocal<SecureRandom> secureRandom = new ThreadLocal<>() {
+        @Override
+        protected SecureRandom initialValue() {
+            try {
+                return SecureRandom.getInstanceStrong();
+            }
+            catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
+    };
     public final static ThreadLocal<Cipher> aes = new ThreadLocal<>() {
         @Override
         protected Cipher initialValue() {

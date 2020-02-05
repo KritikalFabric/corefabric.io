@@ -16,13 +16,11 @@ import org.kritikal.fabric.net.ThreadLocalSecurity;
 import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
-import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.Set;
 import java.util.UUID;
 
 public class SecureCFCookieCutter implements CFCookieCutter {
-    SecureRandom secureRandom = new SecureRandom();
     public static class Credentials {
         public byte[] code_key, hash_key;
     }
@@ -49,7 +47,7 @@ public class SecureCFCookieCutter implements CFCookieCutter {
             try {
                 StringBuilder sb = new StringBuilder();
                 sb.append("2."); // format
-                byte[] entropy = SecureRandom.getSeed(64);
+                byte[] entropy = ThreadLocalSecurity.secureRandom.get().getSeed(64);
                 byte[] plainBytes = plaintext.getBytes("UTF-8");
 
                 byte[] a = null;
