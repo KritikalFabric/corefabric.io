@@ -6,20 +6,21 @@ import io.vertx.core.http.ServerWebSocket;
 import io.vertx.core.http.WebSocket;
 import io.vertx.core.http.WebSocketFrame;
 import org.kritikal.fabric.core.exceptions.FabricError;
+import org.kritikal.fabric.net.http.CFCookie;
 
 /**
  * Created by ben on 04/02/15.
  */
 public class CServerWebSocket implements ISocket {
 
-    public CServerWebSocket(final ServerWebSocket webSocket, final String corefabric)
+    public CServerWebSocket(final ServerWebSocket webSocket, final CFCookie corefabric)
     {
         if (corefabric==null) throw new FabricError("corefabric");
         this.webSocket = webSocket; this.corefabric = corefabric;
     }
 
     final ServerWebSocket webSocket;
-    public final String corefabric;
+    public final CFCookie corefabric;
 
     @Override
     public void closeHandler(Handler<Void> handler) {

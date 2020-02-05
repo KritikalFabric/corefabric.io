@@ -7,6 +7,7 @@ import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.web.RoutingContext;
 import org.kritikal.fabric.CoreFabric;
 import org.kritikal.fabric.core.Configuration;
+import org.kritikal.fabric.net.http.CFCookie;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 
@@ -131,7 +132,7 @@ public class CFNoscriptRenderers {
     }
 
     public static class CFXmlParameters {
-        public CFXmlParameters(Configuration cfg, HttpServerRequest req, RoutingContext rc, String corefabric) {
+        public CFXmlParameters(Configuration cfg, HttpServerRequest req, RoutingContext rc, CFCookie corefabric) {
             this.cfg = cfg;
             this.req = req;
             this.rc = rc;
@@ -141,7 +142,7 @@ public class CFNoscriptRenderers {
         public final Configuration cfg;
         public final HttpServerRequest req;
         public final RoutingContext rc;
-        public final String corefabric;
+        public final CFCookie corefabric;
     }
 
     public final ArrayList<CFXmlRenderer> array = new ArrayList<>();

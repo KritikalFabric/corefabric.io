@@ -7,6 +7,7 @@ import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.web.RoutingContext;
 import org.kritikal.fabric.CoreFabric;
 import org.kritikal.fabric.core.Configuration;
+import org.kritikal.fabric.net.http.CFCookie;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
@@ -40,12 +41,12 @@ public abstract class CFApiBase {
         }
         return args;
     }
-    String corefabric = null;
-    public void setCookie(String s) {
+    CFCookie corefabric = null;
+    public void setCookie(CFCookie s) {
         corefabric = s;
     }
     public String getCookie() {
-        return corefabric;
+        return corefabric.session_uuid.toString();
     }
     JsonObject schemaOrgMetaData = null;
     public void setSchemaOrgMetaData(JsonObject object) {

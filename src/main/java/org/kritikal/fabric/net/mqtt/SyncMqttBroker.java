@@ -6,6 +6,7 @@ import io.vertx.core.logging.LoggerFactory;
 import org.kritikal.fabric.CoreFabric;
 import org.kritikal.fabric.core.exceptions.FabricError;
 import org.kritikal.fabric.daemon.MqttBrokerVerticle;
+import org.kritikal.fabric.net.http.CFCookie;
 import org.kritikal.fabric.net.mqtt.entities.AbstractMessage;
 import org.kritikal.fabric.net.mqtt.entities.ConnectMessage;
 import org.kritikal.fabric.net.mqtt.entities.PublishMessage;
@@ -125,7 +126,7 @@ public class SyncMqttBroker implements IMqttServerCallback, ISyncMqttBroker {
             super(logger, vertx, callback, new CNetSocket(netSocket));
         }
 
-        public MyMqttServerProtocol(final Logger logger, final Vertx vertx, final IMqttServerCallback callback, final ServerWebSocket webSocket, final String corefabric)
+        public MyMqttServerProtocol(final Logger logger, final Vertx vertx, final IMqttServerCallback callback, final ServerWebSocket webSocket, final CFCookie corefabric)
         {
             super(logger, vertx, callback, new CServerWebSocket(webSocket, corefabric));
         }
@@ -213,7 +214,7 @@ public class SyncMqttBroker implements IMqttServerCallback, ISyncMqttBroker {
         if (!CoreFabric.ServerConfiguration.nodejsDev) {
             if (current.socket instanceof CServerWebSocket) {
                 final CServerWebSocket socket = (CServerWebSocket) current.socket;
-                if (!current.clientID.startsWith("corefabric--" + socket.corefabric + "--")) {
+                if (!current.clientID.startsWith("corefabric--" + socket.corefabric.session_uuid.toString() + "--")) {
                     throw new KillConnectionError();
                 }
             }

@@ -20,10 +20,7 @@ import org.kritikal.fabric.core.VERTXDEFINES;
 import io.corefabric.pi.appweb.json.DtnConfigJson;
 import io.corefabric.pi.appweb.json.NodeMonitorJson;
 import io.corefabric.pi.appweb.json.StatusJson;
-import org.kritikal.fabric.net.http.AngularIOWebContainer;
-import org.kritikal.fabric.net.http.BinaryBodyHandler;
-import org.kritikal.fabric.net.http.CorsOptionsHandler;
-import org.kritikal.fabric.net.http.FabricApiConnector;
+import org.kritikal.fabric.net.http.*;
 import org.kritikal.fabric.net.mqtt.SyncMqttBroker;
 
 import java.io.*;
@@ -177,8 +174,8 @@ public class AppWebServerVerticle extends AbstractVerticle {
         httpServerOptions.setHandle100ContinueAutomatically(true);
         server = vertx.createHttpServer(httpServerOptions);
         server.websocketHandler(ws -> {
-            final String corefabric = AngularIOWebContainer.cookieCutter(ws);
-            if (corefabric==null) ws.reject();
+            final CFCookie corefabric = AngularIOWebContainer.cookieCutter(ws);
+            if (corefabric.is_new) ws.reject();
             if (!"/mqtt".equals(ws.path())) ws.reject();
             else {
                 final SyncMqttBroker mqttBroker = (SyncMqttBroker)MqttBrokerVerticle.syncBroker();//hack
@@ -207,12 +204,12 @@ public class AppWebServerVerticle extends AbstractVerticle {
             //String instancekey = host.split("\\.")[0];
             final String instancekey = "development/demo"; //FIXME zone/instance
 
-            final String corefabric = AngularIOWebContainer.cookieCutter(req);
+            final CFCookie corefabric = AngularIOWebContainer.cookieCutter(req);
 
             JsonObject o = new JsonObject();
             o.put("instancekey", instancekey);
             o.put("payload", body);
-            o.put("corefabric", corefabric);
+            o.put("corefabric", corefabric.session_uuid.toString());
 
             vertx.eventBus().send("ui.docapi", o, VERTXDEFINES.DELIVERY_OPTIONS, new Handler<AsyncResult<Message<JsonObject>>>() {
                 @Override

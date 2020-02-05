@@ -74,8 +74,14 @@ public class AngularIOWebContainer {
         req.response().end(html);
     }
 
-    public static String cookieCutter(HttpServerRequest req) {
-        return new DefaultCFCookieCutter().cut(req).session_uuid.toString();
+    public static Function<Void,CFCookieCutter> cookieCutterFactory = null;
+    public static CFCookieCutter newCookieCutter() {
+        if (null==cookieCutterFactory) { return new DefaultCFCookieCutter(); }
+        return cookieCutterFactory.apply(null);
+    }
+
+    public static CFCookie cookieCutter(HttpServerRequest req) {
+        return newCookieCutter().cut(req);
     }
 
     public static String hostCutter(HttpServerRequest request) {
@@ -86,8 +92,8 @@ public class AngularIOWebContainer {
         return host;
     }
 
-    public static String cookieCutter(ServerWebSocket webSocket) {
-        return new DefaultCFCookieCutter().cut(webSocket).session_uuid.toString();
+    public static CFCookie cookieCutter(ServerWebSocket webSocket) {
+        return newCookieCutter().cut(webSocket);
     }
 
     private static void extract(JarFile parentJar, ZipEntry entry, String destination)
@@ -211,8 +217,8 @@ public class AngularIOWebContainer {
         options.accept(httpServerOptions);
         HttpServer server = vertx.createHttpServer(httpServerOptions);
         server.websocketHandler(ws -> {
-            String corefabric = cookieCutter(ws);
-            if (corefabric==null) ws.reject();
+            CFCookie corefabric = cookieCutter(ws);
+            if (corefabric.is_new) ws.reject();
             if (!"/mqtt".equals(ws.path())) ws.reject();
             else {
                 SyncMqttBroker mqttBroker = (SyncMqttBroker)MqttBrokerVerticle.syncBroker();//hack
@@ -258,7 +264,7 @@ public class AngularIOWebContainer {
                             if (file != null) {
                                 final boolean isIndexHtml = "index.html".equals(file);
 
-                                final String corefabric = cookieCutter(req);
+                                final CFCookie corefabric = cookieCutter(req);
 
                                 boolean gzip = false;
                                 for (Map.Entry<String, String> stringStringEntry : req.headers()) {
@@ -486,7 +492,7 @@ public class AngularIOWebContainer {
                             if (file != null) {
                                 final boolean isIndexHtml = "index.html".equals(file);
 
-                                final String corefabric = cookieCutter(req);
+                                final CFCookie corefabric = cookieCutter(req);
 
                                 boolean gzip = false;
                                 for (Map.Entry<String, String> stringStringEntry : req.headers()) {
@@ -825,7 +831,7 @@ public class AngularIOWebContainer {
 
                                 ConfigurationManager.getConfigurationAsync(vertx, instancekey, cfg -> {
 
-                                    String corefabric = cookieCutter(req);
+                                    final CFCookie corefabric = cookieCutter(req);
                                     CFNoscriptRenderers.CFXmlParameters params = new CFNoscriptRenderers.CFXmlParameters(cfg, req, rc, corefabric);
 
                                     CFNoscriptRenderers.sharedWorkerExecutor.executeBlocking(promise1 -> {
@@ -934,7 +940,7 @@ public class AngularIOWebContainer {
                                             if (CoreFabric.ServerConfiguration.DEBUG)
                                                 logger.info("angular-io\tapi\t" + req.remoteAddress().host() + "\t" + req.host() + "\t" + req.path());
                                             try {
-                                                String corefabric = cookieCutter(req);
+                                                final CFCookie corefabric = cookieCutter(req);
                                                 Object o = ctor.newInstance(cfg);
                                                 ((CFApiBase)o).setCookie(corefabric);
                                                 ((CFApiBase)o).setRoutingContext(rc);
@@ -970,7 +976,7 @@ public class AngularIOWebContainer {
                                             if (CoreFabric.ServerConfiguration.DEBUG)
                                                 logger.info("angular-io\tapi\t" + req.remoteAddress().host() + "\t" + req.host() + "\t" + req.path());
                                             try {
-                                                String corefabric = cookieCutter(req);
+                                                final CFCookie corefabric = cookieCutter(req);
                                                 Object o = ctor.newInstance(cfg);
                                                 ((CFApiBase)o).setCookie(corefabric);
                                                 ((CFApiBase)o).setRoutingContext(rc);
@@ -1014,7 +1020,7 @@ public class AngularIOWebContainer {
                                             if (CoreFabric.ServerConfiguration.DEBUG)
                                                 logger.info("angular-io\tapi\t" + req.remoteAddress().host() + "\t" + req.host() + "\t" + req.path());
                                             try {
-                                                String corefabric = cookieCutter(req);
+                                                final CFCookie corefabric = cookieCutter(req);
                                                 Object o = ctor.newInstance(cfg);
                                                 ((CFApiBase)o).setCookie(corefabric);
                                                 ((CFApiBase)o).setRoutingContext(rc);
@@ -1047,7 +1053,7 @@ public class AngularIOWebContainer {
                                             if (CoreFabric.ServerConfiguration.DEBUG)
                                                 logger.info("angular-io\tapi\t" + req.remoteAddress().host() + "\t" + req.host() + "\t" + req.path());
                                             try {
-                                                String corefabric = cookieCutter(req);
+                                                final CFCookie corefabric = cookieCutter(req);
                                                 Object o = ctor.newInstance(cfg);
                                                 ((CFApiBase)o).setCookie(corefabric);
                                                 ((CFApiBase)o).setRoutingContext(rc);
