@@ -9,25 +9,39 @@ import org.kritikal.fabric.CoreFabric;
 import java.util.Set;
 import java.util.UUID;
 
-public class DefaultCFCookieCutter implements CFCookieCutter {
-    @Override
-    public CFCookie parse(String originalCookieValue) {
+public class SecureCFCookieCutter implements CFCookieCutter {
+    public static class Credentials {
+        public byte[] code_key, hash_key;
+    }
+    public static class SecureCFCookie extends CFCookie {
+        protected SecureCFCookie(String originalCookieValue, UUID session_uuid) {
+            super(originalCookieValue, session_uuid);
+        }
+        protected SecureCFCookie() {
+            super();
+        }
+    }
+    public SecureCFCookie parse(String originalCookieValue) {
         try {
             UUID try_parse = UUID.fromString(originalCookieValue);
             if (null != try_parse) {
-                return new CFCookie(originalCookieValue, try_parse);
+                return new SecureCFCookie(originalCookieValue, try_parse);
             }
         }
         catch (Throwable t) {
             CoreFabric.logger.warn("cookie", t);
         }
-        return new CFCookie();
+        return new SecureCFCookie();
     }
+    public SecureCFCookieCutter(Credentials credentials) {
+        this.credentials = credentials;
+    }
+    private final Credentials credentials;
     @Override
     public CFCookie cut(HttpServerRequest req) {
         String cookieName = req.isSSL() ? "corefabric" : "cf_http";
         String cookieValue = null;
-        CFCookie cfCookie = null;
+        SecureCFCookie cfCookie = null;
         try {
             String cookies = req.headers().get("Cookie");
             Set<Cookie> cookieSet = CookieDecoder.decode(cookies);
@@ -40,19 +54,22 @@ public class DefaultCFCookieCutter implements CFCookieCutter {
             if ("".equals(cookieValue)) {
                 cookieValue = null;
             }
-            cfCookie = parse(cookieValue);
+            UUID session_uuid = UUID.fromString(cookieValue); // does it parse?
+            cfCookie = new SecureCFCookie(cookieValue, session_uuid);
         } catch (Throwable t) {
             cfCookie = null;
         }
         if (cfCookie == null) {
-            cfCookie = new CFCookie();
+            cfCookie = new SecureCFCookie();
         }
 
-        String cfcookie = cookieName + "=" + cfCookie.cookieValue() + "; Path=/";
-        if (req.isSSL())
-            cfcookie = cfcookie + "; Secure";
+        {
+            String cfcookie = cookieName + "=" + cfCookie.cookieValue() + "; Path=/";
+            if (req.isSSL())
+                cfcookie = cfcookie + "; Secure";
 
-        req.response().headers().add("Set-Cookie", cfcookie);
+            req.response().headers().add("Set-Cookie", cfcookie);
+        }
         return cfCookie;
     }
 
@@ -65,12 +82,13 @@ public class DefaultCFCookieCutter implements CFCookieCutter {
             for (Cookie cookie : cookieSet) {
                 if ("corefabric".equals(cookie.getName())) {
                     cookieValue = cookie.getValue().trim();
-                    return parse(cookieValue);
+                    UUID session_uuid = UUID.fromString(cookieValue); // does it parse?
+                    return new SecureCFCookie(cookieValue, session_uuid);
                 }
             }
         } catch (Throwable t) {
             // ignore
         }
-        return new CFCookie();
+        return new SecureCFCookie();
     }
 }
