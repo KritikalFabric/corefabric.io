@@ -56,7 +56,7 @@ public class CoreFabricRoleRegistry {
 
         }));
 
-        RoleRegistry.addRole(new Role(new String[] {"mqtt-broker"}, "app-web", (future, array) -> {
+        RoleRegistry.addRole(new Role(new String[] {"dtn-shell", "mqtt-broker"}, "app-web", (future, array) -> {
 
             JsonObject config = null!=array && array.size() > 0 ? array.getJsonObject(0) : new JsonObject();
             DeploymentOptions deploymentOptions = new DeploymentOptions();
@@ -102,10 +102,10 @@ public class CoreFabricRoleRegistry {
                 else future.complete();
             });
         }));
-        RoleRegistry.addRole(new Role(new String[] {"mqtt-broker"}, "dtn-router", (future, array)->{
+        RoleRegistry.addRole(new Role(new String[] {"dtn-shell", "mqtt-broker"}, "dtn-router", (future, array)->{
             future.complete();
         }));
-        RoleRegistry.addRole(new Role(new String[] {"mqtt-broker"}, "dtn-node", (future, array) -> {
+        RoleRegistry.addRole(new Role(new String[] {"dtn-shell", "mqtt-broker"}, "dtn-node", (future, array) -> {
             future.complete();
         }));
         RoleRegistry.addRole(new Role(new String[] {}, "mqtt-broker", (future, array) -> {
@@ -113,7 +113,7 @@ public class CoreFabricRoleRegistry {
             // TODO: switch on/off mqtt-listen on external ports according to this specific config path
             future.complete();
         }));
-        RoleRegistry.addRole(new Role(new String[] {"mqtt-broker"}, "dtn-mqtt-bridge", (future, array) -> {
+        RoleRegistry.addRole(new Role(new String[] {"dtn-shell", "mqtt-broker"}, "dtn-mqtt-bridge", (future, array) -> {
             List<Future> futures = new LinkedList<Future>();
             for (int i = 0, l = null!=array?array.size():0; i < l; ++i) {
                 final String label = "dtn-mqtt-bridge-" + i;
