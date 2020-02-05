@@ -11,6 +11,7 @@ import org.bouncycastle.crypto.params.KeyParameter;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.kritikal.fabric.CoreFabric;
 import org.kritikal.fabric.core.CFLogEncrypt;
+import org.kritikal.fabric.net.ThreadLocalSecurity;
 
 import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
@@ -55,7 +56,7 @@ public class SecureCFCookieCutter implements CFCookieCutter {
                 byte[] b = null;
 
                 {
-                    Cipher cipher = Cipher.getInstance("AES", new BouncyCastleProvider());
+                    Cipher cipher = ThreadLocalSecurity.aes.get();
                     SecretKey key = new SecretKeySpec(credentials.code_key, "AES");
                     cipher.init(Cipher.ENCRYPT_MODE, key);
                     a = cipher.update(entropy);
@@ -72,7 +73,7 @@ public class SecureCFCookieCutter implements CFCookieCutter {
                     sb.append(new String(encryptedValue, "UTF-8")).append('.');
                 }
                 {
-                    HMac hmac = new HMac(new SHA256Digest());
+                    HMac hmac = ThreadLocalSecurity.sha256hmac.get();
                     hmac.init(new KeyParameter(credentials.hash_key));
                     byte[] result = new byte[hmac.getMacSize()];
                     hmac.update(entropy, 0, entropy.length);
@@ -97,7 +98,7 @@ public class SecureCFCookieCutter implements CFCookieCutter {
                         int j = ciphertext.indexOf('.', i+1);
                         if (j == -1) throw new RuntimeException();
                         byte plaintext[] = ciphertext.substring(i + 1, j).getBytes("UTF-8");
-                        Cipher cipher = Cipher.getInstance("AES", new BouncyCastleProvider());
+                        Cipher cipher = ThreadLocalSecurity.aes.get();
                         SecretKey key = new SecretKeySpec(credentials.code_key, "AES");
                         cipher.init(Cipher.DECRYPT_MODE, key);
                         byte[] decodedBytes = Base64.decodeBase64(plaintext);
@@ -105,7 +106,7 @@ public class SecureCFCookieCutter implements CFCookieCutter {
                         byte[] data = Arrays.copyOfRange(original, 64, original.length);
                         String cookieData = new String(data, "UTF-8");
                         byte[] hashCheck = Base64.decodeBase64(ciphertext.substring(j+1));
-                        HMac hmac = new HMac(new SHA256Digest());
+                        HMac hmac = ThreadLocalSecurity.sha256hmac.get();
                         hmac.init(new KeyParameter(credentials.hash_key));
                         byte[] result = new byte[hmac.getMacSize()];
                         hmac.update(original, 0, original.length);
