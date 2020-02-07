@@ -20,6 +20,8 @@ import java.util.Arrays;
 import java.util.Set;
 import java.util.UUID;
 
+import static org.kritikal.fabric.net.http.DefaultCFCookieCutter.formatSetCookie;
+
 public class SecureCFCookieCutter implements CFCookieCutter {
     public static class Credentials {
         public byte[] code_key, hash_key;
@@ -173,11 +175,7 @@ public class SecureCFCookieCutter implements CFCookieCutter {
             cfCookie = new SecureCFCookie();
         }
 
-        String cfcookie = cookieName + "=" + cfCookie.cookieValue() + "; Path=/; HttpOnly";
-        if (req.isSSL())
-            cfcookie = cfcookie + "; Secure";
-
-        req.response().headers().add("Set-Cookie", cfcookie);
+        req.response().headers().add("Set-Cookie", formatSetCookie(cookieName, cfCookie, req.isSSL()));
         return cfCookie;
     }
 
