@@ -16,6 +16,7 @@ import org.kritikal.fabric.net.ThreadLocalSecurity;
 import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
+import java.net.URI;
 import java.util.Arrays;
 import java.util.Set;
 import java.util.UUID;
@@ -151,9 +152,16 @@ public class SecureCFCookieCutter implements CFCookieCutter {
     }
     private final Credentials credentials;
     private final CFLogEncrypt provider;
+    private final String cookieName(String host) {
+        int i = host.indexOf(':');
+        if (i > -1) {
+            return "cf$_" + host.substring(0, i).replace('.', '_').replace('-', '_');
+        }
+        return "cf$_" + host.replace('.', '_').replace('-', '_');
+    }
     @Override
     public CFCookie cut(HttpServerRequest req) {
-        String cookieName = req.isSSL() ? "corefabric" : "cf_http";
+        String cookieName = req.isSSL() ? cookieName(req.host()) : "cf_http";
         String cookieValue = null;
         SecureCFCookie cfCookie = null;
         try {
@@ -182,12 +190,13 @@ public class SecureCFCookieCutter implements CFCookieCutter {
 
     @Override
     public CFCookie cut(ServerWebSocket webSocket) {
+        //String cookieName = cookieName(URI.create(webSocket.uri()).getHost());
         String cookieValue = null;
         try {
             String cookies = webSocket.headers().get("Cookie");
             Set<Cookie> cookieSet = CookieDecoder.decode(cookies);
             for (Cookie cookie : cookieSet) {
-                if ("corefabric".equals(cookie.getName())) {
+                if (cookie.getName().startsWith("cf$_")) {
                     cookieValue = cookie.getValue().trim();
                     return parse(cookieValue);
                 }
