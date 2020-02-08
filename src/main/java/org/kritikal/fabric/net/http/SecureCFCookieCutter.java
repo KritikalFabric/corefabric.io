@@ -127,7 +127,7 @@ public class SecureCFCookieCutter implements CFCookieCutter {
                 }
             }
             catch (Throwable t) {
-                CoreFabric.logger.fatal("log-encrypt", t);
+                //CoreFabric.logger.fatal("log-encrypt", t);
                 throw new RuntimeException(t);
             }
         }
@@ -140,7 +140,8 @@ public class SecureCFCookieCutter implements CFCookieCutter {
             }
         }
         catch (Throwable t) {
-            CoreFabric.logger.warn("cookie", t);
+            //CoreFabric.logger.warn("cookie", t);
+            CoreFabric.logger.fatal("cookie\t" + originalCookieValue);
         }
         return new SecureCFCookie();
     }

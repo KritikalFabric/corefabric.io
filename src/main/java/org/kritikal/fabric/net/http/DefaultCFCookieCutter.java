@@ -57,7 +57,7 @@ public class DefaultCFCookieCutter implements CFCookieCutter {
         sbCookie.append("=").append(cfCookie.cookieValue());
         sbCookie.append("; Path=/; HttpOnly");
         if (isSSL) sbCookie.append("; Secure");
-        sbCookie.append("; SameSite=Strict");
+        sbCookie.append("; SameSite=None");
         return sbCookie.toString();
     }
 
