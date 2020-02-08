@@ -57,6 +57,7 @@ public class DefaultCFCookieCutter implements CFCookieCutter {
         sbCookie.append("=").append(cfCookie.cookieValue());
         sbCookie.append("; Path=/; HttpOnly; Max-Age=345600"); // 2 days
         if (isSSL) sbCookie.append("; Secure");
+        /*
         if (null!=domain) {
             int i = domain.indexOf(':'); // chop host into domain
             if (i>-1){
@@ -65,6 +66,7 @@ public class DefaultCFCookieCutter implements CFCookieCutter {
                 sbCookie.append("; Domain=").append(domain);
             }
         }
+         */
         sbCookie.append("; SameSite=None");
         return sbCookie.toString();
     }
