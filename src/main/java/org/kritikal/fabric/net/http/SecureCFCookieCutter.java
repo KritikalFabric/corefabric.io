@@ -155,9 +155,9 @@ public class SecureCFCookieCutter implements CFCookieCutter {
     private final String cookieName(String host) {
         int i = host.indexOf(':');
         if (i > -1) {
-            return "cf$_" + host.substring(0, i).replace('.', '_').replace('-', '_');
+            return "cf__" + host.substring(0, i).replace('.', '_').replace('-', '_');
         }
-        return "cf$_" + host.replace('.', '_').replace('-', '_');
+        return "cf__" + host.replace('.', '_').replace('-', '_');
     }
     @Override
     public CFCookie cut(HttpServerRequest req) {
@@ -196,7 +196,7 @@ public class SecureCFCookieCutter implements CFCookieCutter {
             String cookies = webSocket.headers().get("Cookie");
             Set<Cookie> cookieSet = CookieDecoder.decode(cookies);
             for (Cookie cookie : cookieSet) {
-                if (cookie.getName().startsWith("cf$_")) {
+                if (cookie.getName().startsWith("cf__")) {
                     cookieValue = cookie.getValue().trim();
                     return parse(cookieValue);
                 }
