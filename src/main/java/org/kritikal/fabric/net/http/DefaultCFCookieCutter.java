@@ -48,16 +48,24 @@ public class DefaultCFCookieCutter implements CFCookieCutter {
             cfCookie = new CFCookie();
         }
 
-        req.response().headers().add("Set-Cookie", formatSetCookie(cookieName, cfCookie, req.isSSL()));
+        req.response().headers().add("Set-Cookie", formatSetCookie(cookieName, cfCookie, req.isSSL(), req.host()));
         return cfCookie;
     }
 
-    public final static String formatSetCookie(String cookieName, CFCookie cfCookie, boolean isSSL) {
+    public final static String formatSetCookie(String cookieName, CFCookie cfCookie, boolean isSSL, String domain) {
         StringBuilder sbCookie = new StringBuilder(cookieName);
         sbCookie.append("=").append(cfCookie.cookieValue());
-        sbCookie.append("; Path=/; HttpOnly");
+        sbCookie.append("; Path=/; HttpOnly; Max-Age=345600"); // 2 days
         if (isSSL) sbCookie.append("; Secure");
-        sbCookie.append("; SameSite=None");
+        if (null!=domain) {
+            int i = domain.indexOf(':'); // chop host into domain
+            if (i>-1){
+                sbCookie.append("; Domain=").append(domain.substring(0, i));
+            } else {
+                sbCookie.append("; Domain=").append(domain);
+            }
+        }
+        sbCookie.append("; SameSite=Strict");
         return sbCookie.toString();
     }
 

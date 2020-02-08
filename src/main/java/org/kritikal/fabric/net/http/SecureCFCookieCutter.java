@@ -176,7 +176,7 @@ public class SecureCFCookieCutter implements CFCookieCutter {
             cfCookie = new SecureCFCookie();
         }
 
-        req.response().headers().add("Set-Cookie", formatSetCookie(cookieName, cfCookie, req.isSSL()));
+        req.response().headers().add("Set-Cookie", formatSetCookie(cookieName, cfCookie, req.isSSL(), req.host()));
         return cfCookie;
     }
 
