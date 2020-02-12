@@ -46,6 +46,7 @@ import com.cisco.qte.jdtn.general.GeneralManagement;
 import com.cisco.qte.jdtn.general.JDtnException;
 import com.cisco.qte.jdtn.general.Store;
 import org.apache.commons.dbcp2.BasicDataSource;
+import org.kritikal.fabric.contrib.db.CFPostgresqlPoolHelper;
 
 /**
  * An implementation of the DBInterface using a JDBC Connector Driver as the
@@ -58,35 +59,6 @@ import org.apache.commons.dbcp2.BasicDataSource;
 public class DBInterfaceJDBC implements DBInterface {
 	private static final Logger _logger =
 		Logger.getLogger(DBInterfaceJDBC.class.getCanonicalName());
-
-    static class BasicDataSourceHelper {
-
-        /**
-         * Create pools based on a standard template
-         */
-        public static /*synchronized*/ BasicDataSource pool(int concurrency, Consumer<BasicDataSource> config) {
-            BasicDataSource basicDataSource = new BasicDataSource();
-            basicDataSource.setCacheState(true);
-            basicDataSource.setDriverClassName("org.postgresql.Driver");
-            basicDataSource.setDefaultAutoCommit(false);
-            basicDataSource.setMaxWaitMillis(-1);
-            basicDataSource.setValidationQuery("SELECT 1;");
-            basicDataSource.setTestOnBorrow(true);
-            basicDataSource.setTestOnReturn(true);
-            basicDataSource.setTestWhileIdle(true);
-            basicDataSource.setLifo(false);
-            basicDataSource.setRollbackOnReturn(true);
-            basicDataSource.setDefaultTransactionIsolation(Connection.TRANSACTION_READ_UNCOMMITTED);
-            config.accept(basicDataSource);
-            basicDataSource.setInitialSize(concurrency);
-            basicDataSource.setMinIdle(2);
-            //basicDataSource.setMaxTotal(concurrency);
-            //try { basicDataSource.createConnection().close(); } catch (Throwable t) { } // error will happen again for sure
-            //try  { Thread.sleep(Constants.INITIAL_BASIC_DATA_SOURCE_SLEEP); } catch (InterruptedException ie) { }
-            return basicDataSource;
-        }
-
-    }
 
     private static BasicDataSource pool = null;
 
@@ -146,7 +118,7 @@ public class DBInterfaceJDBC implements DBInterface {
 			}
 
             if (pool == null) {
-                pool = BasicDataSourceHelper.pool(2, basicDataSource -> {
+                pool = CFPostgresqlPoolHelper.pool(2, basicDataSource -> {
                     basicDataSource.setUrl("jdbc:postgresql://" + host + ":" + port + "/" + db + "?charSet=UTF8");
                     basicDataSource.setUsername(user);
                     basicDataSource.setPassword(password);

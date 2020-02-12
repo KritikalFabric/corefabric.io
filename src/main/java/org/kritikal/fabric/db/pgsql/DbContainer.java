@@ -7,6 +7,7 @@ import io.vertx.core.file.FileSystem;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.logging.Logger;
 import io.corefabric.pi.db.Factory;
+import org.kritikal.fabric.contrib.db.CFPostgresqlPoolHelper;
 import org.kritikal.fabric.core.Configuration;
 
 import java.sql.Connection;
@@ -43,7 +44,7 @@ public class DbContainer {
         return poolOfPools.computeIfAbsent(cfg.instancekey, new Function<String, BasicDataSource>() {
                 @Override
                 public BasicDataSource apply(String s) {
-                    BasicDataSource basicDataSource = BasicDataSourceHelper.pool(concurrency, basicDataSource1 -> {
+                    BasicDataSource basicDataSource = CFPostgresqlPoolHelper.pool(concurrency, basicDataSource1 -> {
                         basicDataSource1.setUrl(cfg.getMiniConnectionString());
                         basicDataSource1.setUsername(cfg.getDbUser());
                         basicDataSource1.setPassword(cfg.getDbPassword());

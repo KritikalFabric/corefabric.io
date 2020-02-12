@@ -1,19 +1,17 @@
-package org.kritikal.fabric.db.pgsql;
+package org.kritikal.fabric.contrib.db;
 
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import org.apache.commons.dbcp2.BasicDataSource;
 
-import java.sql.Connection;
-import java.sql.SQLException;
 import java.util.function.Consumer;
 
 /**
  * Created by ben on 5/15/16.
  */
-public class BasicDataSourceHelper {
+public class CFPostgresqlPoolHelper {
 
-    public static Logger logger = LoggerFactory.getLogger(BasicDataSourceHelper.class);
+    public static Logger logger = LoggerFactory.getLogger(CFPostgresqlPoolHelper.class);
 
     /**
      * Create pools based on a standard template
@@ -25,13 +23,13 @@ public class BasicDataSourceHelper {
         basicDataSource.setDriverClassName("org.postgresql.Driver");
         basicDataSource.setDefaultAutoCommit(false);
         basicDataSource.setMaxWaitMillis(-1);
-        basicDataSource.setValidationQuery("SELECT pg_advisory_unlock_all();");
-        basicDataSource.setTestOnBorrow(true);
-        basicDataSource.setTestOnReturn(true);
-        basicDataSource.setTestWhileIdle(true);
+        basicDataSource.setValidationQuery(CFPostgresqlCfg.POOL_VALIDATION_QUERY);
+        basicDataSource.setTestOnBorrow(CFPostgresqlCfg.POOL_TEST_BORROW);
+        basicDataSource.setTestOnReturn(CFPostgresqlCfg.POOL_TEST_RETURN);
+        basicDataSource.setTestWhileIdle(CFPostgresqlCfg.POOL_TEST_IDLE);
         basicDataSource.setLifo(false);
         basicDataSource.setRollbackOnReturn(false);
-        basicDataSource.setDefaultTransactionIsolation(Connection.TRANSACTION_READ_UNCOMMITTED);
+        basicDataSource.setDefaultTransactionIsolation(CFPostgresqlCfg.DEFAULT_TRANSACTION_ISOLATION);
         config.accept(basicDataSource);
         basicDataSource.setInitialSize(concurrency);
         basicDataSource.setMinIdle(2);

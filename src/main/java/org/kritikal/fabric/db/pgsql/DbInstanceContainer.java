@@ -1,18 +1,15 @@
 package org.kritikal.fabric.db.pgsql;
 
 import io.corefabric.pi.db.Factory;
-import io.vertx.core.Vertx;
 import io.vertx.core.file.FileSystem;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import org.apache.commons.dbcp2.BasicDataSource;
-import org.kritikal.fabric.core.Configuration;
+import org.kritikal.fabric.contrib.db.CFPostgresqlPoolHelper;
 
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Function;
 
 /**
  * Created by ben on 03/06/15.
@@ -57,7 +54,7 @@ public class DbInstanceContainer {
 
                     logger.info("jdbc:postgresql://" + host + ":" + port + "/" + db + "?charSet=UTF8");
 
-                    dataSource = BasicDataSourceHelper.pool(concurrency, basicDataSource1 -> {
+                    dataSource = CFPostgresqlPoolHelper.pool(concurrency, basicDataSource1 -> {
                         basicDataSource1.setUrl("jdbc:postgresql://" + host + ":" + port + "/" + db + "?charSet=UTF8");
                         basicDataSource1.setUsername(user);
                         basicDataSource1.setPassword(password);

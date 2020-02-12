@@ -5,6 +5,7 @@ import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
+import org.kritikal.fabric.contrib.db.CFPostgresqlPoolHelper;
 import org.kritikal.fabric.core.ConfigurationManager;
 import org.apache.commons.dbcp2.BasicDataSource;
 import org.apache.commons.dbcp2.DelegatingConnection;
@@ -92,7 +93,7 @@ public abstract class CopyInManager {
     private void connectIfNeeded() throws Exception {
         if (con != null) return;
         con = poolOfPools.computeIfAbsent(connectionString, (k) -> {
-            return BasicDataSourceHelper.pool(ConfigurationManager.BULKCOPY_CONCURRENCY, basicDataSource -> {
+            return CFPostgresqlPoolHelper.pool(ConfigurationManager.BULKCOPY_CONCURRENCY, basicDataSource -> {
                 basicDataSource.setUrl(connectionString);
                 basicDataSource.setUsername(username);
                 basicDataSource.setPassword(password);

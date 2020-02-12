@@ -20,8 +20,6 @@ import java.util.concurrent.*;
  */
 public class DelaySendDequeueWorkerVerticle extends AbstractVerticle {
 
-    private final static ConcurrentHashMap<String, BasicDataSource> poolOfPools = new ConcurrentHashMap<>();
-
     private final ScheduledExecutorService scheduler =
             Executors.newScheduledThreadPool(1);
     ScheduledFuture<?> taskHandle;

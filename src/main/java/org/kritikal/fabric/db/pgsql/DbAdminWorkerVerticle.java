@@ -4,6 +4,7 @@ import io.vertx.core.AbstractVerticle;
 import io.vertx.core.eventbus.MessageConsumer;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
+import org.kritikal.fabric.contrib.db.CFPostgresqlPoolHelper;
 import org.kritikal.fabric.core.ConfigurationManager;
 import org.kritikal.fabric.CoreFabric;
 import org.apache.commons.dbcp2.BasicDataSource;
@@ -65,7 +66,7 @@ public abstract class DbAdminWorkerVerticle extends AbstractVerticle implements 
 
     public static Connection getConnection(String connectionString, String username, String password) throws SQLException {
         return poolOfPools.computeIfAbsent(connectionString, (k) -> {
-            return BasicDataSourceHelper.pool(ConfigurationManager.DEFAULT_CONCURRENCY, basicDataSource -> {
+            return CFPostgresqlPoolHelper.pool(ConfigurationManager.DEFAULT_CONCURRENCY, basicDataSource -> {
                         basicDataSource.setUrl(connectionString);
                         basicDataSource.setUsername(username);
                         basicDataSource.setPassword(password);
