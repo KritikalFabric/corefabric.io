@@ -298,4 +298,14 @@ public class PgDbHelper {
         }
     }
 
+    public static void pg_advisory_lock(Connection con, UUID mutex) throws SQLException
+    {
+        pg_advisory_lock(con, mutex.getMostSignificantBits() ^ mutex.getLeastSignificantBits());
+    }
+
+    public static void pg_advisory_lock(Connection con, long mutex) throws SQLException
+    {
+        execute(con, "SELECT pg_advisory_lock(" + mutex + ");");
+    }
+
 }
