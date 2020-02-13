@@ -3,7 +3,10 @@ package org.kritikal.fabric.db.pgsql;
 import com.google.protobuf.ByteString;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
+import io.vertx.core.logging.Logger;
+import io.vertx.core.logging.LoggerFactory;
 import org.kritikal.fabric.core.FormatHelpers;
+import org.postgresql.util.PSQLException;
 
 import java.sql.*;
 import java.util.GregorianCalendar;
@@ -16,6 +19,8 @@ import static org.kritikal.fabric.core.FormatHelpers.toTimestamp;
  * Created by ben on 06/01/15.
  */
 public class PgDbHelper {
+
+    public static Logger logger = LoggerFactory.getLogger(PgDbHelper.class);
 
     public static String quote(String toQuote)
     {
@@ -286,6 +291,28 @@ public class PgDbHelper {
         return ary;
     }
 
+    public static JsonArray jsonQueryRetry(Connection con, String sql) throws SQLException
+    {
+        int retries = 16;
+        JsonArray r = null;
+        while (r == null && --retries >= 0) {
+            try {
+                r = jsonQuery(con, sql);
+                return r;
+            }
+            catch (SQLException e) {
+                String sqlState = e.getSQLState();
+                if ("40001".equals(sqlState)||"40P01".equals(sqlState)) {
+                    con.rollback();
+                    continue;
+                }
+                logger.warn("ERROR:\t" + sqlState);
+                throw e;
+            }
+        }
+        return null;
+    }
+
     public static void execute(Connection con, String sql) throws SQLException
     {
         // "SET SESSION CHARACTERISTICS AS TRANSACTION ISOLATION LEVEL READ UNCOMMITTED READ ONLY DEFERRABLE;"
@@ -305,7 +332,7 @@ public class PgDbHelper {
 
     public static void pg_advisory_lock(Connection con, long mutex) throws SQLException
     {
-        execute(con, "SELECT pg_advisory_lock(" + mutex + ");");
+        execute(con, "SELECT pg_advisory_lock(" + mutex + "::bigint);");
     }
 
 }

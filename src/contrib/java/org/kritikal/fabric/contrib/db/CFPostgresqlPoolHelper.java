@@ -22,14 +22,16 @@ public class CFPostgresqlPoolHelper {
         basicDataSource.setCacheState(true);
         basicDataSource.setDriverClassName("org.postgresql.Driver");
         basicDataSource.setDefaultAutoCommit(false);
+        basicDataSource.setAutoCommitOnReturn(false);
         basicDataSource.setMaxWaitMillis(-1);
         basicDataSource.setValidationQuery(CFPostgresqlCfg.POOL_VALIDATION_QUERY);
         basicDataSource.setTestOnBorrow(CFPostgresqlCfg.POOL_TEST_BORROW);
         basicDataSource.setTestOnReturn(CFPostgresqlCfg.POOL_TEST_RETURN);
         basicDataSource.setTestWhileIdle(CFPostgresqlCfg.POOL_TEST_IDLE);
-        basicDataSource.setLifo(false);
+        basicDataSource.setLifo(true);
         basicDataSource.setRollbackOnReturn(false);
         basicDataSource.setDefaultTransactionIsolation(CFPostgresqlCfg.DEFAULT_TRANSACTION_ISOLATION);
+        basicDataSource.setPoolPreparedStatements(false);
         config.accept(basicDataSource);
         basicDataSource.setInitialSize(concurrency);
         basicDataSource.setMinIdle(2);
