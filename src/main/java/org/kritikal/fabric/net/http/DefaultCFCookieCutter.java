@@ -67,7 +67,7 @@ public class DefaultCFCookieCutter implements CFCookieCutter {
             }
         }
          */
-        sbCookie.append("; SameSite=Strict");
+        sbCookie.append("; SameSite=None");
         return sbCookie.toString();
     }
 
