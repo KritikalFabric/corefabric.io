@@ -27,6 +27,7 @@ import java.util.UUID;
 import static org.kritikal.fabric.net.http.DefaultCFCookieCutter.formatSetCookie;
 
 public class SecureCFCookieCutter implements CFCookieCutter {
+    public final static boolean DEBUG = false;
     public static class Credentials {
         public byte[] code_key, hash_key;
     }
@@ -84,35 +85,26 @@ public class SecureCFCookieCutter implements CFCookieCutter {
             return nonce_uuid;
         }
 
+        public void clear(boolean force) {
+            if (null != this.nonce_uuid || null != this.credential_uuid || force) {
+                this.nonce_uuid = null;
+                this.credential_uuid = null;
+                changed = true;
+            }
+        }
+
         public void associate(UUID nonce_uuid) {
-            if (this.nonce_uuid == null) {
+            if (this.nonce_uuid == null || !this.nonce_uuid.equals(nonce_uuid)) {
                 this.nonce_uuid = nonce_uuid;
                 this.credential_uuid = null;
                 changed = true;
-            } else {
-                if (!this.nonce_uuid.equals(nonce_uuid)) {
-                    this.nonce_uuid = nonce_uuid;
-                    this.credential_uuid = null;
-                    changed = true;
-                } else {
-                    throw new RuntimeException();
-                }
             }
         }
 
         public void associate(UUID nonce_uuid, UUID credential_uuid) {
-            if (this.nonce_uuid == null) {
+            if (this.nonce_uuid == null || !this.nonce_uuid.equals(nonce_uuid)) {
                 this.nonce_uuid = nonce_uuid;
-                this.credential_uuid = null;
                 changed = true;
-            } else {
-                if (!this.nonce_uuid.equals(nonce_uuid)) {
-                    this.nonce_uuid = nonce_uuid;
-                    this.credential_uuid = null;
-                    changed = true;
-                } else {
-                    throw new RuntimeException();
-                }
             }
             if (null != this.credential_uuid && !this.credential_uuid.equals(credential_uuid)) {
                 throw new RuntimeException();
@@ -382,7 +374,7 @@ public class SecureCFCookieCutter implements CFCookieCutter {
     }
     private final Credentials credentials;
     private final CFCookieEncrypt provider;
-    private final String cookieName(String host) {
+    public static final String cookieName(String host) {
         int i = host.indexOf(':');
         if (i > -1) {
             return "cf__" + host.substring(0, i).replace('.', '_').replace('-', '_');
@@ -417,19 +409,27 @@ public class SecureCFCookieCutter implements CFCookieCutter {
         if (cfCookie.is_new || cfCookie.changed) {
             final String s = formatSetCookie(cookieName, cfCookie, req.isSSL(), req.host());
             req.response().headers().add("Set-Cookie", s);
-            //CoreFabric.logger.warn(req.host() + req.path() + "\t" + cfCookie.session_uuid.toString() + "\t" + s);
+            if (SecureCFCookieCutter.DEBUG) CoreFabric.logger.warn(req.host() + req.path() + "\t" + cfCookie.session_uuid.toString() + "\tset (cut)\t" + s);
+            cfCookie.is_new = false;
+            cfCookie.changed = false;
+        }
+        if (req.isSSL()) {
+            var cookie = req.getCookie("cf_http");
+            if (null != cookie) {
+                req.response().headers().add("Set-Cookie", "cf_http=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT");
+            }
         }
         return cfCookie;
     }
 
     @Override
     public void apply(HttpServerRequest req, CFCookie cfCookie) {
-        if (cfCookie.is_new || ((SecureCFCookie)cfCookie).changed) {
+        if (((SecureCFCookie)cfCookie).changed || cfCookie.is_new) {
             String cookieName = req.isSSL() ? cookieName(req.host()) : "cf_http";
             req.response().headers().remove("Set-Cookie");
             final String s = formatSetCookie(cookieName, cfCookie, req.isSSL(), req.host());
             req.response().headers().add("Set-Cookie", s);
-            //CoreFabric.logger.warn(req.host() + req.path() + "\t" + cfCookie.session_uuid.toString() + "\t" + s);
+            if (SecureCFCookieCutter.DEBUG) CoreFabric.logger.warn(req.host() + req.path() + "\t" + cfCookie.session_uuid.toString() + "\tset (apply)\t" + s);
         }
     }
 

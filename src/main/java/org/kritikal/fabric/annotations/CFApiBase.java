@@ -8,6 +8,7 @@ import io.vertx.ext.web.RoutingContext;
 import org.kritikal.fabric.CoreFabric;
 import org.kritikal.fabric.core.Configuration;
 import org.kritikal.fabric.net.http.CFCookie;
+import org.kritikal.fabric.net.http.SecureCFCookieCutter;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
@@ -46,7 +47,7 @@ public abstract class CFApiBase {
         corefabric = s;
     }
     public CFCookie getCookie() {
-        //CoreFabric.logger.warn(request().host() + request().path() + "\tget\t" + corefabric.session_uuid.toString());
+        if (SecureCFCookieCutter.DEBUG) CoreFabric.logger.warn(request().host() + request().path() + "\tget\t" + corefabric.session_uuid.toString());
         return corefabric;
     }
     JsonObject schemaOrgMetaData = null;
