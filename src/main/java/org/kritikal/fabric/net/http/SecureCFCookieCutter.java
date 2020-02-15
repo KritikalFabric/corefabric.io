@@ -60,7 +60,8 @@ public class SecureCFCookieCutter implements CFCookieCutter {
             super(originalCookieValue, session_uuid);
         }
         public SecureCFCookie() {
-            super(null, UUID.randomUUID());
+            super();
+            changed = true;
         }
 
         private boolean changed = false;
@@ -89,7 +90,13 @@ public class SecureCFCookieCutter implements CFCookieCutter {
                 this.credential_uuid = null;
                 changed = true;
             } else {
-                if (!this.nonce_uuid.equals(nonce_uuid)) throw new RuntimeException();
+                if (!this.nonce_uuid.equals(nonce_uuid)) {
+                    this.nonce_uuid = nonce_uuid;
+                    this.credential_uuid = null;
+                    changed = true;
+                } else {
+                    throw new RuntimeException();
+                }
             }
         }
 
@@ -99,13 +106,30 @@ public class SecureCFCookieCutter implements CFCookieCutter {
                 this.credential_uuid = null;
                 changed = true;
             } else {
-                if (!this.nonce_uuid.equals(nonce_uuid)) throw new RuntimeException();
+                if (!this.nonce_uuid.equals(nonce_uuid)) {
+                    this.nonce_uuid = nonce_uuid;
+                    this.credential_uuid = null;
+                    changed = true;
+                } else {
+                    throw new RuntimeException();
+                }
             }
-            if (this.credential_uuid == null) {
+            if (null != this.credential_uuid && !this.credential_uuid.equals(credential_uuid)) {
+                throw new RuntimeException();
+            } else if (null == this.credential_uuid) {
                 this.credential_uuid = credential_uuid;
                 changed = true;
             }
         }
+
+        /*
+        @Override
+        public void renew() {
+            super.renew();
+            changed = true;
+        }
+
+         */
 
         @Override
         public String cookieValue() {
@@ -124,9 +148,9 @@ public class SecureCFCookieCutter implements CFCookieCutter {
                 StringBuilder sb = new StringBuilder();
                 sb.append('3');
                 if (null != cookie.nonce_uuid && null != cookie.credential_uuid) {
-                    sb.append(':');
+                    sb.append('$');
                 } else if (null != cookie.nonce_uuid && null == cookie.credential_uuid) {
-                    sb.append(',');
+                    sb.append('#');
                 } else {
                     sb.append('.');
                 }
@@ -194,10 +218,10 @@ public class SecureCFCookieCutter implements CFCookieCutter {
                         switch (ciphertext.substring(1, 2)) {
                             case ".":
                                 break;
-                            case ",":
+                            case "#":
                                 hasNonceUUID = true;
                                 break;
-                            case ";":
+                            case "$":
                                 hasNonceUUID = true;
                                 hasCredentialUUID = true;
                                 break;
@@ -288,10 +312,10 @@ public class SecureCFCookieCutter implements CFCookieCutter {
                             switch (ciphertext.substring(1, 2)) {
                                 case ".":
                                     break;
-                                case ",":
+                                case "#":
                                     hasNonceUUID = true;
                                     break;
-                                case ":":
+                                case "$":
                                     hasNonceUUID = true;
                                     hasCredentialUUID = true;
                                     break;
@@ -390,15 +414,23 @@ public class SecureCFCookieCutter implements CFCookieCutter {
             cfCookie = new SecureCFCookie();
         }
 
-        req.response().headers().add("Set-Cookie", formatSetCookie(cookieName, cfCookie, req.isSSL(), req.host()));
+        if (cfCookie.is_new || cfCookie.changed) {
+            final String s = formatSetCookie(cookieName, cfCookie, req.isSSL(), req.host());
+            req.response().headers().add("Set-Cookie", s);
+            //CoreFabric.logger.warn(req.host() + req.path() + "\t" + cfCookie.session_uuid.toString() + "\t" + s);
+        }
         return cfCookie;
     }
 
     @Override
     public void apply(HttpServerRequest req, CFCookie cfCookie) {
-        String cookieName = req.isSSL() ? cookieName(req.host()) : "cf_http";
-        req.response().headers().remove("Set-Cookie");
-        req.response().headers().add("Set-Cookie", formatSetCookie(cookieName, cfCookie, req.isSSL(), req.host()));
+        if (cfCookie.is_new || ((SecureCFCookie)cfCookie).changed) {
+            String cookieName = req.isSSL() ? cookieName(req.host()) : "cf_http";
+            req.response().headers().remove("Set-Cookie");
+            final String s = formatSetCookie(cookieName, cfCookie, req.isSSL(), req.host());
+            req.response().headers().add("Set-Cookie", s);
+            //CoreFabric.logger.warn(req.host() + req.path() + "\t" + cfCookie.session_uuid.toString() + "\t" + s);
+        }
     }
 
     @Override

@@ -59,8 +59,8 @@ public class DefaultCFCookieCutter implements CFCookieCutter {
 
     public final static String formatSetCookie(String cookieName, CFCookie cfCookie, boolean isSSL, String domain) {
         StringBuilder sbCookie = new StringBuilder(cookieName);
-        sbCookie.append("=").append(cfCookie.cookieValue());
-        sbCookie.append("; Path=/; HttpOnly"); // only session cookie
+        sbCookie.append("=\"").append(cfCookie.cookieValue());
+        sbCookie.append("\"; Path=/; HttpOnly"); // only session cookie
         if (isSSL) sbCookie.append("; Secure");
         /*
         if (null!=domain) {

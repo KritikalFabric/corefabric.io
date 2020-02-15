@@ -46,6 +46,7 @@ public abstract class CFApiBase {
         corefabric = s;
     }
     public CFCookie getCookie() {
+        //CoreFabric.logger.warn(request().host() + request().path() + "\tget\t" + corefabric.session_uuid.toString());
         return corefabric;
     }
     JsonObject schemaOrgMetaData = null;
