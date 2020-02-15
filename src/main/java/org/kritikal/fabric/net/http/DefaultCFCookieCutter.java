@@ -52,6 +52,11 @@ public class DefaultCFCookieCutter implements CFCookieCutter {
         return cfCookie;
     }
 
+    public void apply(HttpServerRequest req, CFCookie cfCookie) {
+        String cookieName = req.isSSL() ? "corefabric" : "cf_http";
+        req.response().headers().add("Set-Cookie", formatSetCookie(cookieName, cfCookie, req.isSSL(), req.host()));
+    }
+
     public final static String formatSetCookie(String cookieName, CFCookie cfCookie, boolean isSSL, String domain) {
         StringBuilder sbCookie = new StringBuilder(cookieName);
         sbCookie.append("=").append(cfCookie.cookieValue());

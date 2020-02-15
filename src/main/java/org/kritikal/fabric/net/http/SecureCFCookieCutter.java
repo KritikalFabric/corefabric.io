@@ -48,6 +48,14 @@ public class SecureCFCookieCutter implements CFCookieCutter {
         }
     }
     public class SecureCFCookie extends CFCookie {
+        protected SecureCFCookie(String originalCookieValue, UUID session_uuid, UUID nonce_uuid, UUID credential_uuid) {
+            super(originalCookieValue, session_uuid);
+            this.nonce_uuid = nonce_uuid;
+            this.credential_uuid = credential_uuid;
+        }
+        protected SecureCFCookie(String originalCookieValue, UUID session_uuid, UUID nonce_uuid) {
+            super(originalCookieValue, session_uuid);
+        }
         protected SecureCFCookie(String originalCookieValue, UUID session_uuid) {
             super(originalCookieValue, session_uuid);
         }
@@ -55,10 +63,54 @@ public class SecureCFCookieCutter implements CFCookieCutter {
             super(null, UUID.randomUUID());
         }
 
+        private boolean changed = false;
+        private UUID nonce_uuid = null;
+        private UUID credential_uuid = null;
+
+        public boolean hasCredentials() {
+            return null != credential_uuid && null != nonce_uuid;
+        }
+
+        public boolean hasStorage() {
+            return null != nonce_uuid;
+        }
+
+        public UUID getCredential() {
+            return credential_uuid;
+        }
+
+        public UUID getNonce() {
+            return nonce_uuid;
+        }
+
+        public void associate(UUID nonce_uuid) {
+            if (this.nonce_uuid == null) {
+                this.nonce_uuid = nonce_uuid;
+                this.credential_uuid = null;
+                changed = true;
+            } else {
+                if (!this.nonce_uuid.equals(nonce_uuid)) throw new RuntimeException();
+            }
+        }
+
+        public void associate(UUID nonce_uuid, UUID credential_uuid) {
+            if (this.nonce_uuid == null) {
+                this.nonce_uuid = nonce_uuid;
+                this.credential_uuid = null;
+                changed = true;
+            } else {
+                if (!this.nonce_uuid.equals(nonce_uuid)) throw new RuntimeException();
+            }
+            if (this.credential_uuid == null) {
+                this.credential_uuid = credential_uuid;
+                changed = true;
+            }
+        }
+
         @Override
         public String cookieValue() {
             String originalValue = super.cookieValue();
-            if (null==originalValue) {
+            if (null==originalValue || changed) {
                 return provider.encrypt(this);
             }
             return originalValue;
@@ -69,16 +121,33 @@ public class SecureCFCookieCutter implements CFCookieCutter {
         public String encrypt(CFCookie cfCookie) {
             try {
                 SecureCFCookie cookie = (SecureCFCookie) cfCookie;
-                String plaintext = cfCookie.session_uuid.toString();
                 StringBuilder sb = new StringBuilder();
-                sb.append("3.");
+                sb.append('3');
+                if (null != cookie.nonce_uuid && null != cookie.credential_uuid) {
+                    sb.append(':');
+                } else if (null != cookie.nonce_uuid && null == cookie.credential_uuid) {
+                    sb.append(',');
+                } else {
+                    sb.append('.');
+                }
                 byte[] entropy = ThreadLocalSecurity.secureRandom.get().getSeed(256);
-                byte[] plainBytes = UuidUtils.asBytes(cookie.session_uuid);
+                byte[] session_uuid_data = UuidUtils.asBytes(cookie.session_uuid);
+                byte[] nonce_uuid_data = null != cookie.nonce_uuid ? UuidUtils.asBytes(cookie.nonce_uuid) : new byte[0];
+                byte[] credential_uuid_data = null != cookie.credential_uuid ? UuidUtils.asBytes(cookie.credential_uuid) : new byte[0];
+                byte[] plainBytes = new byte[session_uuid_data.length + nonce_uuid_data.length + credential_uuid_data.length];
+                int i = 0;
+                for (int j = 0; j < session_uuid_data.length; ) {
+                    plainBytes[i++] = session_uuid_data[j++];
+                }
+                for (int j = 0; j < nonce_uuid_data.length; ) {
+                    plainBytes[i++] = nonce_uuid_data[j++];
+                }
+                for (int j = 0; j < credential_uuid_data.length; ) {
+                    plainBytes[i++] = credential_uuid_data[j++];
+                }
 
                 byte[] a = null; // initialisation vector
-                byte[] b = null; // session_uuid
-                byte[] c = null; // nonce_uuid
-                byte[] d = null; // credential uuid
+                byte[] b = null; // cookie data encrypted
 
                 {
                     Cipher cipher = ThreadLocalSecurity.aes.get();
@@ -222,7 +291,7 @@ public class SecureCFCookieCutter implements CFCookieCutter {
                                 case ",":
                                     hasNonceUUID = true;
                                     break;
-                                case ";":
+                                case ":":
                                     hasNonceUUID = true;
                                     hasCredentialUUID = true;
                                     break;
@@ -255,7 +324,19 @@ public class SecureCFCookieCutter implements CFCookieCutter {
                             if (data.length >= 16) {
                                 byte session_uuid_data[] = Arrays.copyOfRange(data, 0, 16);
                                 UUID session_uuid = UuidUtils.asUuid(session_uuid_data);
-                                return new SecureCFCookie(ciphertext, session_uuid);
+                                if (hasCredentialUUID && hasNonceUUID) {
+                                    byte nonce_uuid_data[] = Arrays.copyOfRange(data, 16, 32);
+                                    UUID nonce_uuid = UuidUtils.asUuid(nonce_uuid_data);
+                                    byte credential_uuid_data[] = Arrays.copyOfRange(data, 32, 48);
+                                    UUID credential_uuid = UuidUtils.asUuid(credential_uuid_data);
+                                    return new SecureCFCookie(ciphertext, session_uuid, nonce_uuid, credential_uuid);
+                                } else if (hasNonceUUID) {
+                                    byte nonce_uuid_data[] = Arrays.copyOfRange(data, 16, 32);
+                                    UUID nonce_uuid = UuidUtils.asUuid(nonce_uuid_data);
+                                    return new SecureCFCookie(ciphertext, session_uuid, nonce_uuid);
+                                } else {
+                                    return new SecureCFCookie(ciphertext, session_uuid);
+                                }
                             }
                         }
                         default:
@@ -311,6 +392,13 @@ public class SecureCFCookieCutter implements CFCookieCutter {
 
         req.response().headers().add("Set-Cookie", formatSetCookie(cookieName, cfCookie, req.isSSL(), req.host()));
         return cfCookie;
+    }
+
+    @Override
+    public void apply(HttpServerRequest req, CFCookie cfCookie) {
+        String cookieName = req.isSSL() ? cookieName(req.host()) : "cf_http";
+        req.response().headers().remove("Set-Cookie");
+        req.response().headers().add("Set-Cookie", formatSetCookie(cookieName, cfCookie, req.isSSL(), req.host()));
     }
 
     @Override
