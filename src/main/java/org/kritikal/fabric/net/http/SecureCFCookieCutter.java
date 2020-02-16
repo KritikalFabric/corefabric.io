@@ -28,6 +28,7 @@ import static org.kritikal.fabric.net.http.DefaultCFCookieCutter.formatSetCookie
 
 public class SecureCFCookieCutter implements CFCookieCutter {
     public final static boolean DEBUG = false;
+    private static final int year = 1900 + new java.util.Date().getYear();
     public static class Credentials {
         public byte[] code_key, hash_key;
     }
@@ -286,12 +287,14 @@ public class SecureCFCookieCutter implements CFCookieCutter {
         public CFCookie decrypt(String ciphertext) {
             if (null == ciphertext || ciphertext.length() < 3) return new SecureCFCookie();
             char v = ciphertext.charAt(0);
-            if (v == '1' || v == '2') {
+            if (2020==year&&(v == '1' || v == '2')) {
                 try {
                     String plaintext = legacy_decrypt(ciphertext);
                     UUID try_parse = UUID.fromString(plaintext);
                     if (null != try_parse) {
-                        return new SecureCFCookie(ciphertext, try_parse);
+                        SecureCFCookie cfCookie = new SecureCFCookie(ciphertext, try_parse);
+                        cfCookie.changed = true;
+                        return cfCookie;
                     }
                 } catch (Throwable t) {
                 }
