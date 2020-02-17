@@ -139,7 +139,7 @@ public class SecureCFCookieCutter implements CFCookieCutter {
             try {
                 SecureCFCookie cookie = (SecureCFCookie) cfCookie;
                 StringBuilder sb = new StringBuilder();
-                sb.append('3');
+                sb.append('4');
                 if (null != cookie.nonce_uuid && null != cookie.credential_uuid) {
                     sb.append('$');
                 } else if (null != cookie.nonce_uuid && null == cookie.credential_uuid) {
@@ -147,7 +147,7 @@ public class SecureCFCookieCutter implements CFCookieCutter {
                 } else {
                     sb.append('.');
                 }
-                byte[] entropy = ThreadLocalSecurity.secureRandom.get().getSeed(256);
+                byte[] entropy = ThreadLocalSecurity.secureRandom.get().getSeed(2048);
                 byte[] session_uuid_data = UuidUtils.asBytes(cookie.session_uuid);
                 byte[] nonce_uuid_data = null != cookie.nonce_uuid ? UuidUtils.asBytes(cookie.nonce_uuid) : new byte[0];
                 byte[] credential_uuid_data = null != cookie.credential_uuid ? UuidUtils.asBytes(cookie.credential_uuid) : new byte[0];
@@ -168,7 +168,7 @@ public class SecureCFCookieCutter implements CFCookieCutter {
 
                 {
                     Cipher cipher = ThreadLocalSecurity.aes.get();
-                    SecretKey key = new SecretKeySpec(credentials.code_key, "AES");
+                    SecretKey key = new SecretKeySpec(credentials.code_key, "Blowfish");
                     cipher.init(Cipher.ENCRYPT_MODE, key);
                     a = cipher.update(entropy);
                     byte[] encrypted = b = cipher.doFinal(plainBytes);
@@ -301,7 +301,65 @@ public class SecureCFCookieCutter implements CFCookieCutter {
             } else {
                 try {
                     switch (ciphertext.substring(0, 1)) {
+                        case "4": {
+                            boolean hasNonceUUID = false;
+                            boolean hasCredentialUUID = false;
+                            switch (ciphertext.substring(1, 2)) {
+                                case ".":
+                                    break;
+                                case "#":
+                                    hasNonceUUID = true;
+                                    break;
+                                case "$":
+                                    hasNonceUUID = true;
+                                    hasCredentialUUID = true;
+                                    break;
+                            }
+                            int j = ciphertext.indexOf('.', 2);
+                            if (j == -1) throw new RuntimeException();
+                            byte plaintext[] = ciphertext.substring(2, j).getBytes("UTF-8");
+                            Cipher cipher = ThreadLocalSecurity.aes.get();
+                            SecretKey key = new SecretKeySpec(credentials.code_key, "Blowfish");
+                            cipher.init(Cipher.DECRYPT_MODE, key);
+                            byte[] decodedBytes = Base64.decodeBase64(plaintext);
+                            byte[] original = cipher.doFinal(decodedBytes);
+                            byte[] data = Arrays.copyOfRange(original, 2048, original.length);
+
+                            byte[] hashCheck = Base64.decodeBase64(ciphertext.substring(j + 1));
+                            HMac hmac = ThreadLocalSecurity.sha256hmac.get();
+                            hmac.init(new KeyParameter(credentials.hash_key));
+                            byte[] result = new byte[hmac.getMacSize()];
+                            hmac.update(original, 0, original.length);
+                            hmac.doFinal(result, 0);
+                            for (int k = 0; k < result.length; ++k) {
+                                if (hashCheck.length < k) {
+                                    throw new RuntimeException("Invalid HMAC");
+                                }
+                                if (hashCheck[k] != result[k]) {
+                                    throw new RuntimeException("Invalid HMAC");
+                                }
+                            }
+
+                            if (data.length >= 16) {
+                                byte session_uuid_data[] = Arrays.copyOfRange(data, 0, 16);
+                                UUID session_uuid = UuidUtils.asUuid(session_uuid_data);
+                                if (hasCredentialUUID && hasNonceUUID) {
+                                    byte nonce_uuid_data[] = Arrays.copyOfRange(data, 16, 32);
+                                    UUID nonce_uuid = UuidUtils.asUuid(nonce_uuid_data);
+                                    byte credential_uuid_data[] = Arrays.copyOfRange(data, 32, 48);
+                                    UUID credential_uuid = UuidUtils.asUuid(credential_uuid_data);
+                                    return new SecureCFCookie(ciphertext, session_uuid, nonce_uuid, credential_uuid);
+                                } else if (hasNonceUUID) {
+                                    byte nonce_uuid_data[] = Arrays.copyOfRange(data, 16, 32);
+                                    UUID nonce_uuid = UuidUtils.asUuid(nonce_uuid_data);
+                                    return new SecureCFCookie(ciphertext, session_uuid, nonce_uuid);
+                                } else {
+                                    return new SecureCFCookie(ciphertext, session_uuid);
+                                }
+                            }
+                        }
                         case "3": {
+                            if (year != 2020) throw new RuntimeException();
                             boolean hasNonceUUID = false;
                             boolean hasCredentialUUID = false;
                             switch (ciphertext.substring(1, 2)) {
@@ -348,11 +406,15 @@ public class SecureCFCookieCutter implements CFCookieCutter {
                                     UUID nonce_uuid = UuidUtils.asUuid(nonce_uuid_data);
                                     byte credential_uuid_data[] = Arrays.copyOfRange(data, 32, 48);
                                     UUID credential_uuid = UuidUtils.asUuid(credential_uuid_data);
-                                    return new SecureCFCookie(ciphertext, session_uuid, nonce_uuid, credential_uuid);
+                                    SecureCFCookie cfCookie = new SecureCFCookie(ciphertext, session_uuid, nonce_uuid, credential_uuid);
+                                    cfCookie.changed = true;
+                                    return cfCookie;
                                 } else if (hasNonceUUID) {
                                     byte nonce_uuid_data[] = Arrays.copyOfRange(data, 16, 32);
                                     UUID nonce_uuid = UuidUtils.asUuid(nonce_uuid_data);
-                                    return new SecureCFCookie(ciphertext, session_uuid, nonce_uuid);
+                                    SecureCFCookie cfCookie = new SecureCFCookie(ciphertext, session_uuid, nonce_uuid);
+                                    cfCookie.changed = true;
+                                    return cfCookie;
                                 } else {
                                     return new SecureCFCookie(ciphertext, session_uuid);
                                 }
