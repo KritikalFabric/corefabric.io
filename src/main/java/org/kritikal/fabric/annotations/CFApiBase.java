@@ -61,13 +61,12 @@ public abstract class CFApiBase {
         return this.schemaOrgMetaData;
     }
 
-    public void proceedIfCookie(Consumer<UUID> ifCookie, Consumer<Void> ifNoCookie) {
-        boolean preAuthFailure = false;
-        CFCookie corefabric = getCookie();
+    public void proceedIfCookie(Consumer<SecureCFCookieCutter.SecureCFCookie> ifCookie, Consumer<Void> ifNoCookie) {
+        SecureCFCookieCutter.SecureCFCookie corefabric = (SecureCFCookieCutter.SecureCFCookie) getCookie();
         if (corefabric.is_new) {
             ifNoCookie.accept(null);
         } else {
-            ifCookie.accept(corefabric.session_uuid);
+            ifCookie.accept(corefabric);
         }
     }
 
