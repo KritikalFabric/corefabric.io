@@ -1,5 +1,6 @@
 package org.kritikal.fabric.net.http;
 
+import com.google.common.html.HtmlEscapers;
 import io.netty.handler.codec.http.Cookie;
 import io.netty.handler.codec.http.CookieDecoder;
 import io.vertx.core.AsyncResult;
@@ -72,6 +73,16 @@ public class AngularIOWebContainer {
         }
         req.response().headers().add("Content-Length", "" + data.length);
         req.response().end(html);
+    }
+
+    public static void fourOhFourEndResponse(HttpServerRequest req) {
+        req.response().setStatusCode(404).setStatusMessage("Not Found");
+        endResponse(req, "<html><head><title>Not Found</title><meta http-equiv=\"refresh\" content=\"0;URL='/-/not-found'\" /></head><body></body></html>");
+    }
+
+    public static void serverErrorEndResponse(HttpServerRequest req, int statusCode, String statusMessage) {
+        req.response().setStatusCode(statusCode).setStatusMessage(statusMessage);
+        endResponse(req, "<html><head><title>Server Error</title></head><body><h1>Server Error</h1><p><strong>" + statusCode + "</strong> - " + HtmlEscapers.htmlEscaper().escape(statusMessage) + "</p></body></html>");
     }
 
     public static Function<Void,CFCookieCutter> cookieCutterFactory = null;
@@ -247,8 +258,7 @@ public class AngularIOWebContainer {
                             boolean noGzip = false;
                             String file = null;
                             if (req.path().contains("..") || req.path().contains("%2e") || req.path().contains("%2E")) {
-                                req.response().setStatusCode(500);
-                                req.response().end();
+                                serverErrorEndResponse(req, 500, "Internal Server Error");
                                 return;
                             } else if (req.path().equals("/") || req.path().startsWith("/-/") || req.path().equals("/index.html")) {
                                 file = "index.html";
@@ -256,8 +266,7 @@ public class AngularIOWebContainer {
                             } else if (req.path().startsWith("/")) {
                                 file = req.path().substring(1);
                             } else {
-                                req.response().setStatusCode(404);
-                                req.response().end();
+                                fourOhFourEndResponse(req);
                                 return;
                             }
 
@@ -286,11 +295,9 @@ public class AngularIOWebContainer {
                                                     vertx.fileSystem().readFile(filesystemLocation, (ar) -> {
                                                         if (ar.failed()) {
                                                             if ("/-/not-found".equals(req.path())) {
-                                                                req.response().setStatusCode(500).setStatusMessage("Server Error");
-                                                                req.response().end();
+                                                                serverErrorEndResponse(req, 504, "Gateway Timeout");
                                                             } else {
-                                                                req.response().setStatusCode(404).setStatusMessage("Not Found");
-                                                                endResponse(req, "<html><head><title>Server Error</title><meta http-equiv=\"refresh\" content=\"0;URL='/-/not-found'\" /></head><body></body></html>");
+                                                                fourOhFourEndResponse(req);
                                                             }
                                                         } else {
                                                             CFNoscriptRenderers.sharedWorkerExecutor.executeBlocking((promise)->{
@@ -394,8 +401,7 @@ public class AngularIOWebContainer {
                                                             (result)->{
                                                                 if (result.failed()) {
                                                                     logger.error("angular-io\t" + site + "\t" + req.remoteAddress().host() + "\t" + req.host() + "\t" + req.path() + "\t" + result.cause());
-                                                                    req.response().setStatusCode(500).setStatusMessage("Server Error");
-                                                                    req.response().end();
+                                                                    serverErrorEndResponse(req, 500, "Internal Server Error");
                                                                 }
                                                             });
 
@@ -406,38 +412,32 @@ public class AngularIOWebContainer {
                                                 }
                                             } else {
                                                 if ("/-/not-found".equals(req.path())) {
-                                                    req.response().setStatusCode(500).setStatusMessage("Server Error");
-                                                    req.response().end();
+                                                    serverErrorEndResponse(req, 504, "Gateway Timeout");
                                                 } else {
-                                                    req.response().setStatusCode(404).setStatusMessage("Not Found");
-                                                    endResponse(req, "<html><head><title>Server Error</title><meta http-equiv=\"refresh\" content=\"0;URL='/-/not-found'\" /></head><body></body></html>");
+                                                    fourOhFourEndResponse(req);
                                                 }
                                                 return;
                                             }
                                         } else {
-                                            req.response().setStatusCode(500).setStatusMessage("Server Error");
-                                            req.response().end();
+                                            // file does not exist
+                                            fourOhFourEndResponse(req);
                                             return;
                                         }
                                     }
                                 });
                             } else {
-                                req.response().setStatusCode(500).setStatusMessage("Server Error");
-                                req.response().end();
+                                serverErrorEndResponse(req, 500, "Internal Server Error");
                             }
                         } else {
-                            req.response().setStatusCode(500).setStatusMessage("Server Error");
-                            req.response().end();
+                            serverErrorEndResponse(req, 500, "Internal Server Error");
                         }
                     }
                     catch (Throwable t) {
                         logger.error("angular-io\t" + site + "\t" + req.remoteAddress().host() + "\t" + req.host() + "\t" + req.path() + "\t" + t.getMessage());
-                        req.response().setStatusCode(500).setStatusMessage("Server Error");
-                        req.response().end();
+                        serverErrorEndResponse(req, 500, "Internal Server Error");
                     }
                 } else {
-                    req.response().setStatusCode(500).setStatusMessage("Server Error");
-                    req.response().end();
+                    serverErrorEndResponse(req, 500, "Internal Server Error");
                 }
             });
         });
@@ -475,8 +475,7 @@ public class AngularIOWebContainer {
                             boolean noGzip = false;
                             String file = null;
                             if (req.path().contains("..") || req.path().contains("%2e") || req.path().contains("%2E")) {
-                                req.response().setStatusCode(500);
-                                req.response().end();
+                                serverErrorEndResponse(req, 500, "Internal Server Error");
                                 return;
                             } else if (req.path().equals("/") || req.path().startsWith("/-/") || req.path().equals("/index.html")) {
                                 file = "index.html";
@@ -484,8 +483,7 @@ public class AngularIOWebContainer {
                             } else if (req.path().startsWith("/")) {
                                 file = req.path().substring(1);
                             } else {
-                                req.response().setStatusCode(404);
-                                req.response().end();
+                                fourOhFourEndResponse(req);
                                 return;
                             }
 
@@ -514,11 +512,9 @@ public class AngularIOWebContainer {
                                                     vertx.fileSystem().readFile(filesystemLocation, (ar) -> {
                                                         if (ar.failed()) {
                                                             if ("/-/not-found".equals(req.path())) {
-                                                                req.response().setStatusCode(500).setStatusMessage("Server Error");
-                                                                req.response().end();
+                                                                serverErrorEndResponse(req, 504, "Gateway Timeout");
                                                             } else {
-                                                                req.response().setStatusCode(404).setStatusMessage("Not Found");
-                                                                endResponse(req, "<html><head><title>Server Error</title><meta http-equiv=\"refresh\" content=\"0;URL='/-/not-found'\" /></head><body></body></html>");
+                                                                fourOhFourEndResponse(req);
                                                             }
                                                         } else {
                                                             CFNoscriptRenderers.sharedWorkerExecutor.executeBlocking((promise)->{
@@ -538,8 +534,7 @@ public class AngularIOWebContainer {
                                                                             }
 
                                                                             if (null == noscript) {
-                                                                                req.response().setStatusCode(404);
-                                                                                req.response().end();
+                                                                                fourOhFourEndResponse(req);
                                                                                 promise.complete();
                                                                                 return;
                                                                             }
@@ -628,8 +623,7 @@ public class AngularIOWebContainer {
                                                                     (result)->{
                                                                         if (result.failed()) {
                                                                             logger.error("angular-io\t" + site + "\t" + req.remoteAddress().host() + "\t" + req.host() + "\t" + req.path() + "\t" + result.cause());
-                                                                            req.response().setStatusCode(500).setStatusMessage("Server Error");
-                                                                            req.response().end();
+                                                                            fourOhFourEndResponse(req);
                                                                         }
                                                                     });
 
@@ -640,38 +634,30 @@ public class AngularIOWebContainer {
                                                 }
                                             } else {
                                                 if ("/-/not-found".equals(req.path())) {
-                                                    req.response().setStatusCode(500).setStatusMessage("Server Error");
-                                                    req.response().end();
+                                                    serverErrorEndResponse(req, 504, "Gateway Timeout");
                                                 } else {
-                                                    req.response().setStatusCode(404).setStatusMessage("Not Found");
-                                                    endResponse(req, "<html><head><title>Server Error</title><meta http-equiv=\"refresh\" content=\"0;URL='/-/not-found'\" /></head><body></body></html>");
+                                                    fourOhFourEndResponse(req);
                                                 }
                                                 return;
                                             }
                                         } else {
-                                            req.response().setStatusCode(500).setStatusMessage("Server Error");
-                                            req.response().end();
-                                            return;
+                                            serverErrorEndResponse(req, 500, "Internal Server Error");
                                         }
                                     }
                                 });
                             } else {
-                                req.response().setStatusCode(500).setStatusMessage("Server Error");
-                                req.response().end();
+                                serverErrorEndResponse(req, 500, "Internal Server Error");
                             }
                         } else {
-                            req.response().setStatusCode(500).setStatusMessage("Server Error");
-                            req.response().end();
+                            serverErrorEndResponse(req, 500, "Internal Server Error");
                         }
                     }
                     catch (Throwable t) {
                         logger.error("angular-io\t" + site + "\t" + req.remoteAddress().host() + "\t" + req.host() + "\t" + req.path() + "\t" + t.getMessage());
-                        req.response().setStatusCode(500).setStatusMessage("Server Error");
-                        req.response().end();
+                        serverErrorEndResponse(req, 500, "Internal Server Error");
                     }
                 } else {
-                    req.response().setStatusCode(500).setStatusMessage("Server Error");
-                    req.response().end();
+                    serverErrorEndResponse(req, 500, "Internal Server Error");
                 }
             });
         });
@@ -849,7 +835,7 @@ public class AngularIOWebContainer {
                                     }, false, result1->{
 
                                         if (result1.failed() || null==result1.result()) {
-                                            req.response().setStatusCode(500).end();
+                                            fourOhFourEndResponse(req);
                                         } else {
                                             boolean gzip = false;
                                             for (Map.Entry<String, String> stringStringEntry : req.headers()) {
@@ -888,7 +874,7 @@ public class AngularIOWebContainer {
 
                                             } catch (Exception e) {
                                                 logger.warn(e);
-                                                req.response().setStatusCode(500).end();
+                                                serverErrorEndResponse(req, 500, "Internal Server Error");
                                             }
                                         }
                                     });
@@ -955,13 +941,11 @@ public class AngularIOWebContainer {
 
                                             } catch (Throwable t) {
                                                 logger.error("angular-io\tapi\t" + req.remoteAddress().host() + "\t" + req.host() + "\t" + req.path() + "\t" + t.getMessage());
-                                                req.response().setStatusCode(500).setStatusMessage("Server Error");
-                                                req.response().end();
+                                                serverErrorEndResponse(req, 500, "Internal Server Error");
                                             }
                                         }, (fail1)->{
                                             logger.error("angular-io\tapi\t" + req.remoteAddress().host() + "\t" + req.host() + "\t" + req.path() + "\tNot Available");
-                                            req.response().setStatusCode(500).setStatusMessage("Server Error");
-                                            req.response().end();
+                                            serverErrorEndResponse(req, 500, "Internal Server Error");
                                         });
                                     });
                                 });
@@ -999,13 +983,11 @@ public class AngularIOWebContainer {
                                                 method.invoke(o, _object, next);
                                             } catch (Throwable t) {
                                                 logger.error("angular-io\tapi\t" + req.remoteAddress().host() + "\t" + req.host() + "\t" + req.path() + "\t" + t.getMessage());
-                                                req.response().setStatusCode(500).setStatusMessage("Server Error");
-                                                req.response().end();
+                                                serverErrorEndResponse(req, 500, "Internal Server Error");
                                             }
                                         }, (fail1)->{
                                             logger.error("angular-io\tapi\t" + req.remoteAddress().host() + "\t" + req.host() + "\t" + req.path() + "\tNot Available");
-                                            req.response().setStatusCode(500).setStatusMessage("Server Error");
-                                            req.response().end();
+                                            serverErrorEndResponse(req, 500, "Internal Server Error");
                                         });
                                     });
                                 });
@@ -1031,13 +1013,11 @@ public class AngularIOWebContainer {
                                                 method.invoke(o);
                                             } catch (Throwable t) {
                                                 logger.error("angular-io\tapi\t" + req.remoteAddress().host() + "\t" + req.host() + "\t" + req.path() + "\t" + t.getMessage());
-                                                req.response().setStatusCode(500).setStatusMessage("Server Error");
-                                                req.response().end();
+                                                serverErrorEndResponse(req,  500, "Internal Server Error");
                                             }
                                         }, (fail1)->{
                                             logger.error("angular-io\tapi\t" + req.remoteAddress().host() + "\t" + req.host() + "\t" + req.path() + "\tNot Available");
-                                            req.response().setStatusCode(500).setStatusMessage("Server Error");
-                                            req.response().end();
+                                            serverErrorEndResponse(req, 500, "Internal Server Error");
                                         });
                                     });
                                 });
@@ -1064,13 +1044,11 @@ public class AngularIOWebContainer {
                                                 method.invoke(o);
                                             } catch (Throwable t) {
                                                 logger.error("angular-io\tapi\t" + req.remoteAddress().host() + "\t" + req.host() + "\t" + req.path() + "\t" + t.getMessage());
-                                                req.response().setStatusCode(500).setStatusMessage("Server Error");
-                                                req.response().end();
+                                                serverErrorEndResponse(req, 500, "Internal Server Error");
                                             }
                                         }, (fail1)->{
                                             logger.error("angular-io\tapi\t" + req.remoteAddress().host() + "\t" + req.host() + "\t" + req.path() + "\tNot Available");
-                                            req.response().setStatusCode(500).setStatusMessage("Server Error");
-                                            req.response().end();
+                                            serverErrorEndResponse(req, 500, "Internal Server Error");
                                         });
                                     });
                                 });
