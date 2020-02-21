@@ -94,6 +94,15 @@ public class SecureCFCookieCutter implements CFCookieCutter {
             }
         }
 
+        public void reset() {
+            this.originalCookieValue = null;
+            this.session_uuid = UUID.randomUUID();
+            this.nonce_uuid = null;
+            this.credential_uuid = null;
+            is_new = true;
+            changed = true;
+        }
+
         public void associate(UUID nonce_uuid) {
             if (this.nonce_uuid == null || !this.nonce_uuid.equals(nonce_uuid)) {
                 this.nonce_uuid = nonce_uuid;
