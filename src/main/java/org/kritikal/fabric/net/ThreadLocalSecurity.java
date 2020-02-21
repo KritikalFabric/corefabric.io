@@ -19,11 +19,11 @@ public class ThreadLocalSecurity {
             }
         }
     };
-    public final static ThreadLocal<Cipher> aes = new ThreadLocal<>() {
+    public final static ThreadLocal<Cipher> blowfish = new ThreadLocal<>() {
         @Override
         protected Cipher initialValue() {
             try {
-                return Cipher.getInstance("AES", new BouncyCastleProvider());
+                return Cipher.getInstance("Blowfish", new BouncyCastleProvider());
             }
             catch (Exception e) {
                 throw new RuntimeException(e);

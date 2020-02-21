@@ -5,19 +5,15 @@ import io.netty.handler.codec.http.CookieDecoder;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.ServerWebSocket;
 import org.apache.commons.codec.binary.Base64;
-import org.bouncycastle.crypto.digests.SHA256Digest;
 import org.bouncycastle.crypto.macs.HMac;
 import org.bouncycastle.crypto.params.KeyParameter;
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.kritikal.fabric.CoreFabric;
 import org.kritikal.fabric.core.CFCookieEncrypt;
-import org.kritikal.fabric.core.CFLogEncrypt;
 import org.kritikal.fabric.net.ThreadLocalSecurity;
 
 import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
-import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Arrays;
@@ -28,9 +24,14 @@ import static org.kritikal.fabric.net.http.DefaultCFCookieCutter.formatSetCookie
 
 public class SecureCFCookieCutter implements CFCookieCutter {
     public final static boolean DEBUG = false;
-    private static final int year = 1900 + new java.util.Date().getYear();
     public static class Credentials {
         public byte[] code_key, hash_key;
+        public final ThreadLocal<SecretKey> coding_key = new ThreadLocal<>() {
+            @Override
+            protected SecretKey initialValue() {
+                return new SecretKeySpec(code_key, "Blowfish");
+            }
+        };
     }
     public static class UuidUtils {
         public static UUID asUuid(byte[] bytes) {
@@ -142,7 +143,9 @@ public class SecureCFCookieCutter implements CFCookieCutter {
             return originalValue;
         }
     }
+
     public class SecureCookieEncrypt implements CFCookieEncrypt {
+
         @Override
         public String encrypt(CFCookie cfCookie) {
             try {
@@ -176,9 +179,8 @@ public class SecureCFCookieCutter implements CFCookieCutter {
                 byte[] b = null; // cookie data encrypted
 
                 {
-                    Cipher cipher = ThreadLocalSecurity.aes.get();
-                    SecretKey key = new SecretKeySpec(credentials.code_key, "Blowfish");
-                    cipher.init(Cipher.ENCRYPT_MODE, key);
+                    Cipher cipher = ThreadLocalSecurity.blowfish.get();
+                    cipher.init(Cipher.ENCRYPT_MODE, credentials.coding_key.get());
                     a = cipher.update(entropy);
                     byte[] encrypted = b = cipher.doFinal(plainBytes);
                     byte[] combined = new byte[a.length + b.length];
@@ -231,9 +233,9 @@ public class SecureCFCookieCutter implements CFCookieCutter {
                         int j = ciphertext.indexOf('.', 2);
                         if (j == -1) throw new RuntimeException();
                         byte plaintext[] = ciphertext.substring(2, j).getBytes("UTF-8");
-                        Cipher cipher = ThreadLocalSecurity.aes.get();
-                        SecretKey key = new SecretKeySpec(credentials.code_key, "Blowfish");
-                        cipher.init(Cipher.DECRYPT_MODE, key);
+                        Cipher cipher = ThreadLocalSecurity.blowfish.get();
+
+                        cipher.init(Cipher.DECRYPT_MODE, credentials.coding_key.get());
                         byte[] decodedBytes = Base64.decodeBase64(plaintext);
                         byte[] original = cipher.doFinal(decodedBytes);
                         byte[] data = Arrays.copyOfRange(original, 2048, original.length);

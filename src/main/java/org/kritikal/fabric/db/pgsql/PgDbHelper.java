@@ -325,6 +325,13 @@ public class PgDbHelper {
         }
     }
 
+    public static void pg_advisory_lock(Connection con, UUID mutex1, UUID mutex2) throws SQLException
+    {
+        String sql = "SELECT pg_advisory_lock(" + (mutex1.getMostSignificantBits() ^ mutex1.getLeastSignificantBits()) + "::bigint);" +
+                "SELECT pg_advisory_lock(" + (mutex2.getMostSignificantBits() ^ mutex2.getLeastSignificantBits()) + "::bigint);";
+        execute(con, sql);
+    }
+
     public static void pg_advisory_lock(Connection con, UUID mutex) throws SQLException
     {
         pg_advisory_lock(con, mutex.getMostSignificantBits() ^ mutex.getLeastSignificantBits());
