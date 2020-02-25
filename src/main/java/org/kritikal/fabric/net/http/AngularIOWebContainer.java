@@ -1,5 +1,6 @@
 package org.kritikal.fabric.net.http;
 
+import com.datastax.driver.core.utils.UUIDs;
 import com.google.common.html.HtmlEscapers;
 import io.netty.handler.codec.http.Cookie;
 import io.netty.handler.codec.http.CookieDecoder;
@@ -1075,7 +1076,7 @@ public class AngularIOWebContainer {
 
     public static AngularIOSiteInstance prepare(String site, String[] matchParts, String localDir) {
 
-        UUID uuid = UUID.randomUUID();
+        UUID uuid = UUIDs.timeBased();
         AngularIOSiteInstance x = new AngularIOSiteInstance();
         x.tempdir = ConfigurationManager.Shim.tmp + "/corefabric__" + uuid.toString() + "/";
         x.localDir = localDir;

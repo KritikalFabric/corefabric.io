@@ -1,5 +1,6 @@
 package org.kritikal.fabric.net.mqtt;
 
+import com.datastax.driver.core.utils.UUIDs;
 import com.hazelcast.core.IMap;
 import com.hazelcast.core.ITopic;
 import io.vertx.core.logging.LoggerFactory;
@@ -224,7 +225,7 @@ public class SyncMqttBroker implements IMqttServerCallback, ISyncMqttBroker {
          see #121
          */
         if (current.socket instanceof  CServerWebSocket) {
-            current.clientID = "corefabric--" + ((CServerWebSocket) current.socket).corefabric.session_uuid.toString() + "--" + UUID.randomUUID().toString();
+            current.clientID = "corefabric--" + ((CServerWebSocket) current.socket).corefabric.session_uuid.toString() + "--" + UUIDs.timeBased().toString();
         }
 
         connected.stream().mapToLong(p -> {

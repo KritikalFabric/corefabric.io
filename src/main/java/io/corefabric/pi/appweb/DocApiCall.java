@@ -1,5 +1,6 @@
 package io.corefabric.pi.appweb;
 
+import com.datastax.driver.core.utils.UUIDs;
 import com.hazelcast.core.IMap;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.logging.Logger;
@@ -38,7 +39,7 @@ public final class DocApiCall {
     public final boolean hasExited() {
         return !currentCall.getOrDefault(unique, null).equals(uuid);
     }
-    public final UUID uuid = UUID.randomUUID();
+    public final UUID uuid = UUIDs.timeBased();
     public final String topic;
     public final String statusTopic;
     public final JsonObject o;

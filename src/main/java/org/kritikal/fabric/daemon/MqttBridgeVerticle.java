@@ -3,6 +3,7 @@ package org.kritikal.fabric.daemon;
 import com.cisco.qte.jdtn.apps.AbstractApp;
 import com.cisco.qte.jdtn.bp.*;
 import com.cisco.qte.jdtn.general.GeneralManagement;
+import com.datastax.driver.core.utils.UUIDs;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.vertx.core.AbstractVerticle;
@@ -85,7 +86,7 @@ public class MqttBridgeVerticle extends AbstractVerticle {
         }
     }
 
-    public final String uuid = UUID.randomUUID().toString();
+    public final String uuid = UUIDs.timeBased().toString();
     public long sequence = 0L;
     public MessageConsumer<JsonObject> mc = null;
 

@@ -1,5 +1,6 @@
 package org.kritikal.fabric.net.http;
 
+import com.datastax.driver.core.utils.UUIDs;
 import io.netty.handler.codec.http.Cookie;
 import io.netty.handler.codec.http.CookieDecoder;
 import io.vertx.core.http.HttpServerRequest;
@@ -97,7 +98,7 @@ public class SecureCFCookieCutter implements CFCookieCutter {
 
         public void reset() {
             this.originalCookieValue = null;
-            this.session_uuid = UUID.randomUUID();
+            this.session_uuid = UUIDs.timeBased();
             this.nonce_uuid = null;
             this.credential_uuid = null;
             is_new = true;

@@ -1,10 +1,12 @@
 package org.kritikal.fabric.net.http;
 
+import com.datastax.driver.core.utils.UUIDs;
+
 import java.util.UUID;
 
 public class CFCookie {
     public CFCookie() {
-        this.session_uuid = UUID.randomUUID();
+        this.session_uuid = UUIDs.timeBased();
         this.originalCookieValue = this.session_uuid.toString();
         is_new = true;
     }

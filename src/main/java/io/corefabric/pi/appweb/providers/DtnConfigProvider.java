@@ -3,6 +3,7 @@ package io.corefabric.pi.appweb.providers;
 import com.cisco.qte.jdtn.apps.AbstractApp;
 import com.cisco.qte.jdtn.bp.*;
 import com.cisco.qte.jdtn.general.*;
+import com.datastax.driver.core.utils.UUIDs;
 import io.netty.util.internal.ConcurrentSet;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpClient;
@@ -234,7 +235,7 @@ public class DtnConfigProvider implements IDocApiProvider {
 
                     try {
                         //callbacks.onPingRequest(destEid, transmitCount, count);
-                        final  String message = UUID.randomUUID().toString();
+                        final  String message = UUIDs.timeBased().toString();
                         byte[] payloadBytes = message.getBytes("UTF-8");
 
                         // Send Ping Request
