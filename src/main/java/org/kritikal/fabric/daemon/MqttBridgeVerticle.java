@@ -121,7 +121,7 @@ public class MqttBridgeVerticle extends AbstractVerticle {
                 int qos = mqttApiCall.getInteger("qos");
                 publishMessage.setQos(qos == 2 ? AbstractMessage.QOSType.EXACTLY_ONCE : (qos == 1 ? AbstractMessage.QOSType.MOST_ONE : AbstractMessage.QOSType.LEAST_ONE));
                 publishMessage.setRetainFlag(mqttApiCall.containsKey("retain") && mqttApiCall.getBoolean("retain"));
-                publishMessage.expires = mqttApiCall.containsKey("ttl") ? new java.util.Date().getTime() + mqttApiCall.getInteger("ttl") : 0;
+                publishMessage.expires = mqttApiCall.containsKey("ttl") ? new java.util.Date().getTime() + mqttApiCall.getLong("ttl") : 0;
                 publishMessage.origin = CoreFabric.ServerConfiguration.instance;
 
                 vertx.executeBlocking(f -> {

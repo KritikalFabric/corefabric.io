@@ -108,18 +108,18 @@ public class ConfigurationManager {
 
     public static void getConfigurationAsync(Vertx vertx, String instancekey, Consumer<Configuration> consumer) {
         final long t = new java.util.Date().getTime();
-        Configuration c = staticConfiguration.compute(instancekey, (s, configuration) -> {
+        Configuration c1 = staticConfiguration.compute(instancekey, (s, configuration) -> {
             if (configuration == null) {
                 configuration = new Configuration(instancekey);
                 configuration.state = Configuration.State.UNKNOWN;
             }
             return configuration;
         });
-        if (c.state == Configuration.State.UNKNOWN || c.refreshAfter == 0 || t > c.refreshAfter) {
+        if (c1.state == Configuration.State.UNKNOWN || c1.refreshAfter == 0 || t > c1.refreshAfter) {
+            c1 = new Configuration(instancekey);
+            c1.state = Configuration.State.UNKNOWN;
+            final Configuration c = c1;
             getJsonClusterConfigurationAsync(vertx, instancekey, c, jsonClusterConfig -> {
-                if (c.refreshAfter == 0 || t > c.refreshAfter) {
-                    c.reset();
-                }
                 c.refreshAfter = new java.util.Date().getTime() + TTL;
                 c.applyInstanceConfig(jsonClusterConfig);
                 c.state = Configuration.State.LIVE;
@@ -128,10 +128,13 @@ public class ConfigurationManager {
                         c.applyLocalConfig(jsonLocalConfig); // blocking, TODO: use DbInstance for pooling
                         consumer.accept(c);
                         f.complete();
-                    }, false, r -> {});
+                    }, false, r -> {
+                        staticConfiguration.put(instancekey, c);
+                    });
                 });
             });
         } else {
+            final Configuration c = c1;
             vertx.executeBlocking(f -> {
                 consumer.accept(c);
                 f.complete();
@@ -141,28 +144,29 @@ public class ConfigurationManager {
 
     public static void getConfigurationSync(Vertx vertx, String instancekey, Consumer<Configuration> consumer) {
         final long t = new java.util.Date().getTime();
-        Configuration c = staticConfiguration.compute(instancekey, (s, configuration) -> {
+        Configuration c1 = staticConfiguration.compute(instancekey, (s, configuration) -> {
             if (configuration == null) {
                 configuration = new Configuration(instancekey);
                 configuration.state = Configuration.State.UNKNOWN;
             }
             return configuration;
         });
-        if (c.state == Configuration.State.UNKNOWN || c.refreshAfter == 0 || t > c.refreshAfter) {
+        if (c1.state == Configuration.State.UNKNOWN || c1.refreshAfter == 0 || t > c1.refreshAfter) {
+            c1 = new Configuration(instancekey);
+            c1.state = Configuration.State.UNKNOWN;
+            final Configuration c = c1;
             getJsonClusterConfigurationSync(vertx, instancekey, c, jsonClusterConfig -> {
-                if (c.refreshAfter == 0 || t > c.refreshAfter) {
-                    c.reset();
-                }
                 c.refreshAfter = new java.util.Date().getTime() + TTL;
                 c.applyInstanceConfig(jsonClusterConfig);
                 c.state = Configuration.State.LIVE;
                 getJsonLocalConfigurationSync(vertx, instancekey, c, jsonLocalConfig -> {
                     c.applyLocalConfig(jsonLocalConfig);
                     consumer.accept(c);
+                    staticConfiguration.put(instancekey, c);
                 });
             });
         } else {
-            consumer.accept(c);
+            consumer.accept(c1);
         }
     }
 
@@ -171,25 +175,26 @@ public class ConfigurationManager {
      */
     public static Configuration getConfigurationSyncInline(Vertx vertx, String instancekey) {
         final long t = new java.util.Date().getTime();
-        Configuration c = staticConfiguration.compute(instancekey, (s, configuration) -> {
+        Configuration c1 = staticConfiguration.compute(instancekey, (s, configuration) -> {
             if (configuration == null) {
                 configuration = new Configuration(instancekey);
                 configuration.state = Configuration.State.UNKNOWN;
             }
             return configuration;
         });
-        if (c.state == Configuration.State.UNKNOWN || c.refreshAfter == 0 || t > c.refreshAfter) {
+        if (c1.state == Configuration.State.UNKNOWN || c1.refreshAfter == 0 || t > c1.refreshAfter) {
+            c1 = new Configuration(instancekey);
+            c1.state = Configuration.State.UNKNOWN;
+            final Configuration c = c1;
             final JsonObject jsonClusterConfig = getJsonClusterConfigurationSyncInline(vertx, instancekey, c);
-            if (c.refreshAfter == 0 || t > c.refreshAfter) {
-                c.reset();
-            }
             c.refreshAfter = new java.util.Date().getTime() + TTL;
             c.applyInstanceConfig(jsonClusterConfig);
             c.state = Configuration.State.LIVE;
             final JsonObject jsonLocalConfig = getJsonLocalConfigurationSyncInline(vertx, instancekey, c);
             c.applyLocalConfig(jsonLocalConfig);
+            staticConfiguration.put(instancekey, c);
         }
-        return c;
+        return c1;
     }
 
     private final static ConcurrentHashMap<String, ConcurrentLinkedQueue<Consumer<JsonObject>>> clusterQueue = new ConcurrentHashMap<>();
@@ -214,25 +219,26 @@ public class ConfigurationManager {
     public static Configuration getOutsideVerticle(String instancekey)
     {
         final long t = new java.util.Date().getTime();
-        Configuration c = staticConfiguration.compute(instancekey, (s, configuration) -> {
+        Configuration c1 = staticConfiguration.compute(instancekey, (s, configuration) -> {
             if (configuration == null) {
                 configuration = new Configuration(instancekey);
                 configuration.state = Configuration.State.UNKNOWN;
             }
             return configuration;
         });
-        if (c.state == Configuration.State.UNKNOWN || c.refreshAfter == 0 || t > c.refreshAfter) {
+        if (c1.state == Configuration.State.UNKNOWN || c1.refreshAfter == 0 || t > c1.refreshAfter) {
+            c1 = new Configuration(instancekey);
+            c1.state = Configuration.State.UNKNOWN;
+            final Configuration c = c1;
             final JsonObject jsonClusterConfig = new JsonObject(getJsonClusterConfigurationBlockingApi(instancekey));
-            if (c.refreshAfter == 0 || t > c.refreshAfter) {
-                c.reset();
-            }
             c.refreshAfter = new java.util.Date().getTime() + TTL;
             c.applyInstanceConfig(jsonClusterConfig);
             c.state = Configuration.State.LIVE;
             final JsonObject jsonLocalConfig = getJsonLocalConfiguration(c);
             c.applyLocalConfig(jsonLocalConfig);
+            staticConfiguration.put(instancekey, c);
         }
-        return c;
+        return c1;
     }
 
     private static String getJsonClusterConfigurationBlockingApi(String instancekey)
@@ -310,6 +316,7 @@ public class ConfigurationManager {
     }
 
     public static void invalidate(String instancekey) {
+        staticConfiguration.remove(instancekey);
         MqttBrokerVerticle.asyncBroker().apiRemove(clusterTopic(instancekey), (v0id)->{});
     }
 
