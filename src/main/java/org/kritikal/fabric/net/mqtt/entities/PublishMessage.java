@@ -28,7 +28,5 @@ public class PublishMessage extends AbstractMessage {
     // extensions
 
     public long expires = 0l;
-    public UUID origin = ZERO;
-
-    private final static UUID ZERO = new UUID(0,0);
+    public String origin = "";
 }

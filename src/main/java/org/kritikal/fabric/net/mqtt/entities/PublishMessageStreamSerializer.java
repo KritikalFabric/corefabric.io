@@ -24,8 +24,7 @@ public class PublishMessageStreamSerializer implements StreamSerializer<PublishM
         out.writeByteArray(publishMessage.getPayload().array());
         out.writeByte(publishMessage.getQos().getValue());
         out.writeLong(publishMessage.expires);
-        out.writeLong(publishMessage.origin.getMostSignificantBits());
-        out.writeLong(publishMessage.origin.getLeastSignificantBits());
+        out.writeUTF(publishMessage.origin);
     }
 
     @Override
@@ -37,7 +36,7 @@ public class PublishMessageStreamSerializer implements StreamSerializer<PublishM
         AbstractMessage.QOSType qosType = qos == 0 ? AbstractMessage.QOSType.MOST_ONE : (qos <= 1 ? AbstractMessage.QOSType.LEAST_ONE : (qos == 2 ? AbstractMessage.QOSType.EXACTLY_ONCE : AbstractMessage.QOSType.RESERVED));
         publishMessage.setQos(qosType);
         publishMessage.expires = in.readLong();
-        publishMessage.origin = new UUID(in.readLong(), in.readLong());
+        publishMessage.origin = in.readUTF();
         return publishMessage;
     }
 

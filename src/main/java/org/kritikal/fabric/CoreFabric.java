@@ -41,13 +41,15 @@ public class CoreFabric {
     public static JsonObject globalConfig = null;
     private static ArrayList<String> searchNamespaces = new ArrayList<>();
     public static class ServerConfiguration {
-        public static final UUID instance = UUID.randomUUID();
         public static boolean PRODUCTION = false;
         public static boolean DEBUG = true;
         public static String resolver = "localhost";
         public static final int threads = Runtime.getRuntime().availableProcessors() * 8;
         public static boolean SLOWER = true; // watch out this cooks laptops
         public static String hostname = "localhost.localdomain";
+        public static String instance() {
+            return hostname;
+        }
         public static String name = "localhost";
         public static String zone = "localzone";
         public static String ip4 = null;
@@ -207,7 +209,6 @@ public class CoreFabric {
         VertxOptions vertxOptions = new VertxOptions();
         com.hazelcast.config.Config hazelcastConfig = new com.hazelcast.config.Config();
         hazelcastConfig.getNetworkConfig().setPort(5701);
-        hazelcastConfig.getNetworkConfig().addOutboundPort(37000);
         hazelcastConfig.getSerializationConfig().addSerializerConfig(new SerializerConfig().setTypeClass(PublishMessage.class).setClass(PublishMessageStreamSerializer.class));
         final JoinConfig joinConfig = hazelcastConfig.getNetworkConfig().getJoin();
         final TcpIpConfig tcpIpConfig = joinConfig.getTcpIpConfig();

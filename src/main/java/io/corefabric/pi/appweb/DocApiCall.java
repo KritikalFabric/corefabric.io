@@ -22,7 +22,7 @@ public final class DocApiCall {
         this.context = context;
         this.unique = "$/" + context.corefabric + "/api/u/" + CoreFabric.ServerConfiguration.zone + "/" + CoreFabric.ServerConfiguration.name + "/" + topic + "/|";
         this.topic = "$/-/api/d/" + CoreFabric.ServerConfiguration.zone + "/" + CoreFabric.ServerConfiguration.name + "/" + topic + "/|";
-        this.statusTopic =  "$/" + CoreFabric.ServerConfiguration.instance + "/api/s/" + context.cfg.instancekey + "/" + this.uuid + "/|";
+        this.statusTopic =  "$/" + CoreFabric.ServerConfiguration.instance() + "/api/s/" + context.cfg.instancekey + "/" + this.uuid + "/|";
         this.o = new JsonObject();
         currentCall.put(this.unique, this.uuid);
     }
@@ -30,7 +30,7 @@ public final class DocApiCall {
         this.context = context;
         this.unique = "$/" + context.corefabric + "/api/u/" + CoreFabric.ServerConfiguration.zone + "/" + CoreFabric.ServerConfiguration.name + "/" + topic + "/|";
         this.topic = "$/-/api/d/" + CoreFabric.ServerConfiguration.zone + "/" + CoreFabric.ServerConfiguration.name + "/" + topic + "/|";
-        this.statusTopic =  "$/" + CoreFabric.ServerConfiguration.instance + "/api/s/" + this.uuid.toString() + "/|";
+        this.statusTopic =  "$/" + CoreFabric.ServerConfiguration.instance() + "/api/s/" + this.uuid.toString() + "/|";
         this.o = o;
         currentCall.put(this.unique, this.uuid);
     }

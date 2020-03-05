@@ -45,8 +45,16 @@ public class EncodePublish {
 
             if (encodeExtraFields) {
                 buffer.writeLong(message.expires);
-                buffer.writeLong(message.origin.getMostSignificantBits());
-                buffer.writeLong(message.origin.getLeastSignificantBits());
+                byte[] originBytes = null;
+                try {
+                    originBytes = message.origin.getBytes("UTF-8");
+                }
+                catch (UnsupportedEncodingException ex)
+                {
+                    // ignore
+                }
+                buffer.writeLong(originBytes.length);
+                buffer.writeBytes(originBytes);
             }
         }
         finally {

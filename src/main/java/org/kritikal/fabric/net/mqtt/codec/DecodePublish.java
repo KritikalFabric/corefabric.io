@@ -45,7 +45,8 @@ public class DecodePublish {
         message.setPayload(payloadBuffer);
         if (decodeExtraFields) {
             message.expires = bufferContainer.readLong();
-            message.origin = new UUID(bufferContainer.readLong(), bufferContainer.readLong());
+            long originLength = bufferContainer.readLong();
+            message.origin = new String(bufferContainer.readBytes(originLength), "UTF-8");
         }
         return message;
     }

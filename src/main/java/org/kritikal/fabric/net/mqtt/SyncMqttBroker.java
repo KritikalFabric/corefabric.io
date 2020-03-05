@@ -3,6 +3,7 @@ package org.kritikal.fabric.net.mqtt;
 import com.datastax.driver.core.utils.UUIDs;
 import com.hazelcast.core.IMap;
 import com.hazelcast.core.ITopic;
+import com.hazelcast.core.ReplicatedMap;
 import io.vertx.core.logging.LoggerFactory;
 import org.kritikal.fabric.CoreFabric;
 import org.kritikal.fabric.core.exceptions.FabricError;
@@ -41,7 +42,7 @@ public class SyncMqttBroker implements IMqttServerCallback, ISyncMqttBroker {
     final public Vertx vertx;
     final Logger logger;
 
-    final IMap<String, PublishMessage> retainedCluster = CoreFabric.getHazelcastInstance().getMap("mqtt.retained");
+    final ReplicatedMap<String, PublishMessage> retainedCluster = CoreFabric.getHazelcastInstance().getReplicatedMap("mqtt.retained");
     final ConcurrentMap<String, PublishMessage> retainedLocal = new ConcurrentHashMap<>();
     final ITopic<PublishMessage> hazelcastTopic = CoreFabric.getHazelcastInstance().getTopic("mqtt.enqueue");
 
@@ -50,7 +51,7 @@ public class SyncMqttBroker implements IMqttServerCallback, ISyncMqttBroker {
         this.logger = LoggerFactory.getLogger(getClass());
         hazelcastTopic.addMessageListener(m -> {
             final PublishMessage publishMessage = m.getMessageObject();
-            if (publishMessage.origin.equals(CoreFabric.ServerConfiguration.instance)) return;
+            if (publishMessage.origin.equals(CoreFabric.ServerConfiguration.instance())) return;
             enqueue(null, publishMessage);
         });
         vertx.setPeriodic(9997l, l -> {
@@ -689,7 +690,7 @@ public class SyncMqttBroker implements IMqttServerCallback, ISyncMqttBroker {
 
     public void messageArrived(MqttServerProtocol protocol, PublishMessage publishMessage) {
         if (clusterWide(publishMessage)) {
-            publishMessage.origin = CoreFabric.ServerConfiguration.instance;
+            publishMessage.origin = CoreFabric.ServerConfiguration.instance();
             /*
             ByteBuf buf = Unpooled.buffer();
             EncodePublish.encode(publishMessage, buf, true);

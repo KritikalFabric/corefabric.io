@@ -59,7 +59,8 @@ public class AppConfigServerVerticle extends AbstractVerticle {
                 try {
                     final String body = configuration.encode();
                     final byte[] bodyBytes = body.getBytes("utf-8");
-                    req.response().headers().add("Cache-Control", "public, max-age=5");
+                    req.response().headers().add("Pragma", "no-cache");
+                    req.response().headers().add("Cache-Control", "no-cache, no-store, private, must-revalidate");
                     req.response().headers().add("Content-Type", "application/json");
                     req.response().headers().add("Content-Length", Long.toString(bodyBytes.length));
                     req.response().write(Buffer.buffer(bodyBytes)).end();
