@@ -144,7 +144,7 @@ public class SyncMqttBroker implements IMqttServerCallback, ISyncMqttBroker {
         @Override
         public void publish(String topic, byte[] payload, int qos, boolean retain) {
             if (DEBUG && VERBOSE) {
-                logger.debug("Publishing " + topic + " to " + clientID);
+                logger.info("Publishing " + topic + " to " + clientID);
             }
             super.publish(topic, payload, qos, retain);
         }
@@ -203,7 +203,7 @@ public class SyncMqttBroker implements IMqttServerCallback, ISyncMqttBroker {
     public void connected(MqttServerProtocol protocol, ConnectMessage connectMessage)
     {
         if (DEBUG) {
-            protocol.logger.debug("Client connected " + connectMessage.getClientID());
+            protocol.logger.info("Client connected " + connectMessage.getClientID());
         }
         if (!waitingForConnect.remove(protocol)) {
             throw new KillConnectionError();
@@ -303,7 +303,7 @@ public class SyncMqttBroker implements IMqttServerCallback, ISyncMqttBroker {
     public void syncApiPurge()
     {
         if (DEBUG && VERBOSE) {
-            logger.debug("(API) purge");
+            logger.info("(API) purge");
         }
         retainedLocal.clear();
     }
@@ -312,7 +312,7 @@ public class SyncMqttBroker implements IMqttServerCallback, ISyncMqttBroker {
     public void syncApiPublish(String topic, byte[] body, int qos, boolean retained)
     {
         if (DEBUG && VERBOSE) {
-            logger.debug("(API) publish " + topic);
+            logger.info("(API) publish " + topic);
         }
 
         ByteBuffer buffer = body != null ? ByteBuffer.wrap(body) : null;
@@ -329,7 +329,7 @@ public class SyncMqttBroker implements IMqttServerCallback, ISyncMqttBroker {
     public void syncApiPublish(String topic, byte[] body, int qos, boolean retained, long ttl)
     {
         if (DEBUG && VERBOSE) {
-            logger.debug("(API) publish " + topic);
+            logger.info("(API) publish " + topic);
         }
 
         ByteBuffer buffer = body != null ? ByteBuffer.wrap(body) : null;
@@ -357,7 +357,7 @@ public class SyncMqttBroker implements IMqttServerCallback, ISyncMqttBroker {
     public void syncApiSubscribe(String topic, String endPoint)
     {
         if (DEBUG) {
-            logger.debug("(API) subscribe " + topic + " --> " + endPoint);
+            logger.info("(API) subscribe " + topic + " --> " + endPoint);
         }
 
         if (internal.stream().mapToLong(i -> {
@@ -370,7 +370,7 @@ public class SyncMqttBroker implements IMqttServerCallback, ISyncMqttBroker {
     public void syncApiSubscribe(String topic, Consumer<MessageEncapsulation> onMessage)
     {
         if (DEBUG) {
-            logger.debug("(API) subscribe " + topic + " --> callback");
+            logger.info("(API) subscribe " + topic + " --> callback");
         }
         if (internal.stream().mapToLong(i -> {
             return (i.subscription.topic.equals(topic) && i.endPoint != null && i.onMessage == onMessage) ? 1l : 0l;
@@ -382,7 +382,7 @@ public class SyncMqttBroker implements IMqttServerCallback, ISyncMqttBroker {
     public void syncApiUnsubscribe(String topic, String endPoint)
     {
         if (DEBUG) {
-            logger.debug("(API) unsubscribe " + topic + " --> " + endPoint);
+            logger.info("(API) unsubscribe " + topic + " --> " + endPoint);
         }
 
         internal.removeIf(i -> i.subscription.topic.equals(topic) && i.endPoint != null && i.endPoint.equals(endPoint));
@@ -392,17 +392,33 @@ public class SyncMqttBroker implements IMqttServerCallback, ISyncMqttBroker {
     public void syncApiUnsubscribe(String topic, Consumer<MessageEncapsulation> onMessage)
     {
         if (DEBUG) {
-            logger.debug("(API) unsubscribe " + topic + " --> callback");
+            logger.info("(API) unsubscribe " + topic + " --> callback");
         }
 
         internal.removeIf(i -> i.subscription.topic.equals(topic) && i.onMessage != null && i.onMessage == onMessage);
+    }
+
+    public void syncApiRemove(String topic) {
+        if (DEBUG && VERBOSE) {
+            logger.info("(API) remove " + topic);
+        }
+
+        JsonObject ret = null;
+
+        final MqttTopic topic1 = new MqttTopic(topic);
+
+        if (clusterWide(topic1)) {
+            retainedCluster.remove(topic1.topic);
+        } else {
+            retainedLocal.remove(topic1.topic);
+        }
     }
 
     @Override
     public JsonObject syncApiPeek(String topic)
     {
         if (DEBUG && VERBOSE) {
-            logger.debug("(API) peek " + topic);
+            logger.info("(API) peek " + topic);
         }
 
         JsonObject ret = null;
@@ -434,7 +450,7 @@ public class SyncMqttBroker implements IMqttServerCallback, ISyncMqttBroker {
     public void syncApiBroadcast(String topic, byte[] body, int qos, boolean retained)
     {
         if (DEBUG && VERBOSE) {
-            logger.debug("(API) broadcast " + topic);
+            logger.info("(API) broadcast " + topic);
         }
 
         ByteBuffer buffer = body != null ? ByteBuffer.wrap(body) : null;
@@ -688,7 +704,7 @@ public class SyncMqttBroker implements IMqttServerCallback, ISyncMqttBroker {
     public void _messageArrived(MqttServerProtocol protocol, PublishMessage publishMessage)
     {
         if (DEBUG && VERBOSE) {
-            logger.debug("Message arrived " + publishMessage.getTopicName());
+            logger.info("Message arrived " + publishMessage.getTopicName());
         }
 
         if (publishMessage.isRetainFlag()) {
@@ -789,7 +805,7 @@ public class SyncMqttBroker implements IMqttServerCallback, ISyncMqttBroker {
     public byte subscribe(MqttServerProtocol protocol, MqttSubscription subscription) {
         MyMqttServerProtocol myMqttServerProtocol = (MyMqttServerProtocol) protocol;
         if (DEBUG) {
-            protocol.logger.debug("Subscribe message " + subscription.topic + " from " + myMqttServerProtocol.clientID);
+            protocol.logger.info("Subscribe message " + subscription.topic + " from " + myMqttServerProtocol.clientID);
         }
 
         myMqttServerProtocol.state.subscriptions.removeIf(s -> s.topic.equals(subscription.topic));
@@ -808,7 +824,7 @@ public class SyncMqttBroker implements IMqttServerCallback, ISyncMqttBroker {
     {
         MyMqttServerProtocol myMqttServerProtocol = (MyMqttServerProtocol) protocol;
         if (DEBUG) {
-            protocol.logger.debug("Disconnected " + myMqttServerProtocol.clientID);
+            protocol.logger.info("Disconnected " + myMqttServerProtocol.clientID);
         }
 
         if (myMqttServerProtocol.clientID != null && !"".equals(myMqttServerProtocol.clientID)) {

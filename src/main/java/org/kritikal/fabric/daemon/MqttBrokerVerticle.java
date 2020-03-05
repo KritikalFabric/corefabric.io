@@ -295,19 +295,10 @@ public class MqttBrokerVerticle extends AbstractVerticle {
         }
 
         public void apiRemove(String topic, Handler<Void> handler) {
-            final JsonObject mqttApiCall = new JsonObject();
-            mqttApiCall.put("topic", topic);
-            mqttApiCall.put("qos", 0);
-            mqttApiCall.put("retain", true);
-            mqttApiCall.put("body", new byte[0]);
-            mqttApiCall.put("ttl", 0);
-            if (handler == null) {
-                vertx.eventBus().send("mqtt.publish", mqttApiCall);
-            } else {
-                vertx.eventBus().send("mqtt.publish", mqttApiCall, (vo1d) -> {
-                    handler.handle(null);
-                });
-            }
+            getVertx().executeBlocking(promise->{
+                syncMqttBroker.syncApiRemove(topic);
+                promise.complete();
+            }, false, result->{});
         }
     }
 

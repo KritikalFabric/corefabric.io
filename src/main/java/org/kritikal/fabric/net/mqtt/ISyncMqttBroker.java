@@ -31,6 +31,6 @@ public interface ISyncMqttBroker {
     void syncMessageForBroadcast(PublishMessage publishMessage);
 
     boolean SLOWER = CoreFabric.ServerConfiguration.SLOWER;
-    boolean DEBUG = CoreFabric.ServerConfiguration.DEBUG;
+    boolean DEBUG = false;
     boolean VERBOSE = false;
 }
