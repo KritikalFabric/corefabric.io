@@ -309,6 +309,10 @@ public class ConfigurationManager {
         return content;
     }
 
+    public static void invalidate(String instancekey) {
+        MqttBrokerVerticle.asyncBroker().apiRemove(clusterTopic(instancekey), (v0id)->{});
+    }
+
     private static void getJsonClusterConfigurationAsync(Vertx vertx, String instancekey, final Configuration originalConfiguration, Consumer<JsonObject> consumer) {
         ConcurrentLinkedQueue<Consumer<JsonObject>> q = clusterQueue.computeIfAbsent(instancekey, (k) -> { return new ConcurrentLinkedQueue<Consumer<JsonObject>>(); });
         q.add(consumer);

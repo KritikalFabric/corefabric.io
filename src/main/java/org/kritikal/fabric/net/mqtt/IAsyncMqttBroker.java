@@ -11,4 +11,6 @@ public interface IAsyncMqttBroker {
 
     void apiPublish(String topic, byte[] body, int qos, boolean retained, long ttl, Handler<Void> handler);
 
+    void apiRemove(String topic, Handler<Void> handler);
+
 }
