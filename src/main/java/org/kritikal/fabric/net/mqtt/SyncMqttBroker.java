@@ -433,14 +433,22 @@ public class SyncMqttBroker implements IMqttServerCallback, ISyncMqttBroker {
         }
 
         if (publishMessage != null) {
-            ByteBuffer payloadBuffer = publishMessage.getPayload();
-            byte[] payload = payloadBuffer == null ? null : payloadBuffer.array();
 
-            ret = new JsonObject();
-            ret.put("topic", publishMessage.getTopicName());
-            if (payload != null) ret.put("body", payload);
-            ret.put("qos", 0);
-            ret.put("retain", true);
+            final long now = new java.util.Date().getTime();
+            if (publishMessage.expires != 0l && publishMessage.expires < now) {
+                // expired, ignore
+            } else {
+
+                ByteBuffer payloadBuffer = publishMessage.getPayload();
+                byte[] payload = payloadBuffer == null ? null : payloadBuffer.array();
+
+                ret = new JsonObject();
+                ret.put("topic", publishMessage.getTopicName());
+                if (payload != null) ret.put("body", payload);
+                ret.put("qos", 0);
+                ret.put("retain", true);
+
+            }
         }
 
         return ret;

@@ -206,6 +206,8 @@ public class CoreFabric {
         ServerConfiguration.apply(globalConfig);
         VertxOptions vertxOptions = new VertxOptions();
         com.hazelcast.config.Config hazelcastConfig = new com.hazelcast.config.Config();
+        hazelcastConfig.getNetworkConfig().setPort(5701);
+        hazelcastConfig.getNetworkConfig().addOutboundPort(37000);
         hazelcastConfig.getSerializationConfig().addSerializerConfig(new SerializerConfig().setTypeClass(PublishMessage.class).setClass(PublishMessageStreamSerializer.class));
         final JoinConfig joinConfig = hazelcastConfig.getNetworkConfig().getJoin();
         final TcpIpConfig tcpIpConfig = joinConfig.getTcpIpConfig();
