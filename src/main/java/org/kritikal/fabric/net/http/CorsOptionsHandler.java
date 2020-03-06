@@ -31,18 +31,20 @@ public class CorsOptionsHandler implements Handler<RoutingContext> {
         req.response().end();
     }
 
-    public void applyResponseHeaders(HttpServerRequest req, boolean cache) {
+    public void applyResponseHeaders(HttpServerRequest req, boolean cors, boolean cache) {
         req.response().headers().add("Content-Type", "application/json");
         if (cache) {
             req.response().setStatusCode(200).setStatusMessage("OK");
-            req.response().headers().add("Cache-Control", "private, max-age=0");
+            req.response().headers().add("Cache-Control", "cache, store, private, must-revalidate, max-age=604800"); // 7 days
         } else {
             req.response().headers().add("Pragma", "no-cache");
             req.response().headers().add("Cache-control", "no-cache, no-store, private, must-revalidate");
         }
-        req.response().headers().add("Access-Control-Allow-Credentials", "true");
-        String optionsOrigin = req.headers().get("Origin");
-        if (optionsOrigin == null) optionsOrigin = "*";
-        req.response().headers().add("Access-Control-Allow-Origin", optionsOrigin);
+        if (cors) {
+            req.response().headers().add("Access-Control-Allow-Credentials", "true");
+            String optionsOrigin = req.headers().get("Origin");
+            if (optionsOrigin == null) optionsOrigin = "*";
+            req.response().headers().add("Access-Control-Allow-Origin", optionsOrigin);
+        }
     }
 }

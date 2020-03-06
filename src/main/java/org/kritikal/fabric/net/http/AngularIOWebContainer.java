@@ -710,9 +710,9 @@ public class AngularIOWebContainer {
         }
     }
 
-    private static final void gzipJson(final HttpServerRequest req, final JsonObject r, final CorsOptionsHandler corsOptionsHandler, boolean nocache, CFCookie cookie) {
+    private static final void gzipJson(final HttpServerRequest req, final JsonObject r, final CorsOptionsHandler corsOptionsHandler, boolean cors, boolean nocache, CFCookie cookie) {
         req.response().setStatusCode(200).setStatusMessage("OK");
-        corsOptionsHandler.applyResponseHeaders(req, !nocache);
+        corsOptionsHandler.applyResponseHeaders(req, cors, !nocache);
         req.response().headers().add("Content-Type", "application/json");
 
         if (null != cookie) {
@@ -938,7 +938,7 @@ public class AngularIOWebContainer {
                                                 ((CFApiBase)o).setCookie(corefabric);
                                                 ((CFApiBase)o).setRoutingContext(rc);
                                                 Consumer<JsonObject> next = (r)->{
-                                                    gzipJson(req, r, corsOptionsHandler, apiMethod.nocache(), corefabric);
+                                                    gzipJson(req, r, corsOptionsHandler, apiMethod.cors(), apiMethod.nocache(), corefabric);
                                                 };
                                                 method.invoke(o, next);
 
@@ -981,7 +981,7 @@ public class AngularIOWebContainer {
                                                     throw new RuntimeException(e);
                                                 }
                                                 Consumer<JsonObject> next = (r)->{
-                                                    gzipJson(req, r, corsOptionsHandler, apiMethod.nocache(), corefabric);
+                                                    gzipJson(req, r, corsOptionsHandler, apiMethod.cors(), apiMethod.nocache(), corefabric);
                                                 };
                                                 method.invoke(o, _object, next);
                                             } catch (Throwable t) {
