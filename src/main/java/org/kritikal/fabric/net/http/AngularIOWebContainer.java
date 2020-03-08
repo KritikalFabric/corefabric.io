@@ -525,7 +525,13 @@ public class AngularIOWebContainer {
                                                                             CFNoscriptRenderers.CFXmlParameters parameters = null;
                                                                             String noscript = null;
 
-                                                                            s = s.replace("<link rel=\"manifest\" href=\"manifest.json\">", "");
+                                                                            s = s.replace("<link rel=\"manifest\" href=\"manifest.json\">",
+                                                                                    "<link rel=\"manifest\" href=\"https://" +
+                                                                                            (CoreFabric.ServerConfiguration.nodejsDev
+                                                                                                    ? req.host().replace(":1480", ":1443")
+                                                                                                    : req.host()
+                                                                                            ) +
+                                                                                            "/manifest.json\">");
 
                                                                             for (CFNoscriptRenderers.CFXmlRenderer renderer : noscriptRenderers.array) {
                                                                                 Matcher matcher = renderer.pattern.matcher(req.path());
