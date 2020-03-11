@@ -72,7 +72,11 @@ public class DefaultCFCookieCutter implements CFCookieCutter {
             }
         }
          */
-        sbCookie.append("; SameSite=None");
+        if (isSSL) {
+            sbCookie.append("; SameSite=None");
+        } else {
+            sbCookie.append("; SameSite=Strict");
+        }
         return sbCookie.toString();
     }
 
