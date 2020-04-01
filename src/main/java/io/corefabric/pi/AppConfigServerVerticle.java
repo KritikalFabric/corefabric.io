@@ -76,6 +76,6 @@ public class AppConfigServerVerticle extends AbstractVerticle {
         // TODO: post() handler to write configuration to the database
         // TODO: security
         server.requestHandler(req -> { router.accept(req); });
-        server.listen(8082); // TODO: receive configuration from config.json
+        server.listen(8888); // TODO: receive configuration from config.json
     }
 }

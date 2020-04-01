@@ -9,9 +9,13 @@ import io.vertx.core.json.JsonObject;
 import org.kritikal.fabric.CoreFabric;
 import org.kritikal.fabric.core.Role;
 import org.kritikal.fabric.core.RoleRegistry;
+import org.kritikal.fabric.dtn.jdtn.JsonConfigShim;
 
 import java.util.LinkedList;
 import java.util.List;
+
+import static org.kritikal.fabric.CoreFabric.getVertx;
+import static org.kritikal.fabric.CoreFabric.logger;
 
 /**
  * Created by ben on 11/29/16.
@@ -20,7 +24,7 @@ public class CoreFabricRoleRegistry {
 
     public static void addCoreFabricRoles(final Vertx vertx) {
 
-        final String[] dtnRoles = new String[] {"dtn-router", "dtn-node", "dtn-mqtt-bridge", "dtn-shell"};
+        final String[] dtnRoles = new String[] {"dtn-router", "dtn-node", "dtn-mqtt-bridge"};
 
         if (RoleRegistry.hasRoleInSet(dtnRoles)) {
             org.kritikal.fabric.dtn.jdtn.JsonConfigShim.bootstrap();
@@ -56,7 +60,7 @@ public class CoreFabricRoleRegistry {
 
         }));
 
-        RoleRegistry.addRole(new Role(new String[] {"dtn-shell", "mqtt-broker"}, "app-web", (future, array) -> {
+        RoleRegistry.addRole(new Role(new String[] {"mqtt-broker"}, "app-web", (future, array) -> {
 
             JsonObject config = null!=array && array.size() > 0 ? array.getJsonObject(0) : new JsonObject();
             DeploymentOptions deploymentOptions = new DeploymentOptions();
@@ -94,26 +98,27 @@ public class CoreFabricRoleRegistry {
             });
 
         }));
-        RoleRegistry.addRole(new Role(new String[] {}, "dtn-shell", (future, array) -> {
-            DeploymentOptions deploymentOptions = new DeploymentOptions();
-            deploymentOptions.setWorker(true);
-            vertx.deployVerticle("org.kritikal.fabric.dtn.jdtn.JDTNHTTPShell", deploymentOptions, f1 -> {
-                if (f1.failed()) future.fail("dtn-shell");
-                else future.complete();
-            });
-        }));
-        RoleRegistry.addRole(new Role(new String[] {"dtn-shell", "mqtt-broker"}, "dtn-router", (future, array)->{
+        RoleRegistry.addRole(new Role(new String[] {"mqtt-broker"}, "dtn-router", (future, array)->{
             future.complete();
         }));
-        RoleRegistry.addRole(new Role(new String[] {"dtn-shell", "mqtt-broker"}, "dtn-node", (future, array) -> {
+        RoleRegistry.addRole(new Role(new String[] {"mqtt-broker"}, "dtn-node", (future, array) -> {
             future.complete();
         }));
         RoleRegistry.addRole(new Role(new String[] {}, "mqtt-broker", (future, array) -> {
-            // do nothing this is dummy
-            // TODO: switch on/off mqtt-listen on external ports according to this specific config path
-            future.complete();
+            getVertx().executeBlocking((future1)->{
+                try {
+                    JsonConfigShim.bootstrap();
+                }
+                catch (Throwable t) {
+                    logger.fatal("mqtt-broker", t);
+                    future1.fail(t);
+                }
+            }, true, result->{
+                if (result.succeeded()) future.complete();
+                else future.fail(result.cause());
+            });
         }));
-        RoleRegistry.addRole(new Role(new String[] {"dtn-shell", "mqtt-broker"}, "dtn-mqtt-bridge", (future, array) -> {
+        RoleRegistry.addRole(new Role(new String[] {"mqtt-broker"}, "dtn-mqtt-bridge", (future, array) -> {
             List<Future> futures = new LinkedList<Future>();
             for (int i = 0, l = null!=array?array.size():0; i < l; ++i) {
                 final String label = "dtn-mqtt-bridge-" + i;
