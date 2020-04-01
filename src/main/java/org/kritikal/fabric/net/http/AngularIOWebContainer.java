@@ -528,7 +528,7 @@ public class AngularIOWebContainer {
                                                                             s = s.replace("<link rel=\"manifest\" href=\"manifest.json\">",
                                                                                     "<link rel=\"manifest\" href=\"https://" +
                                                                                             (CoreFabric.ServerConfiguration.nodejsDev
-                                                                                                    ? req.host().replace(":1480", ":1443")
+                                                                                                    ? req.host().replace(":8080", ":8443")
                                                                                                     : req.host()
                                                                                             ) +
                                                                                             "/manifest.json\">");
